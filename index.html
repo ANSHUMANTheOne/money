@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Million Pixel Auction — millionpixelauction.com</title>
+<title>The Million Pixel Auction — millionpixelauction.com</title>
 <meta name="description" content="1,000,000 pixel ad spaces. Each is an auction. Win one, link it forever.">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -251,7 +251,18 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 #lounge-send{font-size:9px;background:transparent;color:#0d2b0d;border:none;border-left:1px solid #0a1e0a;padding:0 14px;cursor:pointer;font-family:'Share Tech Mono',monospace;height:100%;letter-spacing:1px;}
 #lounge-send:hover{color:#00ff41;background:#001a00;}
 /* SPOTLIGHT BUY PANEL */
-#sp-panel{background:linear-gradient(135deg,#000033,#000066);margin:5px;border-top:2px solid #4444FF;border-left:2px solid #4444FF;border-right:2px solid #000044;border-bottom:2px solid #000044;overflow:hidden;flex-shrink:0;}
+#sp-winner-box{display:none;padding:8px 8px 0;margin-bottom:2px;}
+#sp-winner-box.show{display:block;}
+#sp-winner-name{font-family:'Press Start 2P',monospace;font-size:8px;color:#FFD700;margin-bottom:3px;}
+#sp-winner-title{font-family:'VT323',monospace;font-size:15px;color:#AAAAFF;margin-bottom:3px;}
+#sp-winner-pixel{font-family:'Share Tech Mono',monospace;font-size:10px;color:#8888CC;margin-bottom:4px;}
+#sp-winner-link{font-family:'Share Tech Mono',monospace;font-size:10px;color:#4488FF;text-decoration:underline;cursor:pointer;word-break:break-all;}
+#sp-winner-link:hover{color:#88BBFF;}
+/* lounge bottom exit */
+#lounge-exit-bar{border-top:1px solid #0a1e0a;background:#000;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+#lounge-exit-btn{font-family:'Share Tech Mono',monospace;font-size:11px;color:#1a5a1a;background:transparent;border:1px solid #0a2a0a;padding:5px 16px;cursor:pointer;letter-spacing:1px;}
+#lounge-exit-btn:hover{border-color:#00ff41;color:#00ff41;}
+#lounge-exit-hint{font-family:'Share Tech Mono',monospace;font-size:9px;color:#0a2a0a;letter-spacing:1px;}margin:5px;border-top:2px solid #4444FF;border-left:2px solid #4444FF;border-right:2px solid #000044;border-bottom:2px solid #000044;overflow:hidden;flex-shrink:0;}
 #sp-panel .ptb{background:linear-gradient(90deg,#000080,#0000CC);border-bottom:1px solid #4444FF;}
 #sp-price-tag{font-family:'Press Start 2P',monospace;font-size:16px;color:#FFD700;text-align:center;padding:6px 0 2px;text-shadow:0 0 8px #FFD700;}
 #sp-price-sub{font-family:'VT323',monospace;font-size:13px;color:#8888FF;text-align:center;padding-bottom:2px;}
@@ -274,6 +285,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 #sp-mo-note{font-family:'VT323',monospace;font-size:14px;color:#888;margin-bottom:12px;padding:8px;background:#FFFFF0;border:1px solid #DDD;}
 #sp-msub{width:100%;padding:10px;background:#000080;color:white;font-family:'Press Start 2P',monospace;font-size:8px;border:none;cursor:pointer;border-top:2px solid #4444FF;border-left:2px solid #4444FF;border-right:2px solid #000044;border-bottom:2px solid #000044;}
 #sp-msub:hover{background:#0000AA;}
+#spov{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2500;display:none;align-items:center;justify-content:center;}
 #spov.show{display:flex;}
 #spbox{background:white;border:3px solid #FFD700;box-shadow:0 0 0 6px #CC8800,4px 4px 0 8px rgba(0,0,0,0.3);padding:24px;text-align:center;max-width:380px;animation:spop 0.4s ease;}
 @keyframes spop{from{transform:scale(0.8);}to{transform:scale(1);}}
@@ -316,6 +328,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
     <span id="sp-hdr-user"></span>
     <span id="sp-hdr-sep">—</span>
     <span id="sp-hdr-title"></span>
+    <span id="sp-hdr-pixel" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#AA6600;cursor:pointer;text-decoration:underline;" title="Click to jump to their pixel"></span>
     <span id="sp-hdr-timer"></span>
   </div>
   <div id="stats-bar">
@@ -386,6 +399,12 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
     </div>
     <div id="sp-panel" class="panel">
       <div class="ptb"><span>💡 SPOTLIGHT AD</span><span style="font-family:'VT323',monospace;font-size:13px;color:#AAAAFF;">24H FEATURE</span></div>
+      <div id="sp-winner-box">
+        <div id="sp-winner-name"></div>
+        <div id="sp-winner-title"></div>
+        <div id="sp-winner-pixel"></div>
+        <a id="sp-winner-link" target="_blank" rel="noopener noreferrer"></a>
+      </div>
       <div id="sp-price-tag">$100</div>
       <div id="sp-price-sub">full-page takeover · 24 hours</div>
       <div id="sp-price-next">next purchase: $500</div>
@@ -400,10 +419,12 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
     <div id="sp-mtb"><span>💡 BUY SPOTLIGHT AD</span><div id="sp-mx" onclick="closeSpotlightBuy()">✕</div></div>
     <div id="sp-mbody">
       <div id="sp-mo-price">$100</div>
-      <div id="sp-mo-desc">Your ad shown to every visitor as a full-screen popup for 24 hours.</div>
+      <div id="sp-mo-desc">Your ad shown to every visitor as a full-screen popup for 24 hours. Your pixel + link will be featured in the header.</div>
       <div class="sp-mf"><label>AD TITLE (max 40 chars)</label><input type="text" id="sp-inp-title" maxlength="40" placeholder="My Brand / Project Name"></div>
       <div class="sp-mf"><label>AD DESCRIPTION (max 120 chars)</label><textarea id="sp-inp-desc" maxlength="120" placeholder="Short tagline or message..."></textarea></div>
-      <div id="sp-mo-note">💳 Price increases after each purchase: $100 → $500 → $1,000 → $1,500 → $2,000 → +$500 each time. First come, first served.</div>
+      <div class="sp-mf"><label>YOUR PIXEL # (the block you own)</label><input type="number" id="sp-inp-pixel" min="0" max="999999" placeholder="e.g. 42381"></div>
+      <div class="sp-mf"><label>YOUR WEBPAGE URL</label><input type="url" id="sp-inp-url" placeholder="https://yoursite.com"></div>
+      <div id="sp-mo-note">💳 Price increases after each purchase: $100 → $500 → $1,000 → $1,500 → $2,000 → +$500 each time. Slot is exclusive — only one spotlight runs at a time.</div>
       <button id="sp-msub" onclick="submitSpotlight()">▶ PROCEED TO PAYMENT — <span id="sp-msub-price">$100</span></button>
     </div>
   </div>
@@ -545,6 +566,10 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
           <input id="lounge-inp" placeholder="type here..." maxlength="200" autocomplete="off" spellcheck="false">
           <button id="lounge-send" onclick="loungeSubmit()">SEND</button>
         </div>
+        <div id="lounge-exit-bar">
+          <span id="lounge-exit-hint">esc or /exit to disconnect</span>
+          <button id="lounge-exit-btn" onclick="closeLounge()">[ DISCONNECT ]</button>
+        </div>
       </div>
     </div>
   </div>
@@ -556,6 +581,9 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
     <div style="font-size:48px;">💡</div>
     <div class="sptit" id="sp-title">ADVERTISER</div>
     <div class="spdes" id="sp-desc">Powered by Million Pixel Auction</div>
+    <div id="sp-pixel-row" style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#555;margin:6px 0 2px;display:none;">
+      Pixel: <a id="sp-pixel-link" href="#" target="_blank" rel="noopener noreferrer" style="color:#0000EE;text-decoration:underline;cursor:pointer;">#000000</a>
+    </div>
     <div id="sptmr">10</div>
     <button id="spskip" onclick="closeSP()">[ SKIP ]</button>
   </div>
@@ -733,7 +761,7 @@ function catchBlimp(){if(!loggedIn)return;clearInterval(blimpIv);document.getEle
 // SPOTLIGHT — one slot at a time, 24h duration, escalating price
 let spTO, spHdrTO;
 let spTimesSold = 0;
-let spActive = null; // {user, title, desc, endsAt (timestamp ms)}
+let spActive = null; // {user, title, desc, pixelId, url, endsAt}
 
 function getSpotlightPrice(n){if(n===0)return 100;if(n===1)return 500;return 1000+(n-2)*500;}
 
@@ -747,15 +775,25 @@ function updateSpotlightPanel(){
   document.getElementById('sp-mo-price').textContent   = '$'+price.toLocaleString();
   document.getElementById('sp-msub-price').textContent = '$'+price.toLocaleString();
   const btn = document.getElementById('sp-buy-btn');
+  const wb  = document.getElementById('sp-winner-box');
   if(busy){
-    btn.textContent = '⏳ SLOT TAKEN';
-    btn.disabled = true;
-    btn.style.opacity = '0.45';
-    btn.style.cursor  = 'not-allowed';
-    document.getElementById('sp-price-sub').textContent = 'slot occupied — check back soon';
+    wb.classList.add('show');
+    document.getElementById('sp-winner-name').textContent  = '👤 '+spActive.user;
+    document.getElementById('sp-winner-title').textContent = spActive.title;
+    document.getElementById('sp-winner-pixel').textContent = 'Pixel #'+spActive.pixelId;
+    const lnk = document.getElementById('sp-winner-link');
+    lnk.textContent = spActive.url || '';
+    lnk.href        = spActive.url || '#';
+    lnk.style.display = spActive.url ? '' : 'none';
+    btn.textContent    = '⏳ SLOT TAKEN';
+    btn.disabled       = true;
+    btn.style.opacity  = '0.45';
+    btn.style.cursor   = 'not-allowed';
+    document.getElementById('sp-price-sub').textContent = 'slot occupied — expires in 24h';
   } else {
-    btn.textContent = '▶ BUY SPOTLIGHT';
-    btn.disabled = false;
+    wb.classList.remove('show');
+    btn.textContent   = '▶ BUY SPOTLIGHT';
+    btn.disabled      = false;
     btn.style.opacity = '1';
     btn.style.cursor  = 'pointer';
     document.getElementById('sp-price-sub').textContent = 'full-page takeover · 24 hours';
@@ -768,6 +806,9 @@ function startSpotlightHeader(){
   bar.classList.add('active');
   document.getElementById('sp-hdr-user').textContent  = spActive.user;
   document.getElementById('sp-hdr-title').textContent = spActive.title;
+  // make pixel # clickable — navigates grid to that pixel
+  const pixEl = document.getElementById('sp-hdr-pixel');
+  if(pixEl){ pixEl.textContent = 'Pixel #'+spActive.pixelId; pixEl.onclick = ()=>{ const gi=document.getElementById('gi'); gi.value=spActive.pixelId; gotoCell(); }; }
   if(spHdrTO) clearInterval(spHdrTO);
   function tick(){
     const rem = spActive.endsAt - Date.now();
@@ -778,9 +819,9 @@ function startSpotlightHeader(){
       updateSpotlightPanel();
       return;
     }
-    const h  = Math.floor(rem/3600000);
-    const m  = Math.floor((rem%3600000)/60000);
-    const s  = Math.floor((rem%60000)/1000);
+    const h = Math.floor(rem/3600000);
+    const m = Math.floor((rem%3600000)/60000);
+    const s = Math.floor((rem%60000)/1000);
     document.getElementById('sp-hdr-timer').textContent =
       '⏱ '+String(h).padStart(2,'0')+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s remaining';
   }
@@ -790,7 +831,7 @@ function startSpotlightHeader(){
 
 function openSpotlightBuy(){
   if(!loggedIn){openLM('login');return;}
-  if(spActive && Date.now() < spActive.endsAt){return;} // slot taken
+  if(spActive && Date.now() < spActive.endsAt) return;
   updateSpotlightPanel();
   document.getElementById('sp-mo').classList.add('open');
 }
@@ -799,35 +840,56 @@ function closeSpotlightBuy(){document.getElementById('sp-mo').classList.remove('
 function submitSpotlight(){
   if(!loggedIn){openLM('login');return;}
   if(spActive && Date.now() < spActive.endsAt){closeSpotlightBuy();return;}
-  const title = document.getElementById('sp-inp-title').value.trim();
-  const desc  = document.getElementById('sp-inp-desc').value.trim();
+  const title   = document.getElementById('sp-inp-title').value.trim();
+  const desc    = document.getElementById('sp-inp-desc').value.trim();
+  const pixelId = parseInt(document.getElementById('sp-inp-pixel').value);
+  const rawUrl  = document.getElementById('sp-inp-url').value.trim();
   if(!title){
     document.getElementById('sp-inp-title').style.borderColor='#CC0000';
     setTimeout(()=>document.getElementById('sp-inp-title').style.borderColor='',1000);
     return;
   }
+  // validate URL
+  let safeUrl = '';
+  if(rawUrl){
+    try{
+      const u = new URL(rawUrl);
+      if(['http:','https:'].includes(u.protocol)) safeUrl = rawUrl;
+    }catch(e){ safeUrl = ''; }
+  }
   const price = getSpotlightPrice(spTimesSold);
-  // [API] POST /api/spotlight/purchase {title, desc, price, user:loggedIn}
-  //       → Stripe PaymentIntent → on confirmed payment:
-  spActive = {user: loggedIn, title, desc, endsAt: Date.now() + 24*60*60*1000};
+  // [API] POST /api/spotlight/purchase {title,desc,pixelId,url:safeUrl,price,user:loggedIn}
+  spActive = {user:loggedIn, title, desc, pixelId: isNaN(pixelId)?'?':pixelId, url:safeUrl, endsAt: Date.now()+24*60*60*1000};
   spTimesSold++;
   updateSpotlightPanel();
   startSpotlightHeader();
   closeSpotlightBuy();
-  document.getElementById('sp-inp-title').value = '';
-  document.getElementById('sp-inp-desc').value  = '';
-  showSP(title, desc);
+  document.getElementById('sp-inp-title').value  = '';
+  document.getElementById('sp-inp-desc').value   = '';
+  document.getElementById('sp-inp-pixel').value  = '';
+  document.getElementById('sp-inp-url').value    = '';
+  showSP(title, desc, isNaN(pixelId)?null:pixelId, safeUrl);
 }
 
-function showSP(title,desc){
-  const ov=document.getElementById('spov');
-  document.getElementById('sp-title').textContent=title||'PREMIUM AD';
-  document.getElementById('sp-desc').textContent=desc||'Powered by Million Pixel Auction';
+function showSP(title, desc, pixelId, url){
+  const ov = document.getElementById('spov');
+  document.getElementById('sp-title').textContent = title||'PREMIUM AD';
+  document.getElementById('sp-desc').textContent  = desc||'Powered by Million Pixel Auction';
+  const prow = document.getElementById('sp-pixel-row');
+  const plink = document.getElementById('sp-pixel-link');
+  if(pixelId != null){
+    prow.style.display = '';
+    plink.textContent  = '#'+pixelId;
+    plink.href         = url||'#';
+    if(!url) plink.onclick = (e)=>{ e.preventDefault(); const gi=document.getElementById('gi'); gi.value=pixelId; gotoCell(); closeSP(); };
+    else     plink.onclick = null;
+  } else { prow.style.display='none'; }
   ov.classList.add('show');
-  let s=10;document.getElementById('sptmr').textContent=s;
+  let s=10; document.getElementById('sptmr').textContent=s;
   spTO=setInterval(()=>{s--;document.getElementById('sptmr').textContent=s;if(s<=0)closeSP();},1000);
 }
 function closeSP(){clearInterval(spTO);document.getElementById('spov').classList.remove('show');}
+
 
 
 
