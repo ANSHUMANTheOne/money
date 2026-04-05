@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Million Pixel Auction — millionpixelauction.com</title>
+<title>Million Pixel Auction — millionpixelauction.com</title>
 <meta name="description" content="1,000,000 pixel ad spaces. Each is an auction. Win one, link it forever.">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
@@ -136,6 +136,18 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 .lmoa{display:flex;gap:6px;}
 .lmob{flex:1;padding:6px;background:var(--bg);border-top:2px solid var(--bl);border-left:2px solid var(--bl);border-right:2px solid var(--bdd);border-bottom:2px solid var(--bdd);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;gap:5px;}
 .lmob:hover{background:#D4D0C8;}
+/* RETRO GOOGLE BUTTON */
+.google-btn{width:100%;padding:0;background:#fff;border:2px solid #AAAAAA;border-bottom-color:#888888;cursor:pointer;display:flex;align-items:center;gap:0;font-family:Arial,sans-serif;margin-top:2px;box-shadow:1px 1px 2px rgba(0,0,0,0.2);}
+.google-btn:hover{border-color:#4285F4;box-shadow:1px 1px 3px rgba(66,133,244,0.3);}
+.google-btn:active{box-shadow:inset 1px 1px 2px rgba(0,0,0,0.15);}
+.google-btn-icon{width:36px;height:36px;background:#fff;display:flex;align-items:center;justify-content:center;border-right:1px solid #DDDDDD;flex-shrink:0;}
+.google-btn-text{flex:1;text-align:center;font-size:13px;color:#444;letter-spacing:0.3px;padding-right:36px;}
+.google-btn-text span{color:#4285F4;font-weight:bold;}
+.google-btn-text span:nth-child(2){color:#EA4335;}
+.google-btn-text span:nth-child(3){color:#FBBC05;}
+.google-btn-text span:nth-child(4){color:#4285F4;}
+.google-btn-text span:nth-child(5){color:#34A853;}
+.google-btn-text span:nth-child(6){color:#EA4335;}
 .lmck{display:flex;align-items:center;gap:6px;font-size:11px;color:#333;margin-top:8px;}
 .lmck input{width:auto;}
 .lmerr{background:#FFEEEE;border:1px solid #CC0000;padding:6px 8px;font-size:11px;color:#CC0000;margin-top:6px;display:none;}
@@ -413,6 +425,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
     </div>
   </div>
 </div>
+<div id="sv"></div>
 <!-- SPOTLIGHT BUY MODAL -->
 <div id="sp-mo">
   <div id="sp-mow">
@@ -454,13 +467,12 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
         <button class="lmsub" onclick="doLogin()">▶ LOG IN</button>
         <!-- [API] POST /api/auth/login {email, password} → returns JWT token -->
         <div class="lmerr" id="le-err"></div>
-        <div class="lmor">— or sign in with —</div>
-        <div class="lmoa">
-          <button class="lmob" onclick="oauth('google')">🌐 Google</button>
-          <!-- [API] GET /api/auth/google → OAuth redirect -->
-          <button class="lmob" onclick="oauth('facebook')">📘 Facebook</button>
-          <!-- [API] GET /api/auth/facebook → OAuth redirect -->
-        </div>
+        <div class="lmor">— or —</div>
+        <button class="google-btn" onclick="oauth('google')">
+          <div class="google-btn-icon"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-3.59-13.46-8.83l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></div>
+          <div class="google-btn-text">Sign in with <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></div>
+        </button>
+        <!-- [API] Firebase: firebase.auth().signInWithPopup(googleProvider) -->
         <div style="text-align:center;margin-top:10px;font-size:11px;color:#0000EE;cursor:pointer;" onclick="forgotPwd()">Forgot password?</div>
         <!-- [API] POST /api/auth/forgot {email} → sends reset email -->
       </div>
@@ -471,11 +483,12 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
         <button class="lmsub" onclick="doRegister()">▶ CREATE ACCOUNT</button>
         <!-- [API] POST /api/auth/register {username, email, password} → returns JWT -->
         <div class="lmerr" id="re-err"></div>
-        <div class="lmor">— or sign up with —</div>
-        <div class="lmoa">
-          <button class="lmob" onclick="oauth('google')">🌐 Google</button>
-          <button class="lmob" onclick="oauth('facebook')">📘 Facebook</button>
-        </div>
+        <div class="lmor">— or —</div>
+        <button class="google-btn" onclick="oauth('google')">
+          <div class="google-btn-icon"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-3.59-13.46-8.83l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></div>
+          <div class="google-btn-text">Sign up with <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></div>
+        </button>
+        <!-- [API] Firebase: firebase.auth().signInWithPopup(googleProvider) -->
       </div>
     </div>
   </div>
