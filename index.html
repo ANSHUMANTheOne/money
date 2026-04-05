@@ -55,8 +55,8 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 .nav-btn.active,.nav-btn:active{border-top:2px solid var(--bdd);border-left:2px solid var(--bdd);border-right:2px solid var(--bl);border-bottom:2px solid var(--bl);background:#BEBEBE;}
 .nav-sep{width:2px;background:var(--bdd);height:22px;margin:0 2px;}
 
-#main{display:flex;height:calc(100vh - 152px);min-height:300px;}
-#grid-sec{flex:1;display:flex;flex-direction:column;min-width:0;border-right:2px solid var(--bdd);}
+#main{display:flex;height:calc(100vh - 152px);min-height:300px;overflow:hidden;}
+#grid-sec{flex:1;display:flex;flex-direction:column;min-width:0;max-width:calc(100% - 285px);border-right:2px solid var(--bdd);}
 #gtb{background:var(--bg);padding:4px 8px;display:flex;align-items:center;gap:7px;border-bottom:2px solid var(--bdd);flex-wrap:wrap;flex-shrink:0;}
 .li2{display:flex;align-items:center;gap:4px;font-size:10px;white-space:nowrap;}
 .ld2{width:11px;height:11px;border:1px solid #444;flex-shrink:0;}
@@ -80,7 +80,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 .ttr{display:flex;justify-content:space-between;gap:12px;}
 .ttk{color:#666;}.ttv{color:#000080;font-weight:bold;}
 
-#sidebar{width:285px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg);overflow-y:auto;overflow-x:hidden;}
+#sidebar{width:285px;min-width:285px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg);overflow-y:auto;overflow-x:hidden;}
 .panel{background:var(--bg);margin:5px;border-top:2px solid var(--bl);border-left:2px solid var(--bl);border-right:2px solid var(--bdd);border-bottom:2px solid var(--bdd);overflow:hidden;flex-shrink:0;}
 .ptb{background:var(--navy);color:white;font-family:'Press Start 2P',monospace;font-size:8px;padding:5px 7px;display:flex;align-items:center;justify-content:space-between;}
 .pdot{width:12px;height:12px;background:var(--bg);border-top:1px solid #FFFFFF88;border-left:1px solid #FFFFFF88;border-right:1px solid #00000044;border-bottom:1px solid #00000044;display:flex;align-items:center;justify-content:center;font-size:8px;cursor:pointer;}
@@ -274,7 +274,8 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 #lounge-exit-bar{border-top:1px solid #0a1e0a;background:#000;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 #lounge-exit-btn{font-family:'Share Tech Mono',monospace;font-size:11px;color:#1a5a1a;background:transparent;border:1px solid #0a2a0a;padding:5px 16px;cursor:pointer;letter-spacing:1px;}
 #lounge-exit-btn:hover{border-color:#00ff41;color:#00ff41;}
-#lounge-exit-hint{font-family:'Share Tech Mono',monospace;font-size:9px;color:#0a2a0a;letter-spacing:1px;}margin:5px;border-top:2px solid #4444FF;border-left:2px solid #4444FF;border-right:2px solid #000044;border-bottom:2px solid #000044;overflow:hidden;flex-shrink:0;}
+#lounge-exit-hint{font-family:'Share Tech Mono',monospace;font-size:9px;color:#0a2a0a;letter-spacing:1px;}
+#sp-panel{margin:5px;border-top:2px solid #4444FF;border-left:2px solid #4444FF;border-right:2px solid #000044;border-bottom:2px solid #000044;overflow:hidden;flex-shrink:0;}
 #sp-panel .ptb{background:linear-gradient(90deg,#000080,#0000CC);border-bottom:1px solid #4444FF;}
 #sp-price-tag{font-family:'Press Start 2P',monospace;font-size:16px;color:#FFD700;text-align:center;padding:6px 0 2px;text-shadow:0 0 8px #FFD700;}
 #sp-price-sub{font-family:'VT323',monospace;font-size:13px;color:#8888FF;text-align:center;padding-bottom:2px;}
@@ -368,7 +369,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 
 /* ── MOBILE RESPONSIVENESS ─────────────────────────────── */
 @media (max-width: 768px) {
-  body{overflow:auto;height:auto;}
+  body{overflow-x:hidden;overflow-y:auto;height:auto;padding-bottom:26px;}
   #hdr{position:sticky;top:0;z-index:200;}
   #htb{padding:4px 8px;gap:6px;flex-wrap:wrap;}
   #site-title{font-size:9px;}
@@ -381,16 +382,19 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
   .nav-btn{font-size:10px;padding:3px 8px;flex-shrink:0;}
   .nav-sep{display:none;}
   #nav-bar>div[style*="margin-left:auto"]{display:none;}
-  #main{flex-direction:column;height:auto;min-height:0;}
-  #grid-sec{border-right:none;border-bottom:2px solid var(--bdd);height:60vw;min-height:300px;max-height:55vh;flex-shrink:0;}
-  #gtb{padding:3px 5px;gap:4px;overflow-x:auto;flex-wrap:nowrap;}
+  /* Stack grid + sidebar vertically */
+  #main{flex-direction:column;height:auto;min-height:0;overflow:visible;width:100%;}
+  #grid-sec{border-right:none;border-bottom:2px solid var(--bdd);width:100% !important;max-width:100% !important;height:55vw;min-height:240px;max-height:50vh;flex-shrink:0;}
+  #gtb{padding:3px 5px;gap:4px;overflow-x:auto;flex-wrap:nowrap;width:100%;}
   .li2{font-size:9px;flex-shrink:0;}
   .ld2{width:9px;height:9px;}
   #gtb>div[style*="margin-left:auto"]{flex-shrink:0;}
-  #sidebar{width:100%;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;height:220px;flex-shrink:0;-webkit-overflow-scrolling:touch;border-top:2px solid var(--bdd);}
-  #sidebar .panel{margin:4px;flex-shrink:0;width:240px;min-height:0;}
-  #feed-list{height:120px;}
-  #bl-log{height:60px;}
+  /* Sidebar: full-width vertical stack */
+  #sidebar{width:100% !important;min-width:0 !important;flex-direction:column;flex-wrap:nowrap;overflow-x:hidden;overflow-y:visible;height:auto;flex-shrink:0;border-top:none;}
+  #sidebar .panel{margin:5px 0 0 0;flex-shrink:0;width:100%;min-height:0;box-sizing:border-box;}
+  #feed-list{height:160px;}
+  #bl-log{height:90px;}
+  #sp-panel{display:block !important;width:100%;margin:5px 0 0 0;box-sizing:border-box;}
   #mmbox{display:none;}
   #sbar{position:fixed;bottom:0;left:0;right:0;z-index:100;font-size:10px;}
   #sv{top:0;padding:8px;}
@@ -400,8 +404,6 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
   #lmw{width:98vw;}
   .mig{grid-template-columns:1fr 1fr;}
   .expand-opts{grid-template-columns:1fr 1fr;}
-  #sp-panel{display:none;}
-  /* Touch-friendly tap targets */
   .nav-btn{min-height:36px;}
   .hbtn{min-height:32px;}
 }
@@ -409,16 +411,15 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 @media (max-width: 480px) {
   #site-title{font-size:7px;}
   #live-badge{display:none;}
-  #grid-sec{height:55vw;min-height:260px;}
-  #sidebar{height:200px;}
-  #sidebar .panel{width:200px;}
+  #grid-sec{height:55vw;min-height:220px;}
   .mig{grid-template-columns:1fr;}
   .expand-opts{grid-template-columns:1fr;}
 }
 
 /* Sidebar always scrollable on small desktop too */
-@media (max-width: 1100px) {
-  #sidebar{width:250px;overflow-y:auto;}
+@media (min-width: 769px) and (max-width: 1100px) {
+  #sidebar{width:285px;min-width:285px;overflow-y:auto;}
+  #grid-sec{max-width:calc(100% - 285px);}
   #sidebar .panel{flex-shrink:0;}
 }
 
@@ -473,6 +474,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
   <button class="nav-btn" id="btn-badges" onclick="showSec('badges')">🏅 Badges</button>
   <div class="nav-sep"></div>
   <button class="nav-btn" id="btn-how" onclick="showSec('how')">❓ How It Works</button>
+  <button class="nav-btn" id="btn-mypixels" onclick="showSec('mypixels')" style="display:none;">🖼 My Pixels</button>
   <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
     <span style="font-size:11px;">SECURED BY:</span>
     <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#635BFF;font-weight:bold;">▋STRIPE</span>
@@ -482,7 +484,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 <div id="main">
   <div id="grid-sec">
     <div id="gtb">
-      <span class="li2"><div class="ld2" style="background:#FFFFFF;"></div>No Bids</span>
+      <span class="li2"><div class="ld2" style="background:#F0F0F0;border-color:#BBBBBB;"></div>1×1 Available</span>
       <span class="li2"><div class="ld2" style="background:#0088CC;border-color:#0066AA;"></div><span style="color:#0066AA;">1×1 $1</span></span>
       <span class="li2"><div class="ld2" style="width:14px;height:14px;background:#FF88CC;border-color:#880066;"></div><span style="color:#880066;">2×2 $5</span></span>
       <span class="li2"><div class="ld2" style="width:20px;height:20px;background:#FFDD44;border-color:#886600;"></div><span style="color:#886600;">5×5 $20</span></span>
@@ -517,11 +519,11 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
       <div class="ptb"><span>🏆 TOP BIDDERS</span><div class="pdots"><div class="pdot">_</div></div></div>
       <div id="lb-area"><div class="empty-msg" style="padding:10px;"><div>No winners yet.</div><div>Be first on the board!</div></div></div>
     </div>
-    <div class="panel" style="flex:1;overflow:hidden;min-height:80px;">
+    <div class="panel" style="flex-shrink:0;min-height:0;">
       <div class="ptb"><span>🎈 BLIMP LOG</span><span style="font-family:'VT323',monospace;font-size:13px;color:#AAFFAA;" id="nxt-bl">Next: 100 users</span></div>
-      <div id="bl-log" style="overflow-y:auto;height:80px;background:white;"><div class="empty-msg" style="padding:8px;"><div>No blimps yet.</div><div>Spawns every 100 users.</div></div></div>
+      <div id="bl-log" style="overflow-y:auto;height:100px;background:white;"><div class="empty-msg" style="padding:8px;"><div>No blimps yet.</div><div>Spawns every 100 users.</div></div></div>
     </div>
-    <div id="sp-panel" class="panel">
+    <div id="sp-panel">
       <div class="ptb"><span>💡 SPOTLIGHT AD</span><span style="font-family:'VT323',monospace;font-size:13px;color:#AAAAFF;">24H FEATURE</span></div>
       <div id="sp-winner-box">
         <div id="sp-winner-name"></div>
@@ -579,30 +581,25 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
         <div class="lmf"><label>PASSWORD</label><input type="password" id="lp" placeholder="••••••••"></div>
         <div class="lmck"><input type="checkbox" id="lrem"><label for="lrem">Remember me (saves session cookie)</label></div>
         <button class="lmsub" onclick="doLogin()">▶ LOG IN</button>
-        <!-- [API] POST /api/auth/login {email, password} → returns JWT token -->
         <div class="lmerr" id="le-err"></div>
         <div class="lmor">— or —</div>
         <button class="google-btn" onclick="oauth('google')">
           <div class="google-btn-icon"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-3.59-13.46-8.83l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></div>
           <div class="google-btn-text">Sign in with <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></div>
         </button>
-        <!-- [API] Firebase: firebase.auth().signInWithPopup(googleProvider) -->
         <div style="text-align:center;margin-top:10px;font-size:11px;color:#0000EE;cursor:pointer;" onclick="forgotPwd()">Forgot password?</div>
-        <!-- [API] POST /api/auth/forgot {email} → sends reset email -->
       </div>
       <div id="lf-r" style="display:none;">
         <div class="lmf"><label>USERNAME</label><input type="text" id="ru" placeholder="pixelmaster99"></div>
         <div class="lmf"><label>EMAIL ADDRESS</label><input type="email" id="re" placeholder="you@email.com"></div>
         <div class="lmf"><label>PASSWORD (min 8 chars)</label><input type="password" id="rp" placeholder="••••••••"></div>
         <button class="lmsub" onclick="doRegister()">▶ CREATE ACCOUNT</button>
-        <!-- [API] POST /api/auth/register {username, email, password} → returns JWT -->
         <div class="lmerr" id="re-err"></div>
         <div class="lmor">— or —</div>
         <button class="google-btn" onclick="oauth('google')">
           <div class="google-btn-icon"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-3.59-13.46-8.83l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></div>
           <div class="google-btn-text">Sign up with <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span></div>
         </button>
-        <!-- [API] Firebase: firebase.auth().signInWithPopup(googleProvider) -->
       </div>
     </div>
   </div>
@@ -636,9 +633,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
         <div class="sechd" style="margin-top:12px;">PAYMENT METHOD</div>
         <div class="payr">
           <button id="strbtn" onclick="choosePay('stripe')"><span>▋</span> Stripe / Card</button>
-          <!-- [API] Stripe PaymentIntent: POST /api/payments/create-intent → use Stripe.js -->
           <button id="ppbtn" onclick="choosePay('paypal')"><span>Ⓟ</span> PayPal</button>
-          <!-- [API] PayPal: POST /api/payments/paypal-order → PayPal JS SDK -->
         </div>
         <div class="payn" id="payn">🔒 Card authorized only — charged if you win. Released if outbid.</div>
         <div class="payn" style="color:#CC0000;margin-top:3px;">⚠ Real payments require backend: POST /api/bids with Stripe/PayPal integration.</div>
@@ -670,7 +665,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
     <div id="lounge-tb">
       <div id="lounge-tb-left">
         <span id="lounge-conn">CONNECTED</span>
-        <span id="lounge-meta" id="lounge-meta"></span>
+        <span id="lounge-meta"></span>
       </div>
       <span id="lounge-title">pixel-lounge // members only</span>
       <button id="lounge-close" onclick="closeLounge()">[ EXIT ]</button>
@@ -723,10 +718,6 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 </div>
 
 <script>
-// =============================================
-// LIVE VERSION — 0 USERS
-// [API] comments mark backend integration points
-// =============================================
 const G=1000,TOTAL=1000000;
 const canvas=document.getElementById('gc'),ctx=canvas.getContext('2d');
 const mmc=document.getElementById('mmc'),mmx=mmc.getContext('2d');
@@ -748,21 +739,12 @@ function genLayout(){
     for(let dr=0;dr<sz;dr++)for(let dc=0;dc<sz;dc++)cellMap.set((r+dr)*G+(c+dc),{bId:id,sz});
     return true;
   }
-  // Meme pixels
-  place(0,1,2);   // pixel 1   -> 2x2
-  place(0,67,5);  // pixel 67  -> 5x5
-  place(0,75,5);  // pixel 69  -> 5x5 (offset)
-  place(1,0,2);   // pixel 1000 -> 2x2
-  // 5x5 premium blocks
+  place(0,1,2);place(0,67,5);place(0,75,5);place(1,0,2);
   for(let a=0,p=0;a<5000&&p<180;a++){const c=Math.floor(rng()*(G-4)),r=Math.floor(rng()*(G-4));if(place(r,c,5))p++;}
-  // 2x2 standard blocks
   for(let a=0,p=0;a<20000&&p<2000;a++){const c=Math.floor(rng()*(G-1)),r=Math.floor(rng()*(G-1));if(place(r,c,2))p++;}
-  // 1x1 basic blocks
   for(let a=0,p=0;a<100000&&p<15000;a++){const c=Math.floor(rng()*G),r=Math.floor(rng()*G);const id=r*G+c;if(occ[id])continue;occ[id]=1;blkMap.set(id,{id,row:r,col:c,size:1,status:'available',bid:0,bids:0,mins:1440,bidder:null,owner:null,image:null,url:null});cellMap.set(id,{bId:id,sz:1});p++;}
-  // [API] fetch('/api/grid/state') to update blkMap with real data
 }
 
-// CANVAS EXPANSION
 function tryMergeBlocks(newBlockId){
   if(!loggedIn)return;
   const newBlk=blkMap.get(newBlockId);
@@ -792,12 +774,10 @@ function blocksAdjacent(a,b){
   return((aC2===b.col||bC2===a.col)&&!(a.row>=bR2||b.row>=aR2))||((aR2===b.row||bR2===a.row)&&!(a.col>=bC2||b.col>=aC2));
 }
 
-// [API] WebSocket real-time: connect when user loads
-// const ws = new WebSocket('wss://your-domain.com/ws');
-// ws.onmessage = (e) => { const d=JSON.parse(e.data); handleWS(d); };
 function handleWS(d){
   if(d.type==='bid'){const blk=blkMap.get(d.blockId);if(blk){blk.bid=d.amount;blk.bids++;blk.status=d.minsLeft<120?'ending':'active';blk.bidder=d.user;blk.mins=d.minsLeft;}ndraw=true;addFeed(d.user,d.amount,d.blockId,d.size,true);totalBids++;document.getElementById('h-bids').textContent=totalBids;}
-  if(d.type==='won'){const blk=blkMap.get(d.blockId);if(blk){blk.status='sold';blk.owner=d.user;}ndraw=true;soldCount++;updStats();if(d.user===loggedIn)tryMergeBlocks(d.blockId);}
+  if(d.type==='won'){const blk=blkMap.get(d.blockId);if(blk){blk.status='sold';blk.owner=d.user;}ndraw=true;soldCount++;updStats();
+    if(d.user===loggedIn){tryMergeWithChoice(d.blockId);openPxEdit(d.blockId);}}
   if(d.type==='online'){document.getElementById('h-on').textContent=d.count;visCount=Math.max(visCount,d.count);}
   if(d.type==='blimp')spawnBlimp();
 }
@@ -826,12 +806,42 @@ function blkCol(blk){
           :blk.size>=2?{f:'#2299FF28',b:'#0077CC',lw:1}
           :{f:'#AA88FF28',b:'#8866DD',lw:1};
   }
-  // available — light tints on WHITE background, all same style
-  if(blk.size>=5)return{f:'#FFF4CC',b:'#DDAA00',lw:1};   // 5x5 = light gold tint
-  if(blk.size>=2)return{f:'#D8EEFF',b:'#6699CC',lw:1};   // 2x2 = light blue tint
-  return{f:'#F0F0F0',b:'#BBBBBB',lw:1};                   // 1x1 = very light grey tint
+  if(blk.size>=5)return{f:'#FFF4CC',b:'#DDAA00',lw:1};
+  if(blk.size>=2)return{f:'#D8EEFF',b:'#6699CC',lw:1};
+  return{f:'#F0F0F0',b:'#BBBBBB',lw:1};
 }
 
+// ── Draw helper that handles retro gradients & images ──────
+function drawBlockWithRetro(blk,bx,by,bw){
+  const col=blkCol(blk);
+  if(blk.status==='sold'&&!blk.image){
+    const p=RETRO_PALETTES[blk.id%RETRO_PALETTES.length];
+    const grad=ctx.createLinearGradient(bx,by,bx+bw,by+bw);
+    grad.addColorStop(0,p[0]+'99');grad.addColorStop(1,p[1]+'99');
+    ctx.fillStyle=grad;ctx.fillRect(bx+1,by+1,bw-2,bw-2);
+    ctx.strokeStyle=p[0];ctx.lineWidth=col.lw||1;ctx.strokeRect(bx+0.5,by+0.5,bw-1,bw-1);
+    return;
+  }
+  if(blk.status==='sold'&&blk.image&&blk._imgObj){
+    ctx.drawImage(blk._imgObj,bx+1,by+1,bw-2,bw-2);
+    ctx.strokeStyle=col.b||'#FFD700';ctx.lineWidth=2;ctx.strokeRect(bx+0.5,by+0.5,bw-1,bw-1);
+    return;
+  }
+  ctx.fillStyle=col.f;ctx.fillRect(bx+1,by+1,bw-2,bw-2);
+  ctx.strokeStyle=col.b;ctx.lineWidth=col.lw||1;ctx.strokeRect(bx+0.5,by+0.5,bw-1,bw-1);
+}
+
+// ── RETRO PALETTES ─────────────────────────────────────────
+const RETRO_PALETTES=[
+  ['#FF6B6B','#FFE66D'],['#4ECDC4','#45B7D1'],['#96CEB4','#FFEAA7'],
+  ['#DDA0DD','#98D8C8'],['#F7DC6F','#82E0AA'],['#5DADE2','#EC407A'],
+  ['#FF8C00','#FFD700'],['#00CED1','#98FB98']
+];
+function retroGradient(id){const p=RETRO_PALETTES[id%RETRO_PALETTES.length];return`linear-gradient(135deg,${p[0]},${p[1]})`;}
+const RETRO_EMOJIS=['👾','🌈','💾','🕹️','⚡','🔮','🎮','💿','🌀','🎲'];
+function retroEmoji(id){return RETRO_EMOJIS[id%RETRO_EMOJIS.length];}
+
+// ── MAIN DRAW LOOP ─────────────────────────────────────────
 function drawGrid(){
   if(!ndraw)return;ndraw=false;
   const cs=CELL,ox=sc.x,oy=sc.y,sc2=Math.floor(ox/cs),sr=Math.floor(oy/cs);
@@ -840,13 +850,33 @@ function drawGrid(){
   const drawn=new Set();
   for(let r=sr;r<er;r++)for(let c=sc2;c<ec;c++){
     const id=r*G+c,cell=cellMap.get(id);
-    if(cell){const blk=blkMap.get(cell.bId);if(cell.bId!==id||drawn.has(cell.bId))continue;drawn.add(cell.bId);const bx=Math.floor(blk.col*cs-ox),by=Math.floor(blk.row*cs-oy),bw=blk.size*cs;const{f,b,lw=1}=blkCol(blk);ctx.fillStyle=f;ctx.fillRect(bx+1,by+1,bw-2,bw-2);ctx.strokeStyle=b;ctx.lineWidth=lw;ctx.strokeRect(bx+0.5,by+0.5,bw-1,bw-1);}
-    else{const x=Math.floor(c*cs-ox),y=Math.floor(r*cs-oy),w=cs>3?cs-1:cs;ctx.fillStyle='#EEEEEE';ctx.fillRect(x,y,1,cs);ctx.fillRect(x,y,cs,1);}
+    if(cell){
+      const blk=blkMap.get(cell.bId);
+      if(cell.bId!==id||drawn.has(cell.bId))continue;
+      drawn.add(cell.bId);
+      const bx=Math.floor(blk.col*cs-ox),by=Math.floor(blk.row*cs-oy),bw=blk.size*cs;
+      drawBlockWithRetro(blk,bx,by,bw);
+    } else {
+      // ── FIX: unregistered cells rendered identically to 1×1 available blocks ──
+      const x=Math.floor(c*cs-ox),y=Math.floor(r*cs-oy);
+      ctx.fillStyle='#F0F0F0';
+      ctx.fillRect(x+1,y+1,cs-2,cs-2);
+      ctx.strokeStyle='#BBBBBB';
+      ctx.lineWidth=1;
+      ctx.strokeRect(x+0.5,y+0.5,cs-1,cs-1);
+    }
   }
+  // Highlight
   if(hlCell){const hx=hlCell.col*CELL-sc.x,hy=hlCell.row*CELL-sc.y,hsz=(hlCell.size||1)*CELL;ctx.save();ctx.strokeStyle=`rgba(255,220,0,${hlAlpha})`;ctx.lineWidth=3;ctx.shadowColor='rgba(255,220,0,0.9)';ctx.shadowBlur=16;ctx.strokeRect(hx+2,hy+2,hsz-4,hsz-4);ctx.fillStyle=`rgba(255,220,0,${hlAlpha*0.15})`;ctx.fillRect(hx+2,hy+2,hsz-4,hsz-4);ctx.restore();hlAlpha+=hlDir*0.035;if(hlAlpha<=0){if(hlDir<0){hlDir=1;hlAlpha=0;}else{hlCell=null;}}else if(hlAlpha>=1){hlDir=-1;}ndraw=true;}
-  updMM();
+  // Minimap
+  const mscale=100/G;mmx.fillStyle='#FFFFFF';mmx.fillRect(0,0,100,100);
+  for(const [id,blk] of blkMap){
+    const bc=blkCol(blk);mmx.fillStyle=bc.f;mmx.fillRect(blk.col*mscale,blk.row*mscale,Math.max(1,blk.size*mscale),Math.max(1,blk.size*mscale));
+  }
+  const vx=sc.x/G/CELL*100,vy=sc.y/G/CELL*100,vw=canvas.width/G/CELL*100,vh2=canvas.height/G/CELL*100;
+  const mv=document.getElementById('mmv');if(mv){mv.style.left=vx+'px';mv.style.top=vy+'px';mv.style.width=Math.min(100,vw)+'px';mv.style.height=Math.min(100,vh2)+'px';}
 }
-function updMM(){const s=100/G;mmx.fillStyle='#FFFFFF';mmx.fillRect(0,0,100,100);for(const[bid,blk]of blkMap){if(blk.status==='available')continue;mmx.fillStyle=blk.status==='sold'?(blk.size===5?'#CC8800':blk.size===2?'#880066':'#0055AA'):blk.status==='ending'?'#FF4444':'#88AA8866';mmx.fillRect(Math.floor(blk.col*s),Math.floor(blk.row*s),Math.max(1,Math.floor(blk.size*s)),Math.max(1,Math.floor(blk.size*s)));}const vp=document.getElementById('mmv'),px=(sc.x/CELL/G)*100,py=(sc.y/CELL/G)*100,vw=Math.min(100,(canvas.width/CELL/G)*100),vh=Math.min(100,(canvas.height/CELL/G)*100);vp.style.cssText=`left:${px}px;top:${py}px;width:${vw}px;height:${vh}px;`;}
+
 let lastR=0;function loop(ts){if(ts-lastR>16){lastR=ts;drawGrid();}requestAnimationFrame(loop);}
 
 function hitCell(mx,my){const col=Math.floor((mx+sc.x)/CELL),row=Math.floor((my+sc.y)/CELL);if(col<0||col>=G||row<0||row>=G)return null;return{col,row,id:row*G+col};}
@@ -879,14 +909,12 @@ canvas.addEventListener('wheel',e=>{e.preventDefault();sc.x+=e.deltaX*2;sc.y+=e.
 function showTT(h,cx,cy){
   const cell=cellMap.get(h.id),tt=document.getElementById('tt');
   document.getElementById('tthd').textContent=`GRID #${String(h.id).padStart(6,'0')}`;
-  if(!cell){document.getElementById('tt-sz').textContent='Available';document.getElementById('tt-bid').textContent='No bids';document.getElementById('tt-bids').textContent='0';document.getElementById('tt-tm').textContent='24h on first bid';document.getElementById('tt-st').textContent='AVAILABLE';document.getElementById('tt-st').style.color='#008000';
-    const pe=document.getElementById('tt-price');if(pe)pe.style.display='none';
-    const oe=document.getElementById('tt-owner');if(oe)oe.parentElement.style.display='none';}
+  if(!cell){document.getElementById('tt-sz').textContent='1×1 BASIC';document.getElementById('tt-bid').textContent='No bids';document.getElementById('tt-bids').textContent='0';document.getElementById('tt-tm').textContent='24h on first bid';document.getElementById('tt-st').textContent='AVAILABLE';document.getElementById('tt-st').style.color='#008000';
+    const pRow=document.getElementById('tt-price-row');if(pRow)pRow.style.display='none';
+    const oRow=document.getElementById('tt-owner-row');if(oRow)oRow.style.display='none';}
   else{const blk=blkMap.get(cell.bId);const sn=blk.size===5?'5×5 PREMIUM':blk.size===2?'2×2 STANDARD':'1×1 BASIC';document.getElementById('tt-sz').textContent=sn;document.getElementById('tt-bid').textContent=blk.bid?'$'+blk.bid:'No bids';document.getElementById('tt-bids').textContent=blk.bids;
-    // Show purchase price if sold
     const pe=document.getElementById('tt-price');const pRow=document.getElementById('tt-price-row');
     if(blk.status==='sold'&&blk.bid){if(pe)pe.textContent='$'+blk.bid;if(pRow)pRow.style.display='flex';}else{if(pRow)pRow.style.display='none';}
-    // Show owner
     const oe=document.getElementById('tt-owner');const oRow=document.getElementById('tt-owner-row');
     if(blk.owner&&oe){oe.textContent=blk.owner;if(oRow)oRow.style.display='flex';}else{if(oRow)oRow.style.display='none';}
     if(blk.status==='sold'){document.getElementById('tt-tm').textContent='ENDED';document.getElementById('tt-st').textContent='● SOLD';document.getElementById('tt-st').style.color='#008800';}else if(blk.status==='available'){document.getElementById('tt-tm').textContent='24h on first bid';document.getElementById('tt-st').textContent='AVAILABLE';document.getElementById('tt-st').style.color='#008000';}else{const hh=Math.floor(blk.mins/60),mm=blk.mins%60;document.getElementById('tt-tm').textContent=`${hh}h ${mm}m`;document.getElementById('tt-st').textContent=blk.status==='ending'?'⚠ ENDING':'▶ ACTIVE';document.getElementById('tt-st').style.color=blk.status==='ending'?'#CC0000':'#CC6600';}}
@@ -899,27 +927,16 @@ let hlCell=null,hlAlpha=0,hlDir=-1;
 function gotoCell(){
   const v=parseInt(document.getElementById('gi').value);
   if(isNaN(v)||v<0||v>=TOTAL)return;
-  // Switch to grid view if on another tab
   showSec('grid');
   const col=v%G,row=Math.floor(v/G);
-  // Find block size so we can zoom appropriately
   const cell=cellMap.get(v);
   const blk=cell?blkMap.get(cell.bId):null;
   const sz=blk?blk.size:1;
-  // Pick zoom level based on size: 1x1→1.5×(zi=3), 2x2→1×(zi=2), 5x5→0.6×(zi=1)
   const targetZi=sz>=5?1:sz>=2?2:3;
-  if(zi!==targetZi){
-    const p=CELL;zi=targetZi;CELL=ZL[zi];
-    document.getElementById('zlbl').textContent=ZN[zi];
-    document.getElementById('sb-zoom').textContent='Zoom: '+ZN[zi];
-  }
-  // Center on the block (accounting for multi-cell blocks)
+  if(zi!==targetZi){const p=CELL;zi=targetZi;CELL=ZL[zi];document.getElementById('zlbl').textContent=ZN[zi];document.getElementById('sb-zoom').textContent='Zoom: '+ZN[zi];}
   const bCol=blk?blk.col:col,bRow=blk?blk.row:row;
-  sc.x=bCol*CELL+(sz*CELL/2)-canvas.width/2;
-  sc.y=bRow*CELL+(sz*CELL/2)-canvas.height/2;
-  clampSc();
-  hlCell={col:bCol,row:bRow,size:sz};
-  hlAlpha=1;hlDir=-1;ndraw=true;
+  sc.x=bCol*CELL+(sz*CELL/2)-canvas.width/2;sc.y=bRow*CELL+(sz*CELL/2)-canvas.height/2;
+  clampSc();hlCell={col:bCol,row:bRow,size:sz};hlAlpha=1;hlDir=-1;ndraw=true;
 }
 
 let curMO=null;
@@ -946,18 +963,17 @@ function placeBid(){
   if(!loggedIn){openLM('login');return;}
   const v=parseInt(document.getElementById('bidinp').value),min=parseInt(document.getElementById('bidinp').min);
   if(isNaN(v)||v<min){document.getElementById('bidinp').style.borderColor='#CC0000';setTimeout(()=>document.getElementById('bidinp').style.borderColor='',1000);return;}
-  // [API] POST /api/bids { blockId: curMO, amount: v, paymentToken: stripeToken }
-  // On success: update local state. Real: server validates + holds Stripe auth
   if(curMO!==null){
     const cell=cellMap.get(curMO);
-    if(cell){const blk=blkMap.get(cell.bId);blk.bid=v;blk.bids++;blk.status='active';blk.bidder=loggedIn;ndraw=true;}
-    else{blkMap.set(curMO,{id:curMO,row:Math.floor(curMO/G),col:curMO%G,size:1,status:'active',bid:v,bids:1,mins:1440,bidder:loggedIn});cellMap.set(curMO,{bId:curMO,sz:1});ndraw=true;}
+    let blk;
+    if(cell){blk=blkMap.get(cell.bId);blk.bid=v;blk.bids++;blk.status='active';blk.bidder=loggedIn;ndraw=true;}
+    else{blk={id:curMO,row:Math.floor(curMO/G),col:curMO%G,size:1,status:'active',bid:v,bids:1,mins:1440,bidder:loggedIn,owner:null,image:null,url:null,title:null,_imgObj:null};blkMap.set(curMO,blk);cellMap.set(curMO,{bId:curMO,sz:1});ndraw=true;}
   }
   const ok=document.getElementById('bidok');ok.style.display='block';
-  ok.innerHTML=`✓ Bid of $${v} placed!<br><span style="font-size:10px;color:#CC6600;">⚠ Real payments need backend. See How It Works.</span>`;
+  ok.innerHTML=`✓ Bid of $${v} placed! <span style="font-size:10px;color:#CC6600;">(Demo — backend needed for real payments)</span>`;
   document.getElementById('m-bid').textContent='$'+v;document.getElementById('m-min').textContent='$'+(v+1);
   document.getElementById('bidinp').value=v+1;document.getElementById('bidinp').min=v+1;
-  addFeed(loggedIn,v,curMO,cellMap.get(curMO)?.sz||1,true);
+  if(curMO!==null){const cell2=cellMap.get(curMO);addFeed(loggedIn,v,curMO,cell2?.sz||1,true);}
   totalBids++;document.getElementById('h-bids').textContent=totalBids;
 }
 function choosePay(m){const n=document.getElementById('payn');n.textContent=m==='stripe'?'💳 Stripe: cards, Apple Pay, Google Pay. Backend required.':'🅿 PayPal: international. Backend required.';n.style.color=m==='stripe'?'#635BFF':'#003087';}
@@ -976,140 +992,63 @@ let blimpOn=false,blimpIv;
 function spawnBlimp(){if(blimpOn)return;blimpOn=true;const el=document.getElementById('bl-el'),wrap=document.getElementById('gw');el.style.top=(Math.random()*0.75*wrap.clientHeight+40)+'px';el.style.left='-70px';el.style.display='block';let lx=-70;blimpIv=setInterval(()=>{lx+=1.5;el.style.left=lx+'px';if(lx>wrap.clientWidth+100){el.style.display='none';blimpOn=false;clearInterval(blimpIv);}},30);}
 function catchBlimp(){if(!loggedIn)return;clearInterval(blimpIv);document.getElementById('bl-el').style.display='none';blimpOn=false;const bl=document.getElementById('bl-log');if(bl.querySelector('.empty-msg'))bl.innerHTML='';const d=document.createElement('div');d.className='bl-li';d.innerHTML=`<span>🎈</span><span class="blt2">${loggedIn}</span><span class="bltm2">just now</span>`;bl.insertBefore(d,bl.firstChild);showEgg({id:'blimp',name:'BLIMP CAPTURED!',icon:'🎈',badge:'Blimp Hunter',desc:'You clicked the flying blimp first!'});}
 
-// SPOTLIGHT — one slot at a time, 24h duration, escalating price
-let spTO, spHdrTO;
-let spTimesSold = 0;
-let spActive = null; // {user, title, desc, pixelId, url, endsAt}
-
+// SPOTLIGHT
+let spTO,spHdrTO,spTimesSold=0,spActive=null;
 function getSpotlightPrice(n){if(n===0)return 100;if(n===1)return 500;return 1000+(n-2)*500;}
-
 function updateSpotlightPanel(){
-  const price = getSpotlightPrice(spTimesSold);
-  const next  = getSpotlightPrice(spTimesSold+1);
-  const busy  = spActive && Date.now() < spActive.endsAt;
-  document.getElementById('sp-price-tag').textContent  = '$'+price.toLocaleString();
-  document.getElementById('sp-price-next').textContent = 'next purchase: $'+next.toLocaleString();
-  document.getElementById('sp-times-sold').textContent = spTimesSold+' spotlight'+(spTimesSold===1?'':'s')+' sold';
-  document.getElementById('sp-mo-price').textContent   = '$'+price.toLocaleString();
-  document.getElementById('sp-msub-price').textContent = '$'+price.toLocaleString();
-  const btn = document.getElementById('sp-buy-btn');
-  const wb  = document.getElementById('sp-winner-box');
+  const price=getSpotlightPrice(spTimesSold),next=getSpotlightPrice(spTimesSold+1);
+  const busy=spActive&&Date.now()<spActive.endsAt;
+  document.getElementById('sp-price-tag').textContent='$'+price.toLocaleString();
+  document.getElementById('sp-price-next').textContent='next purchase: $'+next.toLocaleString();
+  document.getElementById('sp-times-sold').textContent=spTimesSold+' spotlight'+(spTimesSold===1?'':'s')+' sold';
+  document.getElementById('sp-mo-price').textContent='$'+price.toLocaleString();
+  document.getElementById('sp-msub-price').textContent='$'+price.toLocaleString();
+  const btn=document.getElementById('sp-buy-btn'),wb=document.getElementById('sp-winner-box');
   if(busy){
     wb.classList.add('show');
-    document.getElementById('sp-winner-name').textContent  = '👤 '+spActive.user;
-    document.getElementById('sp-winner-title').textContent = spActive.title;
-    document.getElementById('sp-winner-pixel').textContent = 'Pixel #'+spActive.pixelId;
-    const lnk = document.getElementById('sp-winner-link');
-    lnk.textContent = spActive.url || '';
-    lnk.href        = spActive.url || '#';
-    lnk.style.display = spActive.url ? '' : 'none';
-    btn.textContent    = '⏳ SLOT TAKEN';
-    btn.disabled       = true;
-    btn.style.opacity  = '0.45';
-    btn.style.cursor   = 'not-allowed';
-    document.getElementById('sp-price-sub').textContent = 'slot occupied — expires in 24h';
-  } else {
-    wb.classList.remove('show');
-    btn.textContent   = '▶ BUY SPOTLIGHT';
-    btn.disabled      = false;
-    btn.style.opacity = '1';
-    btn.style.cursor  = 'pointer';
-    document.getElementById('sp-price-sub').textContent = 'full-page takeover · 24 hours';
+    document.getElementById('sp-winner-name').textContent='👤 '+spActive.user;
+    document.getElementById('sp-winner-title').textContent=spActive.title;
+    document.getElementById('sp-winner-pixel').textContent='Pixel #'+spActive.pixelId;
+    const lnk=document.getElementById('sp-winner-link');lnk.textContent=spActive.url||'';lnk.href=spActive.url||'#';lnk.style.display=spActive.url?'':'none';
+    btn.textContent='⏳ SLOT TAKEN';btn.disabled=true;btn.style.opacity='0.45';btn.style.cursor='not-allowed';
+    document.getElementById('sp-price-sub').textContent='slot occupied — expires in 24h';
+  }else{
+    wb.classList.remove('show');btn.textContent='▶ BUY SPOTLIGHT';btn.disabled=false;btn.style.opacity='1';btn.style.cursor='pointer';
+    document.getElementById('sp-price-sub').textContent='full-page takeover · 24 hours';
   }
 }
-
 function startSpotlightHeader(){
-  if(!spActive) return;
-  const bar = document.getElementById('sp-hdr-bar');
-  bar.classList.add('active');
-  document.getElementById('sp-hdr-user').textContent  = spActive.user;
-  document.getElementById('sp-hdr-title').textContent = spActive.title;
-  // make pixel # clickable — navigates grid to that pixel
-  const pixEl = document.getElementById('sp-hdr-pixel');
-  if(pixEl){ pixEl.textContent = 'Pixel #'+spActive.pixelId; pixEl.onclick = ()=>{ const gi=document.getElementById('gi'); gi.value=spActive.pixelId; gotoCell(); }; }
-  if(spHdrTO) clearInterval(spHdrTO);
-  function tick(){
-    const rem = spActive.endsAt - Date.now();
-    if(rem <= 0){
-      bar.classList.remove('active');
-      clearInterval(spHdrTO);
-      spActive = null;
-      updateSpotlightPanel();
-      return;
-    }
-    const h = Math.floor(rem/3600000);
-    const m = Math.floor((rem%3600000)/60000);
-    const s = Math.floor((rem%60000)/1000);
-    document.getElementById('sp-hdr-timer').textContent =
-      '⏱ '+String(h).padStart(2,'0')+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s remaining';
-  }
-  tick();
-  spHdrTO = setInterval(tick, 1000);
+  if(!spActive)return;
+  const bar=document.getElementById('sp-hdr-bar');bar.classList.add('active');
+  document.getElementById('sp-hdr-user').textContent=spActive.user;
+  document.getElementById('sp-hdr-title').textContent=spActive.title;
+  const pixEl=document.getElementById('sp-hdr-pixel');
+  if(pixEl){pixEl.textContent='Pixel #'+spActive.pixelId;pixEl.onclick=()=>{const gi=document.getElementById('gi');gi.value=spActive.pixelId;gotoCell();};}
+  if(spHdrTO)clearInterval(spHdrTO);
+  function tick(){const rem=spActive.endsAt-Date.now();if(rem<=0){bar.classList.remove('active');clearInterval(spHdrTO);spActive=null;updateSpotlightPanel();return;}const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000),s=Math.floor((rem%60000)/1000);document.getElementById('sp-hdr-timer').textContent='⏱ '+String(h).padStart(2,'0')+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s remaining';}
+  tick();spHdrTO=setInterval(tick,1000);
 }
-
-function openSpotlightBuy(){
-  if(!loggedIn){openLM('login');return;}
-  if(spActive && Date.now() < spActive.endsAt) return;
-  updateSpotlightPanel();
-  document.getElementById('sp-mo').classList.add('open');
-}
+function openSpotlightBuy(){if(!loggedIn){openLM('login');return;}if(spActive&&Date.now()<spActive.endsAt)return;updateSpotlightPanel();document.getElementById('sp-mo').classList.add('open');}
 function closeSpotlightBuy(){document.getElementById('sp-mo').classList.remove('open');}
-
 function submitSpotlight(){
   if(!loggedIn){openLM('login');return;}
-  if(spActive && Date.now() < spActive.endsAt){closeSpotlightBuy();return;}
-  const title   = document.getElementById('sp-inp-title').value.trim();
-  const desc    = document.getElementById('sp-inp-desc').value.trim();
-  const pixelId = parseInt(document.getElementById('sp-inp-pixel').value);
-  const rawUrl  = document.getElementById('sp-inp-url').value.trim();
-  if(!title){
-    document.getElementById('sp-inp-title').style.borderColor='#CC0000';
-    setTimeout(()=>document.getElementById('sp-inp-title').style.borderColor='',1000);
-    return;
-  }
-  // validate URL
-  let safeUrl = '';
-  if(rawUrl){
-    try{
-      const u = new URL(rawUrl);
-      if(['http:','https:'].includes(u.protocol)) safeUrl = rawUrl;
-    }catch(e){ safeUrl = ''; }
-  }
-  const price = getSpotlightPrice(spTimesSold);
-  // [API] POST /api/spotlight/purchase {title,desc,pixelId,url:safeUrl,price,user:loggedIn}
-  spActive = {user:loggedIn, title, desc, pixelId: isNaN(pixelId)?'?':pixelId, url:safeUrl, endsAt: Date.now()+24*60*60*1000};
-  spTimesSold++;
-  updateSpotlightPanel();
-  startSpotlightHeader();
-  closeSpotlightBuy();
-  document.getElementById('sp-inp-title').value  = '';
-  document.getElementById('sp-inp-desc').value   = '';
-  document.getElementById('sp-inp-pixel').value  = '';
-  document.getElementById('sp-inp-url').value    = '';
-  showSP(title, desc, isNaN(pixelId)?null:pixelId, safeUrl);
+  if(spActive&&Date.now()<spActive.endsAt){closeSpotlightBuy();return;}
+  const title=document.getElementById('sp-inp-title').value.trim(),desc=document.getElementById('sp-inp-desc').value.trim(),pixelId=parseInt(document.getElementById('sp-inp-pixel').value),rawUrl=document.getElementById('sp-inp-url').value.trim();
+  if(!title){document.getElementById('sp-inp-title').style.borderColor='#CC0000';setTimeout(()=>document.getElementById('sp-inp-title').style.borderColor='',1000);return;}
+  let safeUrl='';if(rawUrl){try{const u=new URL(rawUrl);if(['http:','https:'].includes(u.protocol))safeUrl=rawUrl;}catch(e){}}
+  spActive={user:loggedIn,title,desc,pixelId:isNaN(pixelId)?'?':pixelId,url:safeUrl,endsAt:Date.now()+24*60*60*1000};
+  spTimesSold++;updateSpotlightPanel();startSpotlightHeader();closeSpotlightBuy();
+  document.getElementById('sp-inp-title').value='';document.getElementById('sp-inp-desc').value='';document.getElementById('sp-inp-pixel').value='';document.getElementById('sp-inp-url').value='';
+  showSP(title,desc,isNaN(pixelId)?null:pixelId,safeUrl);
 }
-
-function showSP(title, desc, pixelId, url){
-  const ov = document.getElementById('spov');
-  document.getElementById('sp-title').textContent = title||'PREMIUM AD';
-  document.getElementById('sp-desc').textContent  = desc||'Powered by Million Pixel Auction';
-  const prow = document.getElementById('sp-pixel-row');
-  const plink = document.getElementById('sp-pixel-link');
-  if(pixelId != null){
-    prow.style.display = '';
-    plink.textContent  = '#'+pixelId;
-    plink.href         = url||'#';
-    if(!url) plink.onclick = (e)=>{ e.preventDefault(); const gi=document.getElementById('gi'); gi.value=pixelId; gotoCell(); closeSP(); };
-    else     plink.onclick = null;
-  } else { prow.style.display='none'; }
-  ov.classList.add('show');
-  let s=10; document.getElementById('sptmr').textContent=s;
-  spTO=setInterval(()=>{s--;document.getElementById('sptmr').textContent=s;if(s<=0)closeSP();},1000);
+function showSP(title,desc,pixelId,url){
+  const ov=document.getElementById('spov');
+  document.getElementById('sp-title').textContent=title||'PREMIUM AD';document.getElementById('sp-desc').textContent=desc||'Powered by Million Pixel Auction';
+  const prow=document.getElementById('sp-pixel-row'),plink=document.getElementById('sp-pixel-link');
+  if(pixelId!=null){prow.style.display='';plink.textContent='#'+pixelId;plink.href=url||'#';if(!url)plink.onclick=(e)=>{e.preventDefault();document.getElementById('gi').value=pixelId;gotoCell();closeSP();};else plink.onclick=null;}else{prow.style.display='none';}
+  ov.classList.add('show');let s=10;document.getElementById('sptmr').textContent=s;spTO=setInterval(()=>{s--;document.getElementById('sptmr').textContent=s;if(s<=0)closeSP();},1000);
 }
 function closeSP(){clearInterval(spTO);document.getElementById('spov').classList.remove('show');}
-
-
-
 
 // EASTER EGGS
 const EGGS=[
@@ -1127,23 +1066,17 @@ const EGGS=[
 const foundEggs=new Set();
 let lcc=0,lct;function logoClick(){if(!loggedIn)return;lcc++;clearTimeout(lct);lct=setTimeout(()=>lcc=0,3000);if(lcc>=10){lcc=0;triggerEgg('globe');}}
 const KC=[38,38,40,40,37,39,37,39,66,65];let ki=0,hb='';
-// Secret knock: click status bar 5 times fast
-let skc=0,skt;
 document.addEventListener('keydown',e=>{
   if(e.keyCode===KC[ki]){ki++;if(ki===KC.length){ki=0;triggerEgg('konami');}}else ki=0;
   hb+=String.fromCharCode(e.keyCode).toLowerCase();hb=hb.slice(-8);
-  if(hb.slice(-6)==='harlem')triggerEgg('harlem');
-  if(hb.slice(-6)==='matrix')triggerEgg('matrix');
-  if(hb.slice(-4)==='doom')triggerEgg('doom');
-  if(hb.slice(-5)==='retro')triggerEgg('retro');
-  if(hb.slice(-5)==='pizza')triggerEgg('pizza');
+  if(hb.slice(-6)==='harlem')triggerEgg('harlem');if(hb.slice(-6)==='matrix')triggerEgg('matrix');
+  if(hb.slice(-4)==='doom')triggerEgg('doom');if(hb.slice(-5)==='retro')triggerEgg('retro');if(hb.slice(-5)==='pizza')triggerEgg('pizza');
 });
 let fc=[],fct2;
 document.getElementById('gi').addEventListener('keyup',e=>{if(document.getElementById('gi').value.toLowerCase().includes('never'))triggerEgg('rickroll');});
-// Secret: click the ONLINE counter 7 times
 let ocnt=0,oct;
 document.getElementById('vis-cnt').addEventListener('click',()=>{ocnt++;clearTimeout(oct);oct=setTimeout(()=>ocnt=0,3000);if(ocnt>=2){ocnt=0;triggerEgg('secret');}});
-function triggerEgg(id){if(!loggedIn){return;}if(foundEggs.has(id))return;foundEggs.add(id);const eg=EGGS.find(e=>e.id===id)||{id,name:id,icon:'🥚',badge:'Explorer',desc:'Secret found!',special:null};showEgg(eg);}
+function triggerEgg(id){if(!loggedIn)return;if(foundEggs.has(id))return;foundEggs.add(id);const eg=EGGS.find(e=>e.id===id)||{id,name:id,icon:'🥚',badge:'Explorer',desc:'Secret found!',special:null};showEgg(eg);}
 function showEgg(eg){
   document.getElementById('eeicon').textContent=eg.icon;document.getElementById('eename').textContent=eg.name;
   document.getElementById('eedesc').textContent=eg.desc;document.getElementById('eebadge').innerHTML=`🏅 BADGE UNLOCKED: <strong>${eg.badge}</strong>`;
@@ -1151,53 +1084,33 @@ function showEgg(eg){
   const em=['⭐','✨','🌟','💫','🎊','🎉','⚡','🏅','🔥','💥','🌈'];
   for(let i=0;i<22;i++){const s=document.createElement('span');s.className='eebit';s.textContent=em[Math.floor(Math.random()*em.length)];s.style.left=Math.random()*100+'%';s.style.animationDelay=Math.random()*2.5+'s';cf.appendChild(s);}
   const iw=document.getElementById('eeiw');iw.style.animation='none';void iw.offsetWidth;iw.style.animation='';
-  // Special effects
   if(eg.special==='harlem'){document.body.style.animation='harlemShake 0.3s ease infinite';setTimeout(()=>{document.body.style.animation='';},3000);}
   if(eg.special==='konami'){document.body.style.filter='hue-rotate(180deg)';setTimeout(()=>{document.body.style.filter='';},4000);}
-  if(eg.special==='matrix'){startMatrixRain();}
-  if(eg.special==='pizza'){showPizzaTime();}
-  // Store special for close action
+  if(eg.special==='matrix')startMatrixRain();
+  if(eg.special==='pizza')showPizzaTime();
   document.getElementById('ee').dataset.special=eg.special||'';
   document.getElementById('ee').classList.add('open');
 }
-function closeEE(){
-  const sp=document.getElementById('ee').dataset.special;
-  document.getElementById('ee').classList.remove('open');
-  if(sp==='lounge')showLoungeLoading();
-}
+function closeEE(){const sp=document.getElementById('ee').dataset.special;document.getElementById('ee').classList.remove('open');if(sp==='lounge')showLoungeLoading();}
 
-// MATRIX RAIN
 function startMatrixRain(){const cv=document.createElement('canvas');cv.style.cssText='position:fixed;top:0;left:0;z-index:9998;pointer-events:none;opacity:0.4;';document.body.appendChild(cv);cv.width=window.innerWidth;cv.height=window.innerHeight;const cx=cv.getContext('2d');const cols=Math.floor(cv.width/16);const drops=Array(cols).fill(0);let frames=0;const iv=setInterval(()=>{cx.fillStyle='rgba(0,0,0,0.05)';cx.fillRect(0,0,cv.width,cv.height);cx.fillStyle='#00FF41';cx.font='14px Share Tech Mono,monospace';drops.forEach((y,i)=>{cx.fillText(String.fromCharCode(0x30A0+Math.random()*96),i*16,y*16);drops[i]=y>cv.height/16+Math.random()*10?0:y+1;});if(++frames>200){clearInterval(iv);document.body.removeChild(cv);}},50);}
-
-// PIZZA TIME
 function showPizzaTime(){const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:9997;display:flex;align-items:center;justify-content:center;pointer-events:none;';d.innerHTML='<div style="font-size:200px;animation:cf 2s ease-out forwards;">🍕</div>';document.body.appendChild(d);setTimeout(()=>document.body.removeChild(d),2000);}
 
 // SECRET LOUNGE
 let loungeSessionStart=null;
 function showLoungeLoading(){
   if(!loggedIn){openLM('login');return;}
-  const steps=[
-    'verifying identity...',
-    'checking access level...',
-    'decrypting channel...',
-    'handshake complete.',
-    'loading room data...',
-    'access granted.',
-  ];
+  const steps=['verifying identity...','checking access level...','decrypting channel...','handshake complete.','loading room data...','access granted.'];
   const ld=document.getElementById('lounge-loading'),bar=document.getElementById('ll-bar'),pct=document.getElementById('ll-pct'),log=document.getElementById('ll-log');
   log.innerHTML='';ld.classList.add('open');bar.style.width='0%';pct.textContent='0%';
   let step=0;
   function addLine(txt){const d=document.createElement('div');d.className='ll-log-line';d.textContent='> '+txt;log.appendChild(d);if(log.children.length>6)log.removeChild(log.children[0]);}
   addLine('session init for '+loggedIn+'...');
-  const iv=setInterval(()=>{
-    if(step<steps.length){addLine(steps[step]);step++;const p=Math.round(step/steps.length*100);bar.style.width=p+'%';pct.textContent=p+'%';}
-    if(step>=steps.length){clearInterval(iv);setTimeout(()=>{ld.classList.remove('open');log.innerHTML='';openLounge();},500);}
-  },380);
+  const iv=setInterval(()=>{if(step<steps.length){addLine(steps[step]);step++;const p=Math.round(step/steps.length*100);bar.style.width=p+'%';pct.textContent=p+'%';}if(step>=steps.length){clearInterval(iv);setTimeout(()=>{ld.classList.remove('open');log.innerHTML='';openLounge();},500);}},380);
 }
 function openLounge(){
   if(!loggedIn){openLM('login');return;}
-  loungeSessionStart=new Date();
-  const nick=loggedIn;
+  loungeSessionStart=new Date();const nick=loggedIn;
   document.getElementById('lounge-nick-prefix').textContent='<'+nick+'>';
   document.getElementById('ll-sess-user').textContent='uid: '+nick;
   document.getElementById('ll-sess-joined').textContent='in: '+loungeSessionStart.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -1212,22 +1125,12 @@ function openLounge(){
   loungeMsg(null,'────────────────────────────────','sys');
   document.getElementById('lounge-overlay').classList.add('open');
   if(window._lClock)clearInterval(window._lClock);
-  window._lClock=setInterval(()=>{
-    if(!loungeSessionStart)return;
-    const s=Math.floor((new Date()-loungeSessionStart)/1000),m=Math.floor(s/60),sec=s%60;
-    const el=document.getElementById('ll-sess-time');
-    if(el)el.textContent='uptime: '+m+'m '+String(sec).padStart(2,'0')+'s';
-  },1000);
+  window._lClock=setInterval(()=>{if(!loungeSessionStart)return;const s=Math.floor((new Date()-loungeSessionStart)/1000),m=Math.floor(s/60),sec=s%60;const el=document.getElementById('ll-sess-time');if(el)el.textContent='uptime: '+m+'m '+String(sec).padStart(2,'0')+'s';},1000);
   setTimeout(()=>document.getElementById('lounge-inp').focus(),100);
 }
-function closeLounge(){
-  document.getElementById('lounge-overlay').classList.remove('open');
-  if(window._lClock){clearInterval(window._lClock);window._lClock=null;}
-  loungeSessionStart=null;
-}
+function closeLounge(){document.getElementById('lounge-overlay').classList.remove('open');if(window._lClock){clearInterval(window._lClock);window._lClock=null;}loungeSessionStart=null;}
 function loungeMsg(from,text,type){
-  const msgs=document.getElementById('lounge-msgs');
-  const nick=loggedIn||'anon';
+  const msgs=document.getElementById('lounge-msgs'),nick=loggedIn||'anon';
   const t=new Date(),ts=t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0')+':'+t.getSeconds().toString().padStart(2,'0');
   const d=document.createElement('div');d.className='lmsg';
   if(type==='sys'){d.innerHTML=`<span class="lmsg-sys">${escH(text)}</span>`;}
@@ -1236,29 +1139,18 @@ function loungeMsg(from,text,type){
   msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
 }
 function loungeSubmit(){
-  const inp=document.getElementById('lounge-inp');const v=inp.value.trim();if(!v)return;
+  const inp=document.getElementById('lounge-inp'),v=inp.value.trim();if(!v)return;
   const nick=loggedIn||'anon';
-  if(v==='/help'){
-    loungeMsg(null,'commands:','sys');
-    loungeMsg(null,'  /clear   — wipe the terminal','sys-hi');
-    loungeMsg(null,'  /who     — show who is here','sys-hi');
-    loungeMsg(null,'  /time    — current session uptime','sys-hi');
-    loungeMsg(null,'  /shrug   — ¯\\_(ツ)_/¯','sys-hi');
-    loungeMsg(null,'  /exit    — leave the lounge','sys-hi');
-    inp.value='';return;
-  }
+  if(v==='/help'){loungeMsg(null,'commands:','sys');loungeMsg(null,'  /clear   — wipe the terminal','sys-hi');loungeMsg(null,'  /who     — show who is here','sys-hi');loungeMsg(null,'  /time    — current session uptime','sys-hi');loungeMsg(null,'  /shrug   — ¯\\_(ツ)_/¯','sys-hi');loungeMsg(null,'  /exit    — leave the lounge','sys-hi');inp.value='';return;}
   if(v==='/clear'){document.getElementById('lounge-msgs').innerHTML='';inp.value='';return;}
   if(v==='/exit'){closeLounge();inp.value='';return;}
   if(v==='/who'){loungeMsg(null,'online: '+nick+' (you)','sys-hi');inp.value='';return;}
   if(v==='/time'){const s=Math.floor((new Date()-loungeSessionStart)/1000),m=Math.floor(s/60),sec=s%60;loungeMsg(null,'session uptime: '+m+'m '+String(sec).padStart(2,'0')+'s','sys-hi');inp.value='';return;}
   if(v==='/shrug'){loungeMsg(nick,'¯\\_(ツ)_/¯','me');inp.value='';return;}
   if(v.startsWith('/')){loungeMsg(null,'unknown command. type /help','sys');inp.value='';return;}
-  loungeMsg(nick,v,'me');
-  inp.value='';
+  loungeMsg(nick,v,'me');inp.value='';
 }
 function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
-// lounge-inp keydown wired in load block below
 
 // LOGIN
 function openLM(tab){stab(tab);document.getElementById('lmo').classList.add('open');}
@@ -1266,35 +1158,24 @@ function closeLM(){document.getElementById('lmo').classList.remove('open');}
 function stab(t){document.getElementById('lt-l').className='lmtab'+(t==='login'?' a':'');document.getElementById('lt-r').className='lmtab'+(t==='register'?' a':'');document.getElementById('lf-l').style.display=t==='login'?'block':'none';document.getElementById('lf-r').style.display=t==='register'?'block':'none';}
 function setUser(u){loggedIn=u;document.getElementById('usr-disp').textContent='👤 '+u.toUpperCase().slice(0,12);document.getElementById('logged-area').style.display='flex';document.getElementById('btn-login').style.display='none';document.getElementById('btn-reg').style.display='none';document.getElementById('btn-mypixels').style.display='';if(document.getElementById('lrem')?.checked)localStorage.setItem('mpa_usr',u);}
 function doLogout(){loggedIn=null;localStorage.removeItem('mpa_usr');document.getElementById('logged-area').style.display='none';document.getElementById('btn-login').style.display='';document.getElementById('btn-reg').style.display='';}
-function doLogin(){
-  const e=document.getElementById('le').value,p=document.getElementById('lp').value;const err=document.getElementById('le-err');
-  if(!e||!p){err.textContent='Enter email and password.';err.style.display='block';return;}
-  // [API] POST /api/auth/login {email:e,password:p} → {token,user} store in cookie
-  setUser(e.split('@')[0]);closeLM();
-}
-function doRegister(){
-  const u=document.getElementById('ru').value,e=document.getElementById('re').value,p=document.getElementById('rp').value;const err=document.getElementById('re-err');
-  if(!u||!e||!p){err.textContent='All fields required.';err.style.display='block';return;}
-  if(p.length<8){err.textContent='Password must be 8+ chars.';err.style.display='block';return;}
-  // [API] POST /api/auth/register {username:u,email:e,password:p} → {token,user}
-  setUser(u);closeLM();
-}
-function oauth(p){/* [API] window.location='/api/auth/oauth/'+p; */setUser('oauth_user');closeLM();}
-function forgotPwd(){/* [API] POST /api/auth/forgot {email} */alert('Password reset link will be sent to your email.');}
+function doLogin(){const e=document.getElementById('le').value,p=document.getElementById('lp').value;const err=document.getElementById('le-err');if(!e||!p){err.textContent='Enter email and password.';err.style.display='block';return;}setUser(e.split('@')[0]);closeLM();}
+function doRegister(){const u=document.getElementById('ru').value,e=document.getElementById('re').value,p=document.getElementById('rp').value;const err=document.getElementById('re-err');if(!u||!e||!p){err.textContent='All fields required.';err.style.display='block';return;}if(p.length<8){err.textContent='Password must be 8+ chars.';err.style.display='block';return;}setUser(u);closeLM();}
+function oauth(p){setUser('oauth_user');closeLM();}
+function forgotPwd(){alert('Password reset link will be sent to your email.');}
 
 // SECTION NAV
-const SNAV=['grid','auctions','ending','leaderboard','badges','how','mypixels'];
 function showSec(name){
-  SNAV.forEach(s=>{document.getElementById('btn-'+s)?.classList.remove('active');});
+  ['grid','auctions','ending','leaderboard','badges','how','mypixels'].forEach(s=>{document.getElementById('btn-'+s)?.classList.remove('active');});
   document.getElementById('btn-'+name)?.classList.add('active');
   const sv=document.getElementById('sv'),ml=document.getElementById('main');
   if(name==='grid'){sv.style.display='none';ml.style.display='flex';resizeC();ndraw=true;return;}
   ml.style.display='none';sv.style.display='block';sv.innerHTML='';
+  if(name==='mypixels'){showMyPixels();return;}
   if(name==='auctions'){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🔨 ACTIVE AUCTIONS</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No active auctions yet. Click any square on the grid to start bidding!</div>`;}
   else if(name==='ending'){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#CC0000;margin-bottom:12px;">⏰ ENDING SOON</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No ending auctions. Check back once bidding starts!</div>`;}
   else if(name==='leaderboard'){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🏆 LEADERBOARD</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No winners yet. Be the first to win a pixel auction!<br><br>The leaderboard fills as pixels are sold. Win pixels → earn your place here!</div>`;}
   else if(name==='badges'){
-    const BDEFS=[{i:'🏅',n:'PIONEER',d:'Own your first pixel',l:false},{i:'🏆',n:'COLLECTOR',d:'Own 10+ pixels',l:true},{i:'💎',n:'DIAMOND HANDS',d:'Win a 5×5 premium block',l:true},{i:'🎈',n:'BLIMP HUNTER',d:'Catch your first blimp',l:true},{i:'🚀',n:'BLIMP ACE',d:'Catch 5 blimps total',l:true},{i:'🕹️',n:'KONAMI MASTER',d:'??? hidden secret',l:true},{i:'🌀',n:'2015 LEGEND',d:'??? hidden secret',l:true},{i:'🎵',n:'RICK ROLLER',d:'??? hidden secret',l:true},{i:'💃',n:'SHAKE IT',d:'??? hidden secret',l:true},{i:'🌐',n:'GLOBE TROTTER',d:'??? hidden secret',l:true},{i:'🐇',n:'NEO',d:'??? hidden secret',l:true},{i:'🔫',n:'RIP & TEAR',d:'??? hidden secret',l:true},{i:'👾',n:'PIXEL PIONEER',d:'??? hidden secret',l:true},{i:'🍕',n:'PIZZA LORD',d:'??? hidden secret',l:true},{i:'🗝️',n:'KEYMASTER',d:'??? hidden secret',l:true},{i:'💡',n:'SPOTLIGHT STAR',d:'Own a Spotlight Ad ($50K)',l:true},{i:'🔥',n:'AUCTION KING',d:'Win 5 auctions in one day',l:true}];
+    const BDEFS=[{i:'🏅',n:'PIONEER',d:'Own your first pixel',l:false},{i:'🏆',n:'COLLECTOR',d:'Own 10+ pixels',l:true},{i:'💎',n:'DIAMOND HANDS',d:'Win a 5×5 premium block',l:true},{i:'🎈',n:'BLIMP HUNTER',d:'Catch your first blimp',l:true},{i:'🚀',n:'BLIMP ACE',d:'Catch 5 blimps total',l:true},{i:'🕹️',n:'KONAMI MASTER',d:'??? hidden secret',l:true},{i:'🌀',n:'2015 LEGEND',d:'??? hidden secret',l:true},{i:'🎵',n:'RICK ROLLER',d:'??? hidden secret',l:true},{i:'💃',n:'SHAKE IT',d:'??? hidden secret',l:true},{i:'🌐',n:'GLOBE TROTTER',d:'??? hidden secret',l:true},{i:'🐇',n:'NEO',d:'??? hidden secret',l:true},{i:'🔫',n:'RIP & TEAR',d:'??? hidden secret',l:true},{i:'👾',n:'PIXEL PIONEER',d:'??? hidden secret',l:true},{i:'🍕',n:'PIZZA LORD',d:'??? hidden secret',l:true},{i:'🗝️',n:'KEYMASTER',d:'??? hidden secret',l:true},{i:'💡',n:'SPOTLIGHT STAR',d:'Own a Spotlight Ad',l:true},{i:'🔥',n:'AUCTION KING',d:'Win 5 auctions in one day',l:true}];
     sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:6px;">🏅 BADGES</div><div style="font-family:'VT323',monospace;font-size:17px;color:#444;margin-bottom:14px;">Unlock badges by bidding, winning pixels, catching blimps, and finding hidden secrets...</div><div class="bg-grid">${BDEFS.map(b=>`<div class="bg-card ${b.l?'locked':''}"><div class="bgi">${b.i}</div><div class="bgn">${b.n}</div><div class="bgd">${b.l?'🔒 ???':b.d}</div>${!b.l?'<div class="bgu">✓ UNLOCKED</div>':''}</div>`).join('')}</div>`;
   }
   else if(name==='how'){
@@ -1304,14 +1185,8 @@ function showSec(name){
       <div style="margin-bottom:12px;"><div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#000080;margin-bottom:5px;">1. BROWSE THE 1M GRID</div>A 1000×1000 canvas with 1,000,000 pixel spaces. Three sizes: 1×1 ($1 start), 2×2 ($5 start), rare 5×5 premium ($20 start).</div>
       <div style="margin-bottom:12px;"><div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#000080;margin-bottom:5px;">2. REGISTER & LOG IN</div>You must create a free account to bid. Your payment method is authorized when you bid — NOT charged until you win.</div>
       <div style="margin-bottom:12px;"><div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#000080;margin-bottom:5px;">3. WIN THE AUCTION</div>24-hour auctions. Anti-sniping: last-60-second bids reset the clock. Highest bidder wins permanently.</div>
-      <div style="margin-bottom:12px;"><div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#008000;margin-bottom:5px;">4. CLAIM YOUR PIXEL FOREVER</div>Upload your image, title, and URL. Your pixel is visible to all future visitors — forever.</div>
-      <div style="background:#FFF8E8;padding:10px;border-left:4px solid #CC8800;">
-        <strong>⚠ PAYMENTS — SETUP REQUIRED:</strong><br>
-        Stripe & PayPal buttons are shown but require a backend server to process real charges.<br><br>
-        <strong>Stripe:</strong> npm install stripe → Create PaymentIntents via POST /api/bids → authorize card, capture on win.<br>
-        <strong>PayPal:</strong> PayPal JS SDK → createOrder + onApprove hooks.<br>
-        <strong>Recommended stack:</strong> Node.js + Express + PostgreSQL + Stripe SDK.
-      </div>
+      <div style="margin-bottom:12px;"><div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#008000;margin-bottom:5px;">4. CLAIM YOUR PIXEL FOREVER</div>Upload your image, title, and URL. Your pixel is visible to all future visitors — forever. Win adjacent pixels to expand your canvas!</div>
+      <div style="background:#FFF8E8;padding:10px;border-left:4px solid #CC8800;"><strong>⚠ PAYMENTS — SETUP REQUIRED:</strong><br>Stripe & PayPal buttons require a backend server.<br><strong>Recommended stack:</strong> Node.js + Express + PostgreSQL + Stripe SDK.</div>
     </div>
     <div style="background:#F0F0FF;padding:12px;border:2px solid #000080;font-family:'VT323',monospace;font-size:17px;">
       <table style="width:100%;border-collapse:collapse;"><tr style="background:#000080;color:white;"><th style="padding:5px 8px;font-family:'Share Tech Mono',monospace;font-size:10px;text-align:left;">RULE</th><th style="padding:5px 8px;font-family:'Share Tech Mono',monospace;font-size:10px;text-align:left;">VALUE</th></tr>
@@ -1325,15 +1200,98 @@ function showSec(name){
   }
 }
 
-window.addEventListener('load',()=>{
-  genLayout();resizeC();requestAnimationFrame(loop);
-  updateSpotlightPanel();
-  window.addEventListener('resize',()=>{resizeC();ndraw=true;});
-  const stored=localStorage.getItem('mpa_usr');
-  if(stored){
-    // [API] Validate stored token: GET /api/auth/validate → {user} or 401
-    setUser(stored);
+// MY PIXELS
+function getMyPixels(){if(!loggedIn)return[];return[...blkMap.values()].filter(b=>b.owner===loggedIn);}
+function showMyPixels(){
+  const sv=document.getElementById('sv');
+  const pixels=getMyPixels();
+  let hd='<div style="font-family:\'Press Start 2P\',monospace;font-size:10px;color:#000080;margin-bottom:6px;">🖼 MY PIXELS</div>';
+  if(!loggedIn){sv.innerHTML=hd+'<div class="mypx-empty">Log in to see your pixels.</div>';return;}
+  if(!pixels.length){sv.innerHTML=hd+'<div class="mypx-empty">You haven\'t won any pixels yet!<br><br>Click any square on the grid to start bidding.</div>';return;}
+  let cards='';
+  pixels.forEach(blk=>{
+    const sn=blk.size===5?'5×5 PREMIUM':blk.size===2?'2×2 STANDARD':'1×1 BASIC';
+    const thumb=blk.image?`<img src="${blk.image}" alt="pixel">`:`<div class="mypx-retro" style="background:${retroGradient(blk.id)}">${retroEmoji(blk.id)}</div>`;
+    const urlStr=blk.url?`<div class="murl" onclick="window.open('${blk.url}','_blank')">${blk.url}</div>`:'<span style="color:#999;font-size:13px;">No URL set</span>';
+    cards+=`<div class="mypx-card"><div class="mypx-hdr"><span>GRID #${String(blk.id).padStart(6,'0')}</span><span style="color:#AAFFAA;">${sn}</span><span style="color:#FFD700;">$${blk.bid||0}</span></div><div class="mypx-body"><div class="mypx-thumb">${thumb}</div><div class="mypx-info"><div class="mid">#${String(blk.id).padStart(6,'0')} · ${sn}</div><div class="mbid">Paid: $${blk.bid||0}</div><div style="margin-top:3px;">${urlStr}</div>${blk.title?`<div style="font-size:13px;color:#555;">${blk.title}</div>`:''}</div><div class="mypx-actions"><button class="mypx-btn primary" onclick="openPxEdit(${blk.id})">✏ EDIT</button><button class="mypx-btn" onclick="jumpToPixel(${blk.id})">🔍 VIEW</button></div></div></div>`;
+  });
+  sv.innerHTML=hd+cards;
+}
+function jumpToPixel(id){document.getElementById('gi').value=id;showSec('grid');gotoCell();}
+
+// PIXEL EDIT MODAL
+let pxEditId=null,pxEditImgData=null;
+function openPxEdit(blockId){
+  const cell=cellMap.get(blockId),blk=blkMap.get(cell?cell.bId:blockId);if(!blk)return;
+  pxEditId=blk.id;pxEditImgData=blk.image||null;
+  document.getElementById('pxedit-ttl').textContent='✏ EDIT PIXEL #'+String(blk.id).padStart(6,'0');
+  document.getElementById('pxedit-url').value=blk.url||'';document.getElementById('pxedit-title').value=blk.title||'';
+  const prev=document.getElementById('pxedit-preview');
+  if(blk.image){prev.innerHTML=`<img src="${blk.image}" alt="preview">`;}else{prev.innerHTML='<span class="pxedit-preview-lbl">No image — retro gradient will show</span>';}
+  document.getElementById('pxedit-mo').classList.add('open');
+}
+function closePxEdit(){document.getElementById('pxedit-mo').classList.remove('open');pxEditId=null;pxEditImgData=null;}
+function handleImgUpload(inp){const file=inp.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{pxEditImgData=e.target.result;document.getElementById('pxedit-preview').innerHTML=`<img src="${pxEditImgData}" alt="preview">`;};reader.readAsDataURL(file);}
+function savePxEdit(){
+  if(pxEditId===null)return;
+  const cell=cellMap.get(pxEditId),blk=blkMap.get(cell?cell.bId:pxEditId);if(!blk)return;
+  const url=document.getElementById('pxedit-url').value.trim(),title=document.getElementById('pxedit-title').value.trim();
+  let safeUrl='';if(url){try{const u=new URL(url);if(['http:','https:'].includes(u.protocol))safeUrl=url;}catch(e){}}
+  blk.image=pxEditImgData||null;blk.url=safeUrl;blk.title=title;
+  if(blk.image){const img=new Image();img.onload=()=>{blk._imgObj=img;ndraw=true;};img.src=blk.image;}else{blk._imgObj=null;}
+  ndraw=true;closePxEdit();
+  if(document.getElementById('btn-mypixels')?.classList.contains('active'))showMyPixels();
+  const n=document.createElement('div');n.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#008000;color:white;font-family:"Press Start 2P",monospace;font-size:9px;padding:10px 18px;z-index:9999;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;white-space:nowrap;';n.textContent='✓ PIXEL SAVED!';document.body.appendChild(n);setTimeout(()=>n.remove(),2500);
+}
+
+// CANVAS EXPANSION
+let pendingMerge=null;
+function tryMergeWithChoice(newBlockId){
+  if(!loggedIn)return;const newBlk=blkMap.get(newBlockId);if(!newBlk||newBlk.owner!==loggedIn)return;
+  const myBlocks=[...blkMap.values()].filter(b=>b.owner===loggedIn&&b.id!==newBlockId);
+  for(const other of myBlocks){
+    if(!blocksAdjacent(newBlk,other))continue;
+    const mergedSize=Math.max(Math.max(newBlk.col+newBlk.size,other.col+other.size)-Math.min(newBlk.col,other.col),Math.max(newBlk.row+newBlk.size,other.row+other.size)-Math.min(newBlk.row,other.row));
+    pendingMerge={newBlockId,other,mergedSize};
+    document.getElementById('expand-desc').innerHTML=`You won pixel <b>#${String(newBlockId).padStart(6,'0')}</b> which is adjacent to your pixel <b>#${String(other.id).padStart(6,'0')}</b>!<br><br>Would you like to merge them into one <b>${mergedSize}×${mergedSize}</b> canvas, or keep them as separate pixels?`;
+    document.getElementById('expand-mo').classList.add('open');return;
   }
+}
+function closeExpandMo(){document.getElementById('expand-mo').classList.remove('open');pendingMerge=null;}
+function confirmExpand(){
+  if(!pendingMerge)return;const{newBlockId,other,mergedSize}=pendingMerge;const newBlk=blkMap.get(newBlockId);
+  const minCol=Math.min(newBlk.col,other.col),minRow=Math.min(newBlk.row,other.row),mergedId=minRow*1000+minCol;
+  blkMap.delete(newBlockId);blkMap.delete(other.id);
+  const merged={id:mergedId,row:minRow,col:minCol,size:mergedSize,status:'sold',owner:loggedIn,bid:Math.max(newBlk.bid||0,other.bid||0),bids:(newBlk.bids||0)+(other.bids||0),image:other.image||newBlk.image||null,url:other.url||newBlk.url||'',title:other.title||newBlk.title||'',_imgObj:other._imgObj||newBlk._imgObj||null,merged:true};
+  for(let dr=0;dr<mergedSize;dr++)for(let dc=0;dc<mergedSize;dc++)cellMap.set((minRow+dr)*1000+(minCol+dc),{bId:mergedId,sz:mergedSize});
+  blkMap.set(mergedId,merged);ndraw=true;closeExpandMo();openPxEdit(mergedId);
+}
+function keepSeparate(){closeExpandMo();}
+
+// TOUCH SUPPORT
+(function(){
+  let tStart={x:0,y:0},tScroll={x:0,y:0},tMoved=false,lastPinchDist=0;
+  const gw=document.getElementById('gw');
+  gw.addEventListener('touchstart',e=>{
+    if(e.touches.length===1){const t=e.touches[0];tStart={x:t.clientX,y:t.clientY};tScroll={x:sc.x,y:sc.y};tMoved=false;}
+    if(e.touches.length===2){const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY;lastPinchDist=Math.hypot(dx,dy);}
+    e.preventDefault();
+  },{passive:false});
+  gw.addEventListener('touchmove',e=>{
+    if(e.touches.length===1){const t=e.touches[0],dx=t.clientX-tStart.x,dy=t.clientY-tStart.y;if(Math.abs(dx)>4||Math.abs(dy)>4)tMoved=true;sc.x=tScroll.x-dx;sc.y=tScroll.y-dy;clampSc();ndraw=true;}
+    if(e.touches.length===2){const dx=e.touches[0].clientX-e.touches[1].clientX,dy=e.touches[0].clientY-e.touches[1].clientY,dist=Math.hypot(dx,dy);if(lastPinchDist>0){if(dist-lastPinchDist>20){czoom(1);lastPinchDist=dist;}else if(lastPinchDist-dist>20){czoom(-1);lastPinchDist=dist;}}}
+    e.preventDefault();
+  },{passive:false});
+  gw.addEventListener('touchend',e=>{
+    if(!tMoved){const t=e.changedTouches[0],rect=canvas.getBoundingClientRect(),cx=t.clientX-rect.left,cy=t.clientY-rect.top,gc2=Math.floor((cx+sc.x)/CELL),gr=Math.floor((cy+sc.y)/CELL),id=gr*G+gc2;if(id>=0&&id<TOTAL)openMO(id);}
+    e.preventDefault();
+  },{passive:false});
+})();
+
+window.addEventListener('load',()=>{
+  genLayout();resizeC();requestAnimationFrame(loop);updateSpotlightPanel();
+  window.addEventListener('resize',()=>{resizeC();ndraw=true;});
+  const stored=localStorage.getItem('mpa_usr');if(stored)setUser(stored);
   document.addEventListener('keydown',e=>{
     if(document.getElementById('ee').classList.contains('open')){if(e.key==='Escape')closeEE();return;}
     if(document.getElementById('lounge-overlay').classList.contains('open')){if(e.key==='Escape')closeLounge();return;}
@@ -1348,350 +1306,11 @@ window.addEventListener('load',()=>{
   document.getElementById('lounge-inp').addEventListener('keydown',e=>{if(e.key==='Enter')loungeSubmit();});
   document.getElementById('moo').addEventListener('click',e=>{if(e.target.id==='moo')closeMO();});
   document.getElementById('lmo').addEventListener('click',e=>{if(e.target.id==='lmo')closeLM();});
-  // Secret: click online counter 7 times fast
-  let _ocnt=0,_oct;document.getElementById('vis-cnt').addEventListener('click',()=>{_ocnt++;clearTimeout(_oct);_oct=setTimeout(()=>_ocnt=0,3000);if(_ocnt>=2){_ocnt=0;triggerEgg('secret');}});
-  // [API] connectWebSocket → ws = new WebSocket('wss://your-domain/ws');
-  // [API] fetch('/api/stats').then(r=>r.json()).then(d=>{soldCount=d.sold;totalBids=d.bids;updStats();document.getElementById('h-on').textContent=d.online;});
   console.log('MPA LIVE — Backend endpoints needed:');
   console.log('POST /api/auth/login|register, GET /api/auth/validate');
   console.log('GET /api/grid/state, POST /api/bids');
   console.log('WSS /ws — real-time bids/blimps/wins');
-  console.log('POST /api/payments/create-intent (Stripe)');
-  console.log('POST /api/payments/paypal-order');
 });
-
-
-// ── MY PIXELS ──────────────────────────────────────────────
-function getMyPixels(){
-  if(!loggedIn) return [];
-  return [...blkMap.values()].filter(b=>b.owner===loggedIn);
-}
-
-function showMyPixels(){
-  const sv=document.getElementById('sv');
-  const pixels=getMyPixels();
-  let hd='<div style="font-family:\'Press Start 2P\',monospace;font-size:10px;color:#000080;margin-bottom:6px;">🖼 MY PIXELS</div>';
-  if(!loggedIn){sv.innerHTML=hd+'<div class="mypx-empty">Log in to see your pixels.</div>';return;}
-  if(!pixels.length){sv.innerHTML=hd+'<div class="mypx-empty">You haven\'t won any pixels yet!<br><br>Click any square on the grid to start bidding.</div>';return;}
-  let cards='';
-  pixels.forEach(blk=>{
-    const sn=blk.size===5?'5×5 PREMIUM':blk.size===2?'2×2 STANDARD':'1×1 BASIC';
-    const thumb=blk.image
-      ? `<img src="${blk.image}" alt="pixel">`
-      : `<div class="mypx-retro" style="background:${retroGradient(blk.id)}">${retroEmoji(blk.id)}</div>`;
-    const urlStr=blk.url?`<div class="murl" onclick="window.open('${blk.url}','_blank')">${blk.url}</div>`:'<span style="color:#999;font-size:13px;">No URL set</span>';
-    cards+=`<div class="mypx-card">
-      <div class="mypx-hdr"><span>GRID #${String(blk.id).padStart(6,'0')}</span><span style="color:#AAFFAA;">${sn}</span><span style="color:#FFD700;">$${blk.bid||0}</span></div>
-      <div class="mypx-body">
-        <div class="mypx-thumb">${thumb}</div>
-        <div class="mypx-info">
-          <div class="mid">#${String(blk.id).padStart(6,'0')} · ${sn}</div>
-          <div class="mbid">Paid: $${blk.bid||0}</div>
-          <div style="margin-top:3px;">${urlStr}</div>
-          ${blk.title?`<div style="font-size:13px;color:#555;">${blk.title}</div>`:''}
-        </div>
-        <div class="mypx-actions">
-          <button class="mypx-btn primary" onclick="openPxEdit(${blk.id})">✏ EDIT</button>
-          <button class="mypx-btn" onclick="jumpToPixel(${blk.id})">🔍 VIEW</button>
-        </div>
-      </div>
-    </div>`;
-  });
-  sv.innerHTML=hd+cards;
-}
-
-function jumpToPixel(id){
-  document.getElementById('gi').value=id;
-  showSec('grid');
-  gotoCell();
-}
-
-// ── RETRO GRADIENT (no image fallback) ─────────────────────
-const RETRO_PALETTES=[
-  ['#FF6B6B','#FFE66D'],['#4ECDC4','#45B7D1'],['#96CEB4','#FFEAA7'],
-  ['#DDA0DD','#98D8C8'],['#F7DC6F','#82E0AA'],['#5DADE2','#EC407A'],
-  ['#FF8C00','#FFD700'],['#00CED1','#98FB98']
-];
-function retroGradient(id){const p=RETRO_PALETTES[id%RETRO_PALETTES.length];return`linear-gradient(135deg,${p[0]},${p[1]})`;}
-const RETRO_EMOJIS=['👾','🌈','💾','🕹️','⚡','🔮','🎮','💿','🌀','🎲'];
-function retroEmoji(id){return RETRO_EMOJIS[id%RETRO_EMOJIS.length];}
-
-// ── DRAW retro gradient for sold pixels without image ──────
-// Patch drawGrid to handle retro sold pixels (called inside draw)
-const _origBlkCol=blkCol;
-function drawBlockWithRetro(blk,bx,by,bw){
-  const col=blkCol(blk);
-  if(blk.status==='sold'&&!blk.image){
-    // Use CSS gradient-ish colors via a simple 2-color fill
-    const p=RETRO_PALETTES[blk.id%RETRO_PALETTES.length];
-    const grad=ctx.createLinearGradient(bx,by,bx+bw,by+bw);
-    grad.addColorStop(0,p[0]+'99');grad.addColorStop(1,p[1]+'99');
-    ctx.fillStyle=grad;ctx.fillRect(bx+1,by+1,bw-2,bw-2);
-    ctx.strokeStyle=p[0];ctx.lineWidth=col.lw||1;ctx.strokeRect(bx+0.5,by+0.5,bw-1,bw-1);
-    return;
-  }
-  if(blk.status==='sold'&&blk.image&&blk._imgObj){
-    ctx.drawImage(blk._imgObj,bx+1,by+1,bw-2,bw-2);
-    ctx.strokeStyle=col.b||'#FFD700';ctx.lineWidth=2;ctx.strokeRect(bx+0.5,by+0.5,bw-1,bw-1);
-    return;
-  }
-  ctx.fillStyle=col.f;ctx.fillRect(bx+1,by+1,bw-2,bw-2);
-  ctx.strokeStyle=col.b;ctx.lineWidth=col.lw||1;ctx.strokeRect(bx+0.5,by+0.5,bw-1,bw-1);
-}
-
-// ── PIXEL EDIT MODAL ───────────────────────────────────────
-let pxEditId=null,pxEditImgData=null;
-
-function openPxEdit(blockId){
-  const cell=cellMap.get(blockId);
-  const blk=blkMap.get(cell?cell.bId:blockId);
-  if(!blk)return;
-  pxEditId=blk.id;pxEditImgData=blk.image||null;
-  document.getElementById('pxedit-ttl').textContent='✏ EDIT PIXEL #'+String(blk.id).padStart(6,'0');
-  document.getElementById('pxedit-url').value=blk.url||'';
-  document.getElementById('pxedit-title').value=blk.title||'';
-  const prev=document.getElementById('pxedit-preview');
-  if(blk.image){prev.innerHTML=`<img src="${blk.image}" alt="preview">`;}
-  else{prev.innerHTML='<span class="pxedit-preview-lbl">No image — retro gradient will show</span>';}
-  document.getElementById('pxedit-mo').classList.add('open');
-}
-function closePxEdit(){document.getElementById('pxedit-mo').classList.remove('open');pxEditId=null;pxEditImgData=null;}
-
-function handleImgUpload(inp){
-  const file=inp.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{
-    pxEditImgData=e.target.result;
-    const prev=document.getElementById('pxedit-preview');
-    prev.innerHTML=`<img src="${pxEditImgData}" alt="preview">`;
-  };
-  reader.readAsDataURL(file);
-}
-
-function savePxEdit(){
-  if(pxEditId===null)return;
-  const cell=cellMap.get(pxEditId);
-  const blk=blkMap.get(cell?cell.bId:pxEditId);
-  if(!blk)return;
-  const url=document.getElementById('pxedit-url').value.trim();
-  const title=document.getElementById('pxedit-title').value.trim();
-  let safeUrl='';
-  if(url){try{const u=new URL(url);if(['http:','https:'].includes(u.protocol))safeUrl=url;}catch(e){}}
-  blk.image=pxEditImgData||null;
-  blk.url=safeUrl;
-  blk.title=title;
-  // Load image obj for canvas drawing
-  if(blk.image){const img=new Image();img.onload=()=>{blk._imgObj=img;ndraw=true;};img.src=blk.image;}
-  else{blk._imgObj=null;}
-  ndraw=true;
-  closePxEdit();
-  // Refresh my pixels view if open
-  if(document.getElementById('btn-mypixels')?.classList.contains('active')) showMyPixels();
-  // [API] PUT /api/pixels/{blk.id} {image:pxEditImgData, url:safeUrl, title}
-  const n=document.createElement('div');
-  n.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#008000;color:white;font-family:"Press Start 2P",monospace;font-size:9px;padding:10px 18px;z-index:9999;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;white-space:nowrap;';
-  n.textContent='✓ PIXEL SAVED!';document.body.appendChild(n);setTimeout(()=>n.remove(),2500);
-}
-
-// ── CANVAS EXPANSION (with user choice) ───────────────────
-let pendingMerge=null; // {newBlockId, other}
-
-function tryMergeWithChoice(newBlockId){
-  if(!loggedIn)return;
-  const newBlk=blkMap.get(newBlockId);
-  if(!newBlk||newBlk.owner!==loggedIn)return;
-  const myBlocks=[...blkMap.values()].filter(b=>b.owner===loggedIn&&b.id!==newBlockId);
-  for(const other of myBlocks){
-    if(!blocksAdjacent(newBlk,other))continue;
-    const mergedSize=Math.max(
-      Math.max(newBlk.col+newBlk.size,other.col+other.size)-Math.min(newBlk.col,other.col),
-      Math.max(newBlk.row+newBlk.size,other.row+other.size)-Math.min(newBlk.row,other.row)
-    );
-    pendingMerge={newBlockId,other,mergedSize};
-    document.getElementById('expand-desc').innerHTML=
-      `You won pixel <b>#${String(newBlockId).padStart(6,'0')}</b> which is adjacent to your pixel <b>#${String(other.id).padStart(6,'0')}</b>!<br><br>` +
-      `Would you like to merge them into one <b>${mergedSize}×${mergedSize}</b> canvas, or keep them as separate pixels?`;
-    document.getElementById('expand-mo').classList.add('open');
-    return;
-  }
-}
-
-function closeExpandMo(){document.getElementById('expand-mo').classList.remove('open');pendingMerge=null;}
-
-function confirmExpand(){
-  if(!pendingMerge)return;
-  const {newBlockId,other,mergedSize}=pendingMerge;
-  const newBlk=blkMap.get(newBlockId);
-  const minCol=Math.min(newBlk.col,other.col),minRow=Math.min(newBlk.row,other.row);
-  const mergedId=minRow*1000+minCol;
-  blkMap.delete(newBlockId);blkMap.delete(other.id);
-  const merged={id:mergedId,row:minRow,col:minCol,size:mergedSize,status:'sold',owner:loggedIn,
-    bid:Math.max(newBlk.bid||0,other.bid||0),bids:(newBlk.bids||0)+(other.bids||0),
-    image:other.image||newBlk.image||null,url:other.url||newBlk.url||'',title:other.title||newBlk.title||'',
-    _imgObj:other._imgObj||newBlk._imgObj||null,merged:true};
-  for(let dr=0;dr<mergedSize;dr++)for(let dc=0;dc<mergedSize;dc++)
-    cellMap.set((minRow+dr)*1000+(minCol+dc),{bId:mergedId,sz:mergedSize});
-  blkMap.set(mergedId,merged);
-  ndraw=true;
-  closeExpandMo();
-  openPxEdit(mergedId);
-}
-
-function keepSeparate(){closeExpandMo();}
-
-// ── Patch handleWS won → use tryMergeWithChoice instead ───
-const _origHandleWS=handleWS;
-// Override won branch:
-function handleWS(d){
-  if(d.type==='bid'){const blk=blkMap.get(d.blockId);if(blk){blk.bid=d.amount;blk.bids++;blk.status=d.minsLeft<120?'ending':'active';blk.bidder=d.user;blk.mins=d.minsLeft;}ndraw=true;addFeed(d.user,d.amount,d.blockId,d.size,true);totalBids++;document.getElementById('h-bids').textContent=totalBids;}
-  if(d.type==='won'){const blk=blkMap.get(d.blockId);if(blk){blk.status='sold';blk.owner=d.user;}ndraw=true;soldCount++;updStats();
-    if(d.user===loggedIn){tryMergeWithChoice(d.blockId);openPxEdit(d.blockId);}}
-  if(d.type==='online'){document.getElementById('h-on').textContent=d.count;visCount=Math.max(visCount,d.count);}
-  if(d.type==='blimp')spawnBlimp();
-}
-
-// ── Patch showSec for mypixels ─────────────────────────────
-const _origShowSec=showSec;
-function showSec(name){
-  ['grid','auctions','ending','leaderboard','badges','how','mypixels'].forEach(s=>{document.getElementById('btn-'+s)?.classList.remove('active');});
-  document.getElementById('btn-'+name)?.classList.add('active');
-  const sv=document.getElementById('sv'),ml=document.getElementById('main');
-  if(name==='grid'){sv.style.display='none';ml.style.display='flex';resizeC();ndraw=true;return;}
-  ml.style.display='none';sv.style.display='block';
-  if(name==='mypixels'){showMyPixels();return;}
-  // delegate the rest to original logic by re-implementing inline
-  sv.innerHTML='';
-  if(name==='auctions'){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🔨 ACTIVE AUCTIONS</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No active auctions yet. Click any square on the grid to start bidding!</div>`;}
-  else if(name==='ending'){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#CC0000;margin-bottom:12px;">⏰ ENDING SOON</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No ending auctions. Check back once bidding starts!</div>`;}
-  else if(name==='leaderboard'){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🏆 LEADERBOARD</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No winners yet. Be the first to win a pixel auction!<br><br>The leaderboard fills as pixels are sold. Win pixels → earn your place here!</div>`;}
-  else if(name==='badges'){
-    const BDEFS=[{i:'🏅',n:'PIONEER',d:'Own your first pixel',l:false},{i:'🏆',n:'COLLECTOR',d:'Own 10+ pixels',l:true},{i:'💎',n:'DIAMOND HANDS',d:'Win a 5×5 premium block',l:true},{i:'🎈',n:'BLIMP HUNTER',d:'Catch your first blimp',l:true},{i:'🚀',n:'BLIMP ACE',d:'Catch 5 blimps total',l:true},{i:'🕹️',n:'KONAMI MASTER',d:'??? hidden secret',l:true},{i:'🌀',n:'2015 LEGEND',d:'??? hidden secret',l:true},{i:'🎵',n:'RICK ROLLER',d:'??? hidden secret',l:true},{i:'💃',n:'SHAKE IT',d:'??? hidden secret',l:true},{i:'🌐',n:'GLOBE TROTTER',d:'??? hidden secret',l:true},{i:'🐇',n:'NEO',d:'??? hidden secret',l:true},{i:'🔫',n:'RIP & TEAR',d:'??? hidden secret',l:true},{i:'👾',n:'PIXEL PIONEER',d:'??? hidden secret',l:true},{i:'🍕',n:'PIZZA LORD',d:'??? hidden secret',l:true},{i:'🗝️',n:'KEYMASTER',d:'??? hidden secret',l:true},{i:'💡',n:'SPOTLIGHT STAR',d:'Own a Spotlight Ad ($50K)',l:true},{i:'🔥',n:'AUCTION KING',d:'Win 5 auctions in one day',l:true}];
-    sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:6px;">🏅 BADGES</div><div style="font-family:'VT323',monospace;font-size:17px;color:#444;margin-bottom:14px;">Unlock badges by bidding, winning pixels, catching blimps, and finding hidden secrets...</div><div class="bg-grid">${BDEFS.map(b=>`<div class="bg-card ${b.l?'locked':''}"><div class="bgi">${b.i}</div><div class="bgn">${b.n}</div><div class="bgd">${b.l?'🔒 ???':b.d}</div>${!b.l?'<div class="bgu">✓ UNLOCKED</div>':''}</div>`).join('')}</div>`;
-  }
-  else if(name==='how'){
-    sv.innerHTML=`<div style="max-width:680px;margin:0 auto;">
-    <div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:16px;text-align:center;">❓ HOW IT WORKS</div>
-    <div style="background:white;padding:16px;border-top:2px solid #DDD;border-left:2px solid #DDD;border-right:2px solid #888;border-bottom:2px solid #888;font-family:'VT323',monospace;font-size:18px;line-height:1.8;margin-bottom:14px;">
-      <div style="margin-bottom:12px;"><div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#000080;margin-bottom:5px;">1. BROWSE THE 1M GRID</div>A 1000×1000 canvas with 1,000,000 pixel spaces. Three sizes: 1×1 ($1 start), 2×2 ($5 start), rare 5×5 premium ($20 start).</div>
-      <div style="margin-bottom:12px;"><div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#000080;margin-bottom:5px;">2. REGISTER & LOG IN</div>You must create a free account to bid. Your payment method is authorized when you bid — NOT charged until you win.</div>
-      <div style="margin-bottom:12px;"><div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#000080;margin-bottom:5px;">3. WIN THE AUCTION</div>24-hour auctions. Anti-sniping: last-60-second bids reset the clock. Highest bidder wins permanently.</div>
-      <div style="margin-bottom:12px;"><div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#008000;margin-bottom:5px;">4. CLAIM YOUR PIXEL FOREVER</div>Upload your image, title, and URL. Your pixel is visible to all future visitors — forever. Win adjacent pixels to expand your canvas!</div>
-      <div style="background:#FFF8E8;padding:10px;border-left:4px solid #CC8800;">
-        <strong>⚠ PAYMENTS — SETUP REQUIRED:</strong><br>Stripe & PayPal buttons require a backend server.<br>
-        <strong>Recommended stack:</strong> Node.js + Express + PostgreSQL + Stripe SDK.
-      </div>
-    </div></div>`;
-  }
-}
-
-// ── Also patch placeBid demo win so edit modal opens ──────
-const _origPlaceBid=placeBid;
-function placeBid(){
-  if(!loggedIn){openLM('login');return;}
-  const v=parseInt(document.getElementById('bidinp').value),min=parseInt(document.getElementById('bidinp').min);
-  if(isNaN(v)||v<min){document.getElementById('bidinp').style.borderColor='#CC0000';setTimeout(()=>document.getElementById('bidinp').style.borderColor='',1000);return;}
-  if(curMO!==null){
-    const cell=cellMap.get(curMO);
-    let blk;
-    if(cell){blk=blkMap.get(cell.bId);blk.bid=v;blk.bids++;blk.status='active';blk.bidder=loggedIn;ndraw=true;}
-    else{blk={id:curMO,row:Math.floor(curMO/G),col:curMO%G,size:1,status:'active',bid:v,bids:1,mins:1440,bidder:loggedIn,owner:null,image:null,url:null,title:null,_imgObj:null};blkMap.set(curMO,blk);cellMap.set(curMO,{bId:curMO,sz:1});ndraw=true;}
-  }
-  const ok=document.getElementById('bidok');ok.style.display='block';
-  ok.innerHTML=`✓ Bid of $${v} placed! <span style="font-size:10px;color:#CC6600;">(Demo — backend needed for real payments)</span>`;
-  document.getElementById('m-bid').textContent='$'+v;document.getElementById('m-min').textContent='$'+(v+1);
-  document.getElementById('bidinp').value=v+1;document.getElementById('bidinp').min=v+1;
-  if(curMO!==null){const cell2=cellMap.get(curMO);addFeed(loggedIn,v,curMO,cell2?.sz||1,true);}
-  totalBids++;document.getElementById('h-bids').textContent=totalBids;
-}
-
-// ── Patch drawGrid to use drawBlockWithRetro ───────────────
-// We'll override in the RAF loop by monkey-patching drawGrid
-const _origDrawGrid=drawGrid;
-function drawGrid(){
-  if(!ndraw)return;ndraw=false;
-  const cs=CELL,ox=sc.x,oy=sc.y,sc2=Math.floor(ox/cs),sr=Math.floor(oy/cs);
-  const ec=Math.min(G,sc2+Math.ceil(canvas.width/cs)+2),er=Math.min(G,sr+Math.ceil(canvas.height/cs)+2);
-  ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,canvas.width,canvas.height);
-  const drawn=new Set();
-  for(let r=sr;r<er;r++)for(let c=sc2;c<ec;c++){
-    const id=r*G+c,cell=cellMap.get(id);
-    if(cell){const blk=blkMap.get(cell.bId);if(cell.bId!==id||drawn.has(cell.bId))continue;drawn.add(cell.bId);
-      const bx=Math.floor(blk.col*cs-ox),by=Math.floor(blk.row*cs-oy),bw=blk.size*cs;
-      drawBlockWithRetro(blk,bx,by,bw);
-    }
-    else{const x=Math.floor(c*cs-ox),y=Math.floor(r*cs-oy),w=cs>3?cs-1:cs;ctx.fillStyle='#EEEEEE';ctx.fillRect(x,y,1,cs);ctx.fillRect(x,y,cs,1);}
-  }
-  // Minimap
-  const mscale=100/G;mmx.fillStyle='#FFFFFF';mmx.fillRect(0,0,100,100);
-  for(const [id,blk] of blkMap){
-    const bc=blkCol(blk);mmx.fillStyle=bc.f;mmx.fillRect(blk.col*mscale,blk.row*mscale,Math.max(1,blk.size*mscale),Math.max(1,blk.size*mscale));
-  }
-  const vx=sc.x/G/CELL*100,vy=sc.y/G/CELL*100,vw=canvas.width/G/CELL*100,vh2=canvas.height/G/CELL*100;
-  const mv=document.getElementById('mmv');if(mv){mv.style.left=vx+'px';mv.style.top=vy+'px';mv.style.width=Math.min(100,vw)+'px';mv.style.height=Math.min(100,vh2)+'px';}
-}
-
-
-// ── TOUCH SUPPORT ─────────────────────────────────────────
-(function(){
-  let tStart={x:0,y:0},tScroll={x:0,y:0},tMoved=false,tLast=0;
-  const gw=document.getElementById('gw');
-
-  gw.addEventListener('touchstart',e=>{
-    if(e.touches.length===1){
-      const t=e.touches[0];
-      tStart={x:t.clientX,y:t.clientY};
-      tScroll={x:sc.x,y:sc.y};
-      tMoved=false;
-    }
-    e.preventDefault();
-  },{passive:false});
-
-  gw.addEventListener('touchmove',e=>{
-    if(e.touches.length===1){
-      const t=e.touches[0];
-      const dx=t.clientX-tStart.x,dy=t.clientY-tStart.y;
-      if(Math.abs(dx)>4||Math.abs(dy)>4) tMoved=true;
-      sc.x=tScroll.x-dx;sc.y=tScroll.y-dy;
-      clampSc();ndraw=true;
-    }
-    e.preventDefault();
-  },{passive:false});
-
-  gw.addEventListener('touchend',e=>{
-    if(!tMoved){
-      // treat as tap — find cell and open modal
-      const t=e.changedTouches[0];
-      const rect=canvas.getBoundingClientRect();
-      const cx=t.clientX-rect.left,cy=t.clientY-rect.top;
-      const gc2=Math.floor((cx+sc.x)/CELL),gr=Math.floor((cy+sc.y)/CELL);
-      const id=gr*G+gc2;
-      if(id>=0&&id<TOTAL) openMO(id);
-    }
-    e.preventDefault();
-  },{passive:false});
-
-  // Pinch-to-zoom
-  let lastPinchDist=0;
-  gw.addEventListener('touchstart',e=>{
-    if(e.touches.length===2){
-      const dx=e.touches[0].clientX-e.touches[1].clientX;
-      const dy=e.touches[0].clientY-e.touches[1].clientY;
-      lastPinchDist=Math.hypot(dx,dy);
-    }
-  },{passive:true});
-  gw.addEventListener('touchmove',e=>{
-    if(e.touches.length===2){
-      const dx=e.touches[0].clientX-e.touches[1].clientX;
-      const dy=e.touches[0].clientY-e.touches[1].clientY;
-      const dist=Math.hypot(dx,dy);
-      if(lastPinchDist>0){
-        if(dist-lastPinchDist>20){czoom(1);lastPinchDist=dist;}
-        else if(lastPinchDist-dist>20){czoom(-1);lastPinchDist=dist;}
-      }
-    }
-  },{passive:true});
-})();
-
 </script>
 
 <!-- PIXEL EDIT MODAL -->
