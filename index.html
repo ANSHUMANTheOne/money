@@ -103,7 +103,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 .blt2{color:#000080;font-weight:bold;}.bltm2{color:#666;margin-left:auto;font-size:13px;}
 .bl-li{padding:3px 7px;border-bottom:1px dotted #DDD;font-family:'VT323',monospace;font-size:15px;display:flex;gap:6px;}
 
-#sv{display:none;position:fixed;inset:0;top:0;padding-top:110px;background:var(--bg);z-index:50;overflow-y:auto;padding:110px 12px 12px;}
+#sv{display:none;flex:1;background:var(--bg);overflow-y:auto;padding:16px;min-height:0;}
 .at{width:100%;border-collapse:collapse;font-family:'VT323',monospace;font-size:16px;background:white;}
 .at th{background:var(--navy);color:white;padding:5px 8px;font-family:'Share Tech Mono',monospace;font-size:10px;text-align:left;position:sticky;top:0;}
 .at td{padding:4px 8px;border-bottom:1px solid #EEE;cursor:pointer;}
@@ -397,7 +397,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
   #sp-panel{display:block !important;width:100%;margin:5px 0 0 0;box-sizing:border-box;}
   #mmbox{display:none;}
   #sbar{position:fixed;bottom:0;left:0;right:0;z-index:100;font-size:10px;}
-  #sv{top:0;padding:8px;}
+  #sv{padding:8px;}
   #mow{width:98vw;}
   #pxedit-win{width:98vw;}
   #expand-win{width:98vw;}
@@ -538,8 +538,8 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
       <div id="sp-times-sold">0 spotlights sold</div>
     </div>
   </div>
+  <div id="sv"></div>
 </div>
-<div id="sv"></div>
 <!-- SPOTLIGHT BUY MODAL -->
 <div id="sp-mo">
   <div id="sp-mow">
@@ -959,22 +959,13 @@ function openMO(id){
 }
 function closeMO(){document.getElementById('moo').classList.remove('open');curMO=null;}
 
-function placeBid(){
+function placeBid(){if(window._fbPlaceBid){window._fbPlaceBid();return;}
+  // fallback demo bid
   if(!loggedIn){openLM('login');return;}
   const v=parseInt(document.getElementById('bidinp').value),min=parseInt(document.getElementById('bidinp').min);
   if(isNaN(v)||v<min){document.getElementById('bidinp').style.borderColor='#CC0000';setTimeout(()=>document.getElementById('bidinp').style.borderColor='',1000);return;}
-  if(curMO!==null){
-    const cell=cellMap.get(curMO);
-    let blk;
-    if(cell){blk=blkMap.get(cell.bId);blk.bid=v;blk.bids++;blk.status='active';blk.bidder=loggedIn;ndraw=true;}
-    else{blk={id:curMO,row:Math.floor(curMO/G),col:curMO%G,size:1,status:'active',bid:v,bids:1,mins:1440,bidder:loggedIn,owner:null,image:null,url:null,title:null,_imgObj:null};blkMap.set(curMO,blk);cellMap.set(curMO,{bId:curMO,sz:1});ndraw=true;}
-  }
   const ok=document.getElementById('bidok');ok.style.display='block';
-  ok.innerHTML=`✓ Bid of $${v} placed! <span style="font-size:10px;color:#CC6600;">(Demo — backend needed for real payments)</span>`;
-  document.getElementById('m-bid').textContent='$'+v;document.getElementById('m-min').textContent='$'+(v+1);
-  document.getElementById('bidinp').value=v+1;document.getElementById('bidinp').min=v+1;
-  if(curMO!==null){const cell2=cellMap.get(curMO);addFeed(loggedIn,v,curMO,cell2?.sz||1,true);}
-  totalBids++;document.getElementById('h-bids').textContent=totalBids;
+  ok.innerHTML='✓ Bid of $'+v+' placed! <span style="font-size:10px;color:#CC6600;">(Demo)</span>';
 }
 function choosePay(m){const n=document.getElementById('payn');n.textContent=m==='stripe'?'💳 Stripe: cards, Apple Pay, Google Pay. Backend required.':'🅿 PayPal: international. Backend required.';n.style.color=m==='stripe'?'#635BFF':'#003087';}
 
@@ -1157,19 +1148,19 @@ function openLM(tab){stab(tab);document.getElementById('lmo').classList.add('ope
 function closeLM(){document.getElementById('lmo').classList.remove('open');}
 function stab(t){document.getElementById('lt-l').className='lmtab'+(t==='login'?' a':'');document.getElementById('lt-r').className='lmtab'+(t==='register'?' a':'');document.getElementById('lf-l').style.display=t==='login'?'block':'none';document.getElementById('lf-r').style.display=t==='register'?'block':'none';}
 function setUser(u){loggedIn=u;document.getElementById('usr-disp').textContent='👤 '+u.toUpperCase().slice(0,12);document.getElementById('logged-area').style.display='flex';document.getElementById('btn-login').style.display='none';document.getElementById('btn-reg').style.display='none';document.getElementById('btn-mypixels').style.display='';if(document.getElementById('lrem')?.checked)localStorage.setItem('mpa_usr',u);}
-function doLogout(){loggedIn=null;localStorage.removeItem('mpa_usr');document.getElementById('logged-area').style.display='none';document.getElementById('btn-login').style.display='';document.getElementById('btn-reg').style.display='';}
-function doLogin(){const e=document.getElementById('le').value,p=document.getElementById('lp').value;const err=document.getElementById('le-err');if(!e||!p){err.textContent='Enter email and password.';err.style.display='block';return;}setUser(e.split('@')[0]);closeLM();}
-function doRegister(){const u=document.getElementById('ru').value,e=document.getElementById('re').value,p=document.getElementById('rp').value;const err=document.getElementById('re-err');if(!u||!e||!p){err.textContent='All fields required.';err.style.display='block';return;}if(p.length<8){err.textContent='Password must be 8+ chars.';err.style.display='block';return;}setUser(u);closeLM();}
-function oauth(p){setUser('oauth_user');closeLM();}
-function forgotPwd(){alert('Password reset link will be sent to your email.');}
+function doLogout(){if(window._fbDoLogout){window._fbDoLogout();return;}loggedIn=null;document.getElementById('logged-area').style.display='none';document.getElementById('btn-login').style.display='';document.getElementById('btn-reg').style.display='';}
+function doLogin(){if(window._fbDoLogin){window._fbDoLogin();return;}}
+function doRegister(){if(window._fbDoRegister){window._fbDoRegister();return;}}
+function oauth(p){if(window._fbOauth){window._fbOauth(p);return;}setUser('oauth_user');closeLM();}
+function forgotPwd(){if(window._fbForgot){window._fbForgot();return;}alert('Password reset link will be sent to your email.');}
 
 // SECTION NAV
 function showSec(name){
   ['grid','auctions','ending','leaderboard','badges','how','mypixels'].forEach(s=>{document.getElementById('btn-'+s)?.classList.remove('active');});
   document.getElementById('btn-'+name)?.classList.add('active');
-  const sv=document.getElementById('sv'),ml=document.getElementById('main');
-  if(name==='grid'){sv.style.display='none';ml.style.display='flex';resizeC();ndraw=true;return;}
-  ml.style.display='none';sv.style.display='block';sv.innerHTML='';
+  const sv=document.getElementById('sv'),gs=document.getElementById('grid-sec'),sb=document.getElementById('sidebar');
+  if(name==='grid'){sv.style.display='none';gs.style.display='flex';sb.style.display='flex';resizeC();ndraw=true;return;}
+  gs.style.display='none';sb.style.display='none';sv.style.display='block';sv.innerHTML='';
   if(name==='mypixels'){showMyPixels();return;}
   if(name==='auctions'){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🔨 ACTIVE AUCTIONS</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No active auctions yet. Click any square on the grid to start bidding!</div>`;}
   else if(name==='ending'){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#CC0000;margin-bottom:12px;">⏰ ENDING SOON</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No ending auctions. Check back once bidding starts!</div>`;}
@@ -1232,17 +1223,7 @@ function openPxEdit(blockId){
 }
 function closePxEdit(){document.getElementById('pxedit-mo').classList.remove('open');pxEditId=null;pxEditImgData=null;}
 function handleImgUpload(inp){const file=inp.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{pxEditImgData=e.target.result;document.getElementById('pxedit-preview').innerHTML=`<img src="${pxEditImgData}" alt="preview">`;};reader.readAsDataURL(file);}
-function savePxEdit(){
-  if(pxEditId===null)return;
-  const cell=cellMap.get(pxEditId),blk=blkMap.get(cell?cell.bId:pxEditId);if(!blk)return;
-  const url=document.getElementById('pxedit-url').value.trim(),title=document.getElementById('pxedit-title').value.trim();
-  let safeUrl='';if(url){try{const u=new URL(url);if(['http:','https:'].includes(u.protocol))safeUrl=url;}catch(e){}}
-  blk.image=pxEditImgData||null;blk.url=safeUrl;blk.title=title;
-  if(blk.image){const img=new Image();img.onload=()=>{blk._imgObj=img;ndraw=true;};img.src=blk.image;}else{blk._imgObj=null;}
-  ndraw=true;closePxEdit();
-  if(document.getElementById('btn-mypixels')?.classList.contains('active'))showMyPixels();
-  const n=document.createElement('div');n.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#008000;color:white;font-family:"Press Start 2P",monospace;font-size:9px;padding:10px 18px;z-index:9999;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;white-space:nowrap;';n.textContent='✓ PIXEL SAVED!';document.body.appendChild(n);setTimeout(()=>n.remove(),2500);
-}
+function savePxEdit(){if(window._fbSavePxEdit){window._fbSavePxEdit();return;}}
 
 // CANVAS EXPANSION
 let pendingMerge=null;
@@ -1291,7 +1272,7 @@ function keepSeparate(){closeExpandMo();}
 window.addEventListener('load',()=>{
   genLayout();resizeC();requestAnimationFrame(loop);updateSpotlightPanel();
   window.addEventListener('resize',()=>{resizeC();ndraw=true;});
-  const stored=localStorage.getItem('mpa_usr');if(stored)setUser(stored);
+  // Auth state managed by Firebase onAuthStateChanged
   document.addEventListener('keydown',e=>{
     if(document.getElementById('ee').classList.contains('open')){if(e.key==='Escape')closeEE();return;}
     if(document.getElementById('lounge-overlay').classList.contains('open')){if(e.key==='Escape')closeLounge();return;}
@@ -1362,5 +1343,321 @@ window.addEventListener('load',()=>{
   </div>
 </div>
 
+
+<script type="module">
+import { initializeApp }                                   from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getAnalytics }                                    from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
+import { getAuth, signInWithEmailAndPassword,
+         createUserWithEmailAndPassword, signInWithPopup,
+         GoogleAuthProvider, signOut, onAuthStateChanged,
+         sendPasswordResetEmail, updateProfile }            from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, collection,
+         onSnapshot, serverTimestamp }                      from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { getDatabase, ref, set, onValue,
+         onDisconnect, serverTimestamp as rtTs }            from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+import { getStorage, ref as sRef,
+         uploadBytes, getDownloadURL }                      from "https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyDL5P_Ypreozb1cssXqKj9s3LLM2j0r0oM",
+  authDomain:        "millionpixelauction.firebaseapp.com",
+  projectId:         "millionpixelauction",
+  storageBucket:     "millionpixelauction.firebasestorage.app",
+  messagingSenderId: "308935428606",
+  appId:             "1:308935428606:web:93eb5ff26d9138751298af",
+  measurementId:     "G-M1ZTB5157V",
+  databaseURL:       "https://millionpixelauction-default-rtdb.firebaseio.com"
+};
+const app      = initializeApp(firebaseConfig);
+const analytics= getAnalytics(app);
+const auth     = getAuth(app);
+const db       = getFirestore(app);
+const rtdb     = getDatabase(app);
+const storage  = getStorage(app);
+const gProvider= new GoogleAuthProvider();
+
+// ── helpers ──────────────────────────────────────────────
+function showErr(id,msg){const e=document.getElementById(id);if(!e)return;e.textContent=msg;e.style.display='block';}
+function clearErr(id){const e=document.getElementById(id);if(e){e.textContent='';e.style.display='none';}}
+function authErr(code){
+  return({'auth/user-not-found':'No account with that email.','auth/wrong-password':'Incorrect password.',
+          'auth/invalid-credential':'Wrong email or password.',
+          'auth/email-already-in-use':'Email already registered — try logging in.',
+          'auth/weak-password':'Use at least 8 characters.','auth/invalid-email':'Invalid email address.',
+          'auth/too-many-requests':'Too many attempts — try again later.',
+          'auth/popup-closed-by-user':'Sign-in popup was closed.',
+          'auth/network-request-failed':'Network error — check your connection.'}[code]||'Error: '+code);
+}
+
+// ── AUTH STATE ───────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (user) {
+    let name = user.displayName || user.email.split('@')[0];
+    try {
+      const snap = await getDoc(doc(db,'users',user.uid));
+      if(snap.exists()&&snap.data().username) name = snap.data().username;
+    } catch(e){}
+    window._fbUid = user.uid;
+    setUser(name);
+    setupPresence(user.uid, name);
+    loadGridState();
+    loadSpotlight();
+  } else {
+    window._fbUid = null;
+    loggedIn = null;
+    document.getElementById('logged-area').style.display = 'none';
+    document.getElementById('btn-login').style.display   = '';
+    document.getElementById('btn-reg').style.display     = '';
+    const mb = document.getElementById('btn-mypixels');
+    if(mb) mb.style.display = 'none';
+  }
+});
+
+// ── VISITOR COUNTER (Realtime Database) ──────────────────
+function setupPresence(uid, name) {
+  const connRef   = ref(rtdb, '.info/connected');
+  const myRef     = ref(rtdb, 'presence/'+uid);
+  onValue(connRef, snap => {
+    if(!snap.val()) return;
+    onDisconnect(myRef).remove();
+    set(myRef, { name, ts: Date.now() });
+  });
+  onValue(ref(rtdb,'presence'), snap => {
+    const count = snap.exists() ? Object.keys(snap.val()).length : 0;
+    document.getElementById('vis-cnt').textContent = String(count).padStart(8,'0');
+    document.getElementById('h-on').textContent    = count;
+    visCount = Math.max(visCount, count);
+    const nb = document.getElementById('nxt-bl');
+    if(nb) nb.textContent = 'Next: '+Math.ceil((count+1)/100)*100+' users';
+    if(count>0 && count%100===0) spawnBlimp();
+  });
+}
+
+// ── GRID STATE (Firestore) ───────────────────────────────
+async function loadGridState() {
+  try {
+    const snap = await getDoc(doc(db,'meta','stats'));
+    if(snap.exists()){
+      const s=snap.data();
+      soldCount=s.sold||0; totalBids=s.bids||0;
+      document.getElementById('h-sold').textContent=soldCount.toLocaleString();
+      document.getElementById('h-bids').textContent=totalBids;
+      document.getElementById('h-rev').textContent='$'+(s.revenue||0).toLocaleString();
+      updStats();
+    }
+  } catch(e){}
+  // Real-time listener
+  onSnapshot(collection(db,'blocks'), snap => {
+    snap.docChanges().forEach(change => {
+      if(change.type==='removed') return;
+      const d = change.doc.data();
+      const blk = blkMap.get(d.id);
+      if(!blk) return;
+      const wasAvail = blk.status==='available';
+      Object.assign(blk, {
+        status:d.status||blk.status, bid:d.bid||blk.bid,
+        bids:d.bids||blk.bids, bidder:d.bidder||blk.bidder,
+        owner:d.owner||blk.owner, image:d.image||blk.image,
+        url:d.url||blk.url, title:d.title||blk.title, mins:d.mins||blk.mins
+      });
+      if(blk.image && !blk._imgObj){
+        const img=new Image();img.onload=()=>{blk._imgObj=img;ndraw=true;};img.src=blk.image;
+      }
+      if(blk.status!=='available' && wasAvail) addFeed(blk.bidder||blk.owner||'?',blk.bid,blk.id,blk.size,true);
+      if(blk.status==='sold' && blk.owner===loggedIn){ tryMergeWithChoice(blk.id); openPxEdit(blk.id); }
+      ndraw=true;
+    });
+  });
+}
+
+// ── SPOTLIGHT (Firestore) ─────────────────────────────────
+async function loadSpotlight() {
+  try {
+    const snap = await getDoc(doc(db,'meta','spotlight'));
+    if(snap.exists()){
+      const d=snap.data();
+      const endsMs = d.endsAt?.toMillis ? d.endsAt.toMillis() : (d.endsAt||0);
+      if(endsMs > Date.now()){
+        spActive={...d, endsAt:endsMs};
+        spTimesSold=d.timesSold||0;
+        updateSpotlightPanel(); startSpotlightHeader();
+      }
+    }
+  } catch(e){}
+}
+
+// ── LOGIN ─────────────────────────────────────────────────
+window._fbDoLogin = async function() {
+  clearErr('le-err');
+  const email=document.getElementById('le').value.trim();
+  const pass=document.getElementById('lp').value;
+  if(!email||!pass){showErr('le-err','Enter email and password.');return;}
+  const btn=document.querySelector('#lf-l .lmsub');
+  if(btn){btn.textContent='...';btn.disabled=true;}
+  try { await signInWithEmailAndPassword(auth,email,pass); }
+  catch(e){ showErr('le-err',authErr(e.code)); }
+  finally{ if(btn){btn.textContent='▶ LOG IN';btn.disabled=false;} }
+};
+
+// ── REGISTER ──────────────────────────────────────────────
+window._fbDoRegister = async function() {
+  clearErr('re-err');
+  const u=document.getElementById('ru').value.trim();
+  const e=document.getElementById('re').value.trim();
+  const p=document.getElementById('rp').value;
+  if(!u||!e||!p){showErr('re-err','All fields required.');return;}
+  if(p.length<8){showErr('re-err','Password must be 8+ chars.');return;}
+  if(u.length<3){showErr('re-err','Username min 3 characters.');return;}
+  const btn=document.querySelector('#lf-r .lmsub');
+  if(btn){btn.textContent='...';btn.disabled=true;}
+  try {
+    const cred=await createUserWithEmailAndPassword(auth,e,p);
+    await updateProfile(cred.user,{displayName:u});
+    await setDoc(doc(db,'users',cred.user.uid),{username:u,email:e,uid:cred.user.uid,createdAt:serverTimestamp()});
+  }
+  catch(err){ showErr('re-err',authErr(err.code)); }
+  finally{ if(btn){btn.textContent='▶ CREATE ACCOUNT';btn.disabled=false;} }
+};
+
+// ── GOOGLE OAUTH ──────────────────────────────────────────
+window._fbOauth = async function(provider) {
+  if(provider!=='google') return;
+  try {
+    const result=await signInWithPopup(auth,gProvider);
+    const snap=await getDoc(doc(db,'users',result.user.uid));
+    if(!snap.exists()){
+      await setDoc(doc(db,'users',result.user.uid),{
+        username:result.user.displayName||result.user.email.split('@')[0],
+        email:result.user.email, uid:result.user.uid, createdAt:serverTimestamp()
+      });
+    }
+  } catch(e){ if(e.code!=='auth/popup-closed-by-user') console.warn('Google OAuth:',e.message); }
+};
+
+// ── LOGOUT ────────────────────────────────────────────────
+window._fbDoLogout = async function() {
+  if(window._fbUid) { try{ await set(ref(rtdb,'presence/'+window._fbUid),null); }catch(e){} }
+  try{ await signOut(auth); }catch(e){}
+};
+
+// ── FORGOT PASSWORD ───────────────────────────────────────
+window._fbForgot = async function() {
+  const email=document.getElementById('le').value.trim();
+  if(!email){showErr('le-err','Enter your email above first.');return;}
+  try {
+    await sendPasswordResetEmail(auth,email);
+    const el=document.getElementById('le-err');
+    if(el){el.textContent='✓ Reset email sent! Check your inbox.';el.style.display='block';el.style.color='#008000';el.style.background='#DFFFDF';el.style.borderColor='#008000';}
+  } catch(e){ showErr('le-err',authErr(e.code)); }
+};
+
+// ── PLACE BID (Firestore) ─────────────────────────────────
+window._fbPlaceBid = async function() {
+  if(!loggedIn||!window._fbUid){openLM('login');return;}
+  const v=parseInt(document.getElementById('bidinp').value);
+  const min=parseInt(document.getElementById('bidinp').min);
+  if(isNaN(v)||v<min){document.getElementById('bidinp').style.borderColor='#CC0000';setTimeout(()=>document.getElementById('bidinp').style.borderColor='',1000);return;}
+  if(curMO===null) return;
+  const cell=cellMap.get(curMO),blk=cell?blkMap.get(cell.bId):null,sz=blk?blk.size:1;
+  const docId=String(curMO).padStart(6,'0');
+  const ok=document.getElementById('bidok');
+  ok.style.display='block';ok.innerHTML='⏳ Placing bid...';
+  ok.style.cssText='display:block;background:#FFF8DC;border:2px solid #CC8800;padding:7px 10px;font-family:"Share Tech Mono",monospace;font-size:12px;color:#CC6600;margin-top:7px;';
+  try {
+    const snap=await getDoc(doc(db,'blocks',docId));
+    const ex=snap.exists()?snap.data():null;
+    if(ex&&ex.bid>=v){
+      ok.innerHTML='⚠ Outbid! Min bid now: $'+(ex.bid+1);
+      ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
+      document.getElementById('bidinp').value=ex.bid+1;document.getElementById('bidinp').min=ex.bid+1;
+      return;
+    }
+    await setDoc(doc(db,'blocks',docId),{
+      id:curMO,row:Math.floor(curMO/1000),col:curMO%1000,size:sz,
+      status:'active',bid:v,bids:(ex?ex.bids||0:0)+1,
+      bidder:loggedIn,uid:window._fbUid,mins:1440,
+      endsAt:new Date(Date.now()+24*60*60*1000)
+    },{merge:true});
+    if(blk){blk.bid=v;blk.bids++;blk.status='active';blk.bidder=loggedIn;ndraw=true;}
+    else{const nb={id:curMO,row:Math.floor(curMO/1000),col:curMO%1000,size:1,status:'active',bid:v,bids:1,mins:1440,bidder:loggedIn,owner:null,image:null,url:null,title:null,_imgObj:null};blkMap.set(curMO,nb);cellMap.set(curMO,{bId:curMO,sz:1});ndraw=true;}
+    ok.innerHTML='✓ Bid of $'+v+' placed! Payment required at checkout.';
+    ok.style.background='#DFFFDF';ok.style.borderColor='#008000';ok.style.color='#008000';
+    document.getElementById('m-bid').textContent='$'+v;
+    document.getElementById('m-min').textContent='$'+(v+1);
+    document.getElementById('bidinp').value=v+1;document.getElementById('bidinp').min=v+1;
+    if(curMO!==null){const c2=cellMap.get(curMO);addFeed(loggedIn,v,curMO,c2?.sz||1,true);}
+    totalBids++;document.getElementById('h-bids').textContent=totalBids;
+  } catch(e){
+    ok.innerHTML='⚠ Error: '+e.message;
+    ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
+  }
+};
+
+// ── SAVE PIXEL EDIT (Firebase Storage + Firestore) ────────
+window._fbSavePxEdit = async function() {
+  if(pxEditId===null||!window._fbUid) return;
+  const cell=cellMap.get(pxEditId),blk=blkMap.get(cell?cell.bId:pxEditId);
+  if(!blk) return;
+  const url=document.getElementById('pxedit-url').value.trim();
+  const title=document.getElementById('pxedit-title').value.trim();
+  let safeUrl='';
+  if(url){try{const u=new URL(url);if(['http:','https:'].includes(u.protocol))safeUrl=url;}catch(e){}}
+  const btn=document.querySelector('.pxedit-submit');
+  if(btn){btn.textContent='⏳ Saving...';btn.disabled=true;}
+  let imageUrl=pxEditImgData;
+  // Upload to Firebase Storage if it's a local data URL
+  if(pxEditImgData&&pxEditImgData.startsWith('data:')){
+    try{
+      const res=await fetch(pxEditImgData);const blob=await res.blob();
+      const fileRef=sRef(storage,'pixels/'+window._fbUid+'/'+pxEditId+'.jpg');
+      await uploadBytes(fileRef,blob);
+      imageUrl=await getDownloadURL(fileRef);
+    }catch(e){console.warn('Image upload:',e);}
+  }
+  try{
+    await setDoc(doc(db,'blocks',String(blk.id).padStart(6,'0')),{
+      id:blk.id,owner:loggedIn,uid:window._fbUid,
+      image:imageUrl||null,url:safeUrl,title,status:'sold'
+    },{merge:true});
+    blk.image=imageUrl||null;blk.url=safeUrl;blk.title=title;
+    if(blk.image){const img=new Image();img.onload=()=>{blk._imgObj=img;ndraw=true;};img.src=blk.image;}
+    else blk._imgObj=null;
+    ndraw=true;closePxEdit();
+    if(document.getElementById('btn-mypixels')?.classList.contains('active'))showMyPixels();
+    const n=document.createElement('div');
+    n.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#008000;color:white;font-family:"Press Start 2P",monospace;font-size:9px;padding:10px 18px;z-index:9999;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;white-space:nowrap;';
+    n.textContent='✓ PIXEL SAVED!';document.body.appendChild(n);setTimeout(()=>n.remove(),2500);
+  }catch(e){ alert('Save failed: '+e.message); }
+  finally{ if(btn){btn.textContent='▶ SAVE CHANGES';btn.disabled=false;} }
+};
+
+// ── SUBMIT SPOTLIGHT (Firestore) ──────────────────────────
+window.submitSpotlight = async function() {
+  if(!loggedIn||!window._fbUid){openLM('login');return;}
+  if(spActive&&Date.now()<spActive.endsAt){closeSpotlightBuy();return;}
+  const title=document.getElementById('sp-inp-title').value.trim();
+  const desc=document.getElementById('sp-inp-desc').value.trim();
+  const pixelId=parseInt(document.getElementById('sp-inp-pixel').value);
+  const rawUrl=document.getElementById('sp-inp-url').value.trim();
+  if(!title){document.getElementById('sp-inp-title').style.borderColor='#CC0000';setTimeout(()=>document.getElementById('sp-inp-title').style.borderColor='',1000);return;}
+  let safeUrl='';
+  if(rawUrl){try{const u=new URL(rawUrl);if(['http:','https:'].includes(u.protocol))safeUrl=rawUrl;}catch(e){}}
+  const endsAt=new Date(Date.now()+24*60*60*1000);
+  try{
+    await setDoc(doc(db,'meta','spotlight'),{
+      user:loggedIn,uid:window._fbUid,title,desc,
+      pixelId:isNaN(pixelId)?null:pixelId,url:safeUrl,
+      price:getSpotlightPrice(spTimesSold),
+      endsAt,timesSold:spTimesSold+1,boughtAt:serverTimestamp()
+    });
+    spActive={user:loggedIn,title,desc,pixelId:isNaN(pixelId)?'?':pixelId,url:safeUrl,endsAt:endsAt.getTime()};
+    spTimesSold++;updateSpotlightPanel();startSpotlightHeader();closeSpotlightBuy();
+    ['sp-inp-title','sp-inp-desc','sp-inp-pixel','sp-inp-url'].forEach(id=>document.getElementById(id).value='');
+    showSP(title,desc,isNaN(pixelId)?null:pixelId,safeUrl);
+  }catch(e){alert('Spotlight error: '+e.message);}
+};
+
+console.log('🔥 Firebase connected — millionpixelauction');
+</script>
 </body>
 </html>
