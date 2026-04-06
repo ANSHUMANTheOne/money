@@ -1216,13 +1216,53 @@ function openPxEdit(blockId){
   const cell=cellMap.get(blockId),blk=blkMap.get(cell?cell.bId:blockId);if(!blk)return;
   pxEditId=blk.id;pxEditImgData=blk.image||null;
   document.getElementById('pxedit-ttl').textContent='✏ EDIT PIXEL #'+String(blk.id).padStart(6,'0');
-  document.getElementById('pxedit-url').value=blk.url||'';document.getElementById('pxedit-title').value=blk.title||'';
+  document.getElementById('pxedit-url').value=blk.url||'';
+  document.getElementById('pxedit-title').value=blk.title||'';
+  document.getElementById('pxedit-file').value='';
+  document.getElementById('pxedit-upload-status').style.display='none';
   const prev=document.getElementById('pxedit-preview');
-  if(blk.image){prev.innerHTML=`<img src="${blk.image}" alt="preview">`;}else{prev.innerHTML='<span class="pxedit-preview-lbl">No image — retro gradient will show</span>';}
+  if(blk.image){prev.innerHTML=`<img src="${blk.image}" alt="preview" style="max-width:100%;max-height:100%;object-fit:contain;">`;}
+  else{prev.innerHTML='<span class="pxedit-preview-lbl">No image uploaded</span>';}
   document.getElementById('pxedit-mo').classList.add('open');
 }
 function closePxEdit(){document.getElementById('pxedit-mo').classList.remove('open');pxEditId=null;pxEditImgData=null;}
-function handleImgUpload(inp){const file=inp.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{pxEditImgData=e.target.result;document.getElementById('pxedit-preview').innerHTML=`<img src="${pxEditImgData}" alt="preview">`;};reader.readAsDataURL(file);}
+// imgbb free API key — free tier, no account needed for uploads
+const IMGBB_API_KEY = 'YOUR_IMGBB_API_KEY'; // get free key at https://api.imgbb.com
+
+async function uploadToImgbb(base64Data) {
+  // Strip the data:image/...;base64, prefix
+  const base64 = base64Data.split(',')[1];
+  const formData = new FormData();
+  formData.append('key', IMGBB_API_KEY);
+  formData.append('image', base64);
+  const res = await fetch('https://api.imgbb.com/1/upload', {method:'POST', body:formData});
+  const json = await res.json();
+  if(!json.success) throw new Error(json.error?.message || 'Image upload failed');
+  return json.data.url; // permanent direct image URL
+}
+
+function handleImgUpload(inp){
+  const file=inp.files[0];
+  if(!file)return;
+  // Validate size (max 5MB)
+  if(file.size > 5*1024*1024){
+    document.getElementById('pxedit-upload-status').style.display='block';
+    document.getElementById('pxedit-upload-status').innerHTML='⚠ Image too large — max 5MB';
+    document.getElementById('pxedit-upload-status').style.color='#CC0000';
+    return;
+  }
+  const status=document.getElementById('pxedit-upload-status');
+  status.style.display='block';status.style.color='#888';status.textContent='⏳ Processing image...';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    pxEditImgData=e.target.result; // store base64 locally for preview
+    document.getElementById('pxedit-preview').innerHTML=`<img src="${pxEditImgData}" alt="preview" style="max-width:100%;max-height:100%;object-fit:contain;">`;
+    status.style.color='#008000';status.textContent='✓ Image ready — click Save to apply';
+  };
+  reader.readAsDataURL(file);
+}
+
+function previewImgUrl(url){ /* legacy stub */ }
 function savePxEdit(){if(window._fbSavePxEdit){window._fbSavePxEdit();return;}}
 
 // CANVAS EXPANSION
@@ -1306,9 +1346,10 @@ window.addEventListener('load',()=>{
         <span class="pxedit-preview-lbl">No image uploaded</span>
       </div>
       <div class="pxedit-f">
-        <label>UPLOAD IMAGE (shown on your pixel)</label>
+        <label>IMAGE (shown on your pixel)</label>
         <button class="pxedit-upload-btn" onclick="document.getElementById('pxedit-file').click()">📁 Choose Image File...</button>
         <input type="file" id="pxedit-file" accept="image/*" style="display:none" onchange="handleImgUpload(this)">
+        <div id="pxedit-upload-status" style="font-family:'VT323',monospace;font-size:14px;color:#666;margin-top:4px;display:none;"></div>
       </div>
       <div class="pxedit-f"><label>WEBSITE URL (clicking your pixel goes here)</label><input type="url" id="pxedit-url" placeholder="https://yourwebsite.com"></div>
       <div class="pxedit-f"><label>TITLE / ALT TEXT</label><input type="text" id="pxedit-title" placeholder="My awesome ad" maxlength="60"></div>
@@ -1593,7 +1634,7 @@ window._fbPlaceBid = async function() {
   }
 };
 
-// ── SAVE PIXEL EDIT (Firebase Storage + Firestore) ────────
+// ── SAVE PIXEL EDIT (imgbb hosting + Firestore URL save) ──
 window._fbSavePxEdit = async function() {
   if(pxEditId===null||!window._fbUid) return;
   const cell=cellMap.get(pxEditId),blk=blkMap.get(cell?cell.bId:pxEditId);
@@ -1604,22 +1645,26 @@ window._fbSavePxEdit = async function() {
   if(url){try{const u=new URL(url);if(['http:','https:'].includes(u.protocol))safeUrl=url;}catch(e){}}
   const btn=document.querySelector('.pxedit-submit');
   if(btn){btn.textContent='⏳ Saving...';btn.disabled=true;}
-  let imageUrl=pxEditImgData;
-  // Upload to Firebase Storage if it's a local data URL
-  if(pxEditImgData&&pxEditImgData.startsWith('data:')){
+  const status=document.getElementById('pxedit-upload-status');
+  let finalImageUrl = blk.image || null; // default: keep existing image
+  // If user picked a new image (base64), upload it to imgbb first
+  if(pxEditImgData && pxEditImgData.startsWith('data:')){
     try{
-      const res=await fetch(pxEditImgData);const blob=await res.blob();
-      const fileRef=sRef(storage,'pixels/'+window._fbUid+'/'+pxEditId+'.jpg');
-      await uploadBytes(fileRef,blob);
-      imageUrl=await getDownloadURL(fileRef);
-    }catch(e){console.warn('Image upload:',e);}
+      if(status){status.style.display='block';status.style.color='#888';status.textContent='⏳ Uploading image...';}
+      finalImageUrl = await uploadToImgbb(pxEditImgData);
+      if(status){status.style.color='#008000';status.textContent='✓ Image uploaded!';}
+    }catch(e){
+      if(status){status.style.display='block';status.style.color='#CC0000';status.textContent='⚠ Image upload failed: '+e.message;}
+      if(btn){btn.textContent='▶ SAVE CHANGES';btn.disabled=false;}
+      return;
+    }
   }
   try{
     await setDoc(doc(db,'blocks',String(blk.id).padStart(6,'0')),{
       id:blk.id,owner:loggedIn,uid:window._fbUid,
-      image:imageUrl||null,url:safeUrl,title,status:'sold'
+      image:finalImageUrl||null,url:safeUrl,title,status:'sold'
     },{merge:true});
-    blk.image=imageUrl||null;blk.url=safeUrl;blk.title=title;
+    blk.image=finalImageUrl||null;blk.url=safeUrl;blk.title=title;
     if(blk.image){const img=new Image();img.onload=()=>{blk._imgObj=img;ndraw=true;};img.src=blk.image;}
     else blk._imgObj=null;
     ndraw=true;closePxEdit();
