@@ -955,11 +955,19 @@ function openMO(id){
   const gate=document.getElementById('mo-gate'),bsec=document.getElementById('mo-bid-sec');
   if(loggedIn){gate.style.display='none';bsec.style.display='block';}else{gate.style.display='block';bsec.style.display='none';}
   document.getElementById('bidok').style.display='none';
+  // Admin controls
+  const existing=document.getElementById('mo-admin');if(existing)existing.remove();
+  if(isAdmin()){
+    const adm=document.createElement('div');adm.id='mo-admin';
+    adm.style.cssText='background:#0a0020;border:2px solid #9900FF;padding:10px 12px;margin-bottom:12px;';
+    adm.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:7px;color:#FF00FF;margin-bottom:8px;">👑 ADMIN CONTROLS</div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button onclick="adminClaimTile()" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 12px;background:#003300;color:#00FF00;border:2px solid #00CC00;cursor:pointer;">✓ CLAIM FREE</button><button onclick="adminSpeedTimer()" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 12px;background:#1a0033;color:#FF88FF;border:2px solid #9900FF;cursor:pointer;">⚡ SPEED TIMER</button></div>`;
+    document.getElementById('mob').insertBefore(adm,document.getElementById('mob').firstChild);
+  }
   document.getElementById('moo').classList.add('open');
 }
 function closeMO(){document.getElementById('moo').classList.remove('open');curMO=null;}
 
-function placeBid(){if(window._fbPlaceBid){window._fbPlaceBid();return;}
+function placeBid(){if(isAdmin()){adminClaimTile();return;}if(window._fbPlaceBid){window._fbPlaceBid();return;}
   // fallback demo bid
   if(!loggedIn){openLM('login');return;}
   const v=parseInt(document.getElementById('bidinp').value),min=parseInt(document.getElementById('bidinp').min);
@@ -967,7 +975,7 @@ function placeBid(){if(window._fbPlaceBid){window._fbPlaceBid();return;}
   const ok=document.getElementById('bidok');ok.style.display='block';
   ok.innerHTML='✓ Bid of $'+v+' placed! <span style="font-size:10px;color:#CC6600;">(Demo)</span>';
 }
-function choosePay(m){if(window._fbChoosePay){window._fbChoosePay(m);return;}const n=document.getElementById('payn');n.textContent=m==='stripe'?'💳 Stripe: cards, Apple Pay, Google Pay. Backend required.':'🅿 PayPal: international. Backend required.';n.style.color=m==='stripe'?'#635BFF':'#003087';}
+function choosePay(m){if(isAdmin()){adminClaimTile();return;}if(window._fbChoosePay){window._fbChoosePay(m);return;}const n=document.getElementById('payn');n.textContent=m==='stripe'?'💳 Stripe: cards, Apple Pay, Google Pay. Backend required.':'🅿 PayPal: international. Backend required.';n.style.color=m==='stripe'?'#635BFF':'#003087';}
 
 function addFeed(user,amt,id,sz,isNew){
   const feed=document.getElementById('feed-list');
@@ -1147,12 +1155,147 @@ function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
 function openLM(tab){stab(tab);document.getElementById('lmo').classList.add('open');}
 function closeLM(){document.getElementById('lmo').classList.remove('open');}
 function stab(t){document.getElementById('lt-l').className='lmtab'+(t==='login'?' a':'');document.getElementById('lt-r').className='lmtab'+(t==='register'?' a':'');document.getElementById('lf-l').style.display=t==='login'?'block':'none';document.getElementById('lf-r').style.display=t==='register'?'block':'none';}
-function setUser(u){loggedIn=u;document.getElementById('usr-disp').textContent='👤 '+u.toUpperCase().slice(0,12);document.getElementById('logged-area').style.display='flex';document.getElementById('btn-login').style.display='none';document.getElementById('btn-reg').style.display='none';document.getElementById('btn-mypixels').style.display='';if(document.getElementById('lrem')?.checked)localStorage.setItem('mpa_usr',u);}
-function doLogout(){if(window._fbDoLogout){window._fbDoLogout();return;}loggedIn=null;document.getElementById('logged-area').style.display='none';document.getElementById('btn-login').style.display='';document.getElementById('btn-reg').style.display='';}
-function doLogin(){if(window._fbDoLogin){window._fbDoLogin();return;}}
-function doRegister(){if(window._fbDoRegister){window._fbDoRegister();return;}}
-function oauth(p){if(window._fbOauth){window._fbOauth(p);return;}setUser('oauth_user');closeLM();}
-function forgotPwd(){if(window._fbForgot){window._fbForgot();return;}alert('Password reset link will be sent to your email.');}
+function setUser(u){loggedIn=u;document.getElementById('usr-disp').textContent='👤 '+u.toUpperCase().slice(0,12);document.getElementById('logged-area').style.display='flex';document.getElementById('btn-login').style.display='none';document.getElementById('btn-reg').style.display='none';document.getElementById('btn-mypixels').style.display='';if(document.getElementById('lrem')?.checked)localStorage.setItem('mpa_usr',u);if(isAdmin())initAdminPanel();}
+
+// ── ADMIN ─────────────────────────────────────────────────
+const ADMIN_EMAIL='luckyansh.t@gmail.com';
+function isAdmin(){return window._fbAuth?.currentUser?.email===ADMIN_EMAIL;}
+
+function initAdminPanel(){
+  // Badge on username
+  document.getElementById('usr-disp').textContent='👑 ADMIN';
+  document.getElementById('usr-disp').style.cssText+='color:#FFD700;border-color:#FFD700;background:#000033;';
+  // Admin toolbar injected below nav-bar
+  if(document.getElementById('admin-bar'))return;
+  const bar=document.createElement('div');
+  bar.id='admin-bar';
+  bar.style.cssText='background:linear-gradient(90deg,#0a0020,#150030,#0a0020);border-bottom:2px solid #9900FF;padding:4px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:"Press Start 2P",monospace;font-size:7px;color:#CC88FF;z-index:999;position:relative;';
+  bar.innerHTML=`
+    <span style="color:#FF00FF;letter-spacing:1px;">👑 ADMIN MODE</span>
+    <div style="width:1px;background:#9900FF;height:16px;"></div>
+    <span style="color:#888;">FREE BID:</span><span style="color:#00FF00;">ON</span>
+    <div style="width:1px;background:#9900FF;height:16px;"></div>
+    <button onclick="adminSpeedTimer()" style="font-family:'Press Start 2P',monospace;font-size:6px;padding:3px 8px;background:#1a0033;color:#FF88FF;border:1px solid #9900FF;cursor:pointer;">⚡ SPEED TIMER</button>
+    <button onclick="adminShowHints()" style="font-family:'Press Start 2P',monospace;font-size:6px;padding:3px 8px;background:#1a0033;color:#FF88FF;border:1px solid #9900FF;cursor:pointer;">🥚 EGG HINTS</button>
+    <div style="width:1px;background:#9900FF;height:16px;margin-left:auto;"></div>
+    <span style="color:#555;">luckyansh.t@gmail.com</span>
+  `;
+  document.getElementById('nav-bar').after(bar);
+  // Adjust #main height to account for admin bar
+  const mainEl=document.getElementById('main');
+  mainEl.style.height='calc(100vh - 152px - 26px)';
+}
+
+function adminSpeedTimer(){
+  if(curMO===null){alert('Open an auction tile first.');return;}
+  const cell=cellMap.get(curMO),blk=cell?blkMap.get(cell.bId):null;
+  if(!blk||blk.status==='available'){alert('Tile has no active auction to speed up.');return;}
+  blk.mins=1; // set to 1 min remaining → triggers "ending" state
+  blk.status='ending';
+  ndraw=true;
+  // Update the visible timer in the open modal
+  const tmr=document.getElementById('motmr');
+  if(tmr){tmr.textContent='00 : 00 : 01 : 00';tmr.style.color='#FF4444';}
+  showRetroSaveToast('⚡ TIMER SET TO 1 MIN',true);
+}
+
+function adminClaimTile(){
+  if(curMO===null)return;
+  const cell=cellMap.get(curMO),blk=cell?blkMap.get(cell.bId):null;
+  if(!blk)return;
+  blk.status='sold';blk.owner=loggedIn;blk.bid=blk.bid||1;
+  soldCount++;updStats();ndraw=true;
+  closeMO();
+  tryMergeWithChoice(blk.id);
+  openPxEdit(blk.id);
+  showRetroSaveToast('👑 TILE CLAIMED (ADMIN)',true);
+}
+
+const EGG_HINTS=[
+  {id:'konami',  hint:'Try the famous video game cheat: ↑↑↓↓←→←→ then B then A on your keyboard.'},
+  {id:'fidget',  hint:'Click rapidly in circles on the pixel grid — spin it like a fidget spinner.'},
+  {id:'rickroll',hint:'Type the word "never" into the Go-to-cell search box.'},
+  {id:'harlem',  hint:'Type the word "harlem" anywhere on the page using your keyboard.'},
+  {id:'globe',   hint:'Click the 🌐 globe logo in the top-left header 10 times fast.'},
+  {id:'matrix',  hint:'Type the word "matrix" anywhere on the page using your keyboard.'},
+  {id:'doom',    hint:'Type the word "doom" anywhere on the page using your keyboard.'},
+  {id:'retro',   hint:'Type the word "retro" anywhere on the page using your keyboard.'},
+  {id:'pizza',   hint:'Type the word "pizza" anywhere on the page using your keyboard.'},
+  {id:'secret',  hint:'Double-click the live visitor counter (the green number) in the header.'},
+];
+
+function adminShowHints(){
+  // Remove if already open (toggle)
+  const existing=document.getElementById('admin-hints-panel');
+  if(existing){existing.remove();return;}
+  const panel=document.createElement('div');
+  panel.id='admin-hints-panel';
+  panel.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#0a0020;border:2px solid #9900FF;box-shadow:0 0 24px #9900FF88,4px 4px 0 rgba(0,0,0,0.6);z-index:9999;width:500px;max-width:96vw;max-height:80vh;overflow-y:auto;font-family:"Share Tech Mono",monospace;';
+  panel.innerHTML=`
+    <div style="background:linear-gradient(90deg,#1a0040,#2a0060,#1a0040);padding:8px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #9900FF;position:sticky;top:0;">
+      <span style="font-family:'Press Start 2P',monospace;font-size:8px;color:#FF00FF;">🥚 EASTER EGG HINTS</span>
+      <div onclick="document.getElementById('admin-hints-panel').remove()" style="width:18px;height:16px;background:#1a0040;border:1px solid #9900FF;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:#FF88FF;">✕</div>
+    </div>
+    <div style="padding:12px;">
+      ${EGG_HINTS.map((e,i)=>{
+        const egg=EGGS.find(x=>x.id===e.id);
+        const found=foundEggs.has(e.id);
+        return `<div style="padding:8px 10px;margin-bottom:6px;background:${found?'#001a00':'#0d0025'};border:1px solid ${found?'#00CC00':'#440088'};">
+          <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:${found?'#00FF00':'#CC88FF'};margin-bottom:5px;">${egg?.icon||'🥚'} ${egg?.name||e.id} ${found?'✓ FOUND':''}</div>
+          <div style="font-size:12px;color:${found?'#AAFFAA':'#AAAAAA'};line-height:1.6;">${e.hint}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+  document.body.appendChild(panel);
+}
+// ── FIREBASE READY QUEUE ─────────────────────────────────
+// The Firebase module is async — queue calls until it's loaded
+window._fbReady = false;
+window._fbQueue = [];
+window._fbOnReady = function(fn){ window._fbReady ? fn() : window._fbQueue.push(fn); };
+window._fbMarkReady = function(){
+  window._fbReady=true;
+  window._fbQueue.forEach(fn=>fn());
+  window._fbQueue=[];
+  // Re-enable auth buttons that were dimmed during load
+  ['btn-login','btn-reg'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(b){b.disabled=false;b.style.opacity='';}
+  });
+};
+
+function doLogin(){
+  window._fbOnReady(()=>{
+    if(window._fbDoLogin) window._fbDoLogin();
+    else showAuthError('le-err','Firebase failed to load. Refresh the page.');
+  });
+}
+function doRegister(){
+  window._fbOnReady(()=>{
+    if(window._fbDoRegister) window._fbDoRegister();
+    else showAuthError('re-err','Firebase failed to load. Refresh the page.');
+  });
+}
+function oauth(p){
+  window._fbOnReady(()=>{
+    if(window._fbOauth) window._fbOauth(p);
+    else showAuthError('le-err','Firebase failed to load. Refresh the page.');
+  });
+}
+function forgotPwd(){
+  window._fbOnReady(()=>{
+    if(window._fbForgot) window._fbForgot();
+    else showAuthError('le-err','Enter email above, then try again.');
+  });
+}
+function doLogout(){ if(window._fbDoLogout){window._fbDoLogout();return;} }
+
+function showAuthError(elId, msg){
+  const el=document.getElementById(elId);
+  if(!el) return;
+  el.textContent=msg; el.style.display='block';
+}
 
 // SECTION NAV
 function showSec(name){
@@ -1292,6 +1435,21 @@ function keepSeparate(){closeExpandMo();}
 
 window.addEventListener('load',()=>{
   genLayout();resizeC();requestAnimationFrame(loop);updateSpotlightPanel();
+  // Dim auth buttons until Firebase module is ready
+  ['btn-login','btn-reg'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(b){b.disabled=true;b.style.opacity='0.5';}
+  });
+  // Safety net: if Firebase module fails to load within 8s, re-enable buttons
+  setTimeout(()=>{
+    if(!window._fbReady){
+      ['btn-login','btn-reg'].forEach(id=>{
+        const b=document.getElementById(id);
+        if(b){b.disabled=false;b.style.opacity='';}
+      });
+      console.warn('Firebase module did not load in time — buttons re-enabled');
+    }
+  },8000);
   window.addEventListener('resize',()=>{resizeC();ndraw=true;});
   // Auth state managed by Firebase onAuthStateChanged
   document.addEventListener('keydown',e=>{
@@ -1366,16 +1524,16 @@ window.addEventListener('load',()=>{
 
 
 <script type="module">
-import { initializeApp }                                   from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-import { getAnalytics }                                    from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
+import { initializeApp }                                   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAnalytics }                                    from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
 import { getAuth, signInWithEmailAndPassword,
          createUserWithEmailAndPassword, signInWithPopup,
          GoogleAuthProvider, signOut, onAuthStateChanged,
-         sendPasswordResetEmail, updateProfile }            from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+         sendPasswordResetEmail, updateProfile }            from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, collection,
-         onSnapshot, serverTimestamp }                      from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+         onSnapshot, serverTimestamp }                      from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getDatabase, ref, set, onValue,
-         onDisconnect, serverTimestamp as rtTs }            from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+         onDisconnect, serverTimestamp as rtTs }            from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyDL5P_Ypreozb1cssXqKj9s3LLM2j0r0oM",
@@ -1416,6 +1574,9 @@ function authErr(code){
           'auth/weak-password':'Use at least 8 characters.','auth/invalid-email':'Invalid email address.',
           'auth/too-many-requests':'Too many attempts — try again later.',
           'auth/popup-closed-by-user':'Sign-in popup was closed.',
+          'auth/popup-blocked':'Popup blocked — allow popups for this site.',
+          'auth/unauthorized-domain':'Domain not authorized in Firebase console.',
+          'auth/internal-error':'Internal auth error — try again.',
           'auth/network-request-failed':'Network error — check your connection.'}[code]||'Error: '+code);
 }
 
@@ -1562,7 +1723,20 @@ window._fbOauth = async function(provider) {
         provider:'google', photoURL:result.user.photoURL||null
       });
     }
-  } catch(e){ if(e.code!=='auth/popup-closed-by-user') console.warn('Google OAuth:',e.message); }
+  } catch(e){
+    if(e.code==='auth/popup-closed-by-user') return;
+    if(e.code==='auth/popup-blocked'){
+      showErr('le-err','Popup was blocked. Please allow popups for this site and try again.');
+      showErr('re-err','Popup was blocked. Please allow popups for this site and try again.');
+    } else if(e.code==='auth/unauthorized-domain'){
+      showErr('le-err','This domain is not authorized in Firebase. Add it to Firebase Console → Auth → Authorized Domains.');
+      showErr('re-err','This domain is not authorized in Firebase. Add it to Firebase Console → Auth → Authorized Domains.');
+    } else {
+      showErr('le-err', authErr(e.code));
+      showErr('re-err', authErr(e.code));
+    }
+    console.warn('Google OAuth error:', e.code, e.message);
+  }
 };
 
 // ── LOGOUT ────────────────────────────────────────────────
@@ -1764,6 +1938,7 @@ window.submitSpotlight = async function() {
 };
 
 console.log('🔥 Firebase connected — millionpixelauction');
+window._fbMarkReady();
 </script>
 </body>
 </html>
