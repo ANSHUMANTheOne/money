@@ -24,7 +24,8 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 #vis-lbl{font-family:'VT323',monospace;font-size:14px;color:#AACCFF;}
 #vis-cnt{font-family:'Share Tech Mono',monospace;font-size:13px;color:#00FF00;background:#000;border:2px inset #333;padding:2px 8px;letter-spacing:3px;}
 #user-area{display:flex;align-items:center;gap:6px;margin-left:16px;}
-.hbtn{font-family:'Press Start 2P',monospace;font-size:7px;padding:5px 10px;cursor:pointer;border:none;}
+.hbtn{font-family:'Press Start 2P',monospace;font-size:7px;padding:5px 10px;cursor:pointer;border:none;opacity:1!important;}
+.hbtn:disabled{opacity:1!important;cursor:pointer;}
 #btn-login{background:var(--bg);color:var(--navy);border-top:2px solid var(--bl);border-left:2px solid var(--bl);border-right:2px solid var(--bdd);border-bottom:2px solid var(--bdd);}
 #btn-login:hover{background:#D4D0C8;}
 #btn-reg{background:var(--gold);color:#000;border-top:2px solid #FFEEAA;border-left:2px solid #FFEEAA;border-right:2px solid #AA8800;border-bottom:2px solid #AA8800;}
@@ -103,7 +104,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 .blt2{color:#000080;font-weight:bold;}.bltm2{color:#666;margin-left:auto;font-size:13px;}
 .bl-li{padding:3px 7px;border-bottom:1px dotted #DDD;font-family:'VT323',monospace;font-size:15px;display:flex;gap:6px;}
 
-#sv{display:none;position:fixed;inset:0;top:0;padding-top:110px;background:var(--bg);z-index:50;overflow-y:auto;padding:110px 12px 12px;}
+#sv{display:none;position:fixed;left:0;right:0;bottom:0;background:var(--bg);z-index:50;overflow-y:auto;padding:12px;}
 .at{width:100%;border-collapse:collapse;font-family:'VT323',monospace;font-size:16px;background:white;}
 .at th{background:var(--navy);color:white;padding:5px 8px;font-family:'Share Tech Mono',monospace;font-size:10px;text-align:left;position:sticky;top:0;}
 .at td{padding:4px 8px;border-bottom:1px solid #EEE;cursor:pointer;}
@@ -636,7 +637,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
           <button id="ppbtn" onclick="choosePay('paypal')"><span>Ⓟ</span> PayPal</button>
         </div>
         <div class="payn" id="payn">🔒 Card authorized only — charged if you win. Released if outbid.</div>
-        <div class="payn" style="color:#CC0000;margin-top:3px;">⚠ Real payments require backend: POST /api/bids with Stripe/PayPal integration.</div>
+        <div id="pay-status" style="display:none;font-family:'Press Start 2P',monospace;font-size:7px;padding:7px 10px;border:2px solid;margin-top:6px;letter-spacing:0.5px;"></div>
       </div>
       <div style="margin-top:12px;"><div class="sechd">BID HISTORY</div><div id="bhlist"><div style="padding:8px;color:#888;font-family:'VT323',monospace;font-size:15px;">No bids yet — be the first! 🚀</div></div></div>
     </div>
@@ -955,11 +956,19 @@ function openMO(id){
   const gate=document.getElementById('mo-gate'),bsec=document.getElementById('mo-bid-sec');
   if(loggedIn){gate.style.display='none';bsec.style.display='block';}else{gate.style.display='block';bsec.style.display='none';}
   document.getElementById('bidok').style.display='none';
+  // Admin controls
+  const existing=document.getElementById('mo-admin');if(existing)existing.remove();
+  if(isAdmin()){
+    const adm=document.createElement('div');adm.id='mo-admin';
+    adm.style.cssText='background:#0a0020;border:2px solid #9900FF;padding:10px 12px;margin-bottom:12px;';
+    adm.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:7px;color:#FF00FF;margin-bottom:8px;">👑 ADMIN CONTROLS</div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button onclick="adminClaimTile()" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 12px;background:#003300;color:#00FF00;border:2px solid #00CC00;cursor:pointer;">✓ CLAIM FREE</button><button onclick="adminSpeedTimer()" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 12px;background:#1a0033;color:#FF88FF;border:2px solid #9900FF;cursor:pointer;">⚡ SPEED TIMER</button></div>`;
+    document.getElementById('mob').insertBefore(adm,document.getElementById('mob').firstChild);
+  }
   document.getElementById('moo').classList.add('open');
 }
 function closeMO(){document.getElementById('moo').classList.remove('open');curMO=null;}
 
-function placeBid(){if(window._fbPlaceBid){window._fbPlaceBid();return;}
+function placeBid(){if(isAdmin()){adminClaimTile();return;}if(window._fbPlaceBid){window._fbPlaceBid();return;}
   // fallback demo bid
   if(!loggedIn){openLM('login');return;}
   const v=parseInt(document.getElementById('bidinp').value),min=parseInt(document.getElementById('bidinp').min);
@@ -967,7 +976,7 @@ function placeBid(){if(window._fbPlaceBid){window._fbPlaceBid();return;}
   const ok=document.getElementById('bidok');ok.style.display='block';
   ok.innerHTML='✓ Bid of $'+v+' placed! <span style="font-size:10px;color:#CC6600;">(Demo)</span>';
 }
-function choosePay(m){const n=document.getElementById('payn');n.textContent=m==='stripe'?'💳 Stripe: cards, Apple Pay, Google Pay. Backend required.':'🅿 PayPal: international. Backend required.';n.style.color=m==='stripe'?'#635BFF':'#003087';}
+function choosePay(m){if(isAdmin()){adminClaimTile();return;}if(window._fbChoosePay){window._fbChoosePay(m);return;}const n=document.getElementById('payn');n.textContent=m==='stripe'?'💳 Stripe: cards, Apple Pay, Google Pay. Backend required.':'🅿 PayPal: international. Backend required.';n.style.color=m==='stripe'?'#635BFF':'#003087';}
 
 function addFeed(user,amt,id,sz,isNew){
   const feed=document.getElementById('feed-list');
@@ -1147,20 +1156,159 @@ function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
 function openLM(tab){stab(tab);document.getElementById('lmo').classList.add('open');}
 function closeLM(){document.getElementById('lmo').classList.remove('open');}
 function stab(t){document.getElementById('lt-l').className='lmtab'+(t==='login'?' a':'');document.getElementById('lt-r').className='lmtab'+(t==='register'?' a':'');document.getElementById('lf-l').style.display=t==='login'?'block':'none';document.getElementById('lf-r').style.display=t==='register'?'block':'none';}
-function setUser(u){loggedIn=u;document.getElementById('usr-disp').textContent='👤 '+u.toUpperCase().slice(0,12);document.getElementById('logged-area').style.display='flex';document.getElementById('btn-login').style.display='none';document.getElementById('btn-reg').style.display='none';document.getElementById('btn-mypixels').style.display='';if(document.getElementById('lrem')?.checked)localStorage.setItem('mpa_usr',u);}
-function doLogout(){if(window._fbDoLogout){window._fbDoLogout();return;}loggedIn=null;document.getElementById('logged-area').style.display='none';document.getElementById('btn-login').style.display='';document.getElementById('btn-reg').style.display='';}
-function doLogin(){if(window._fbDoLogin){window._fbDoLogin();return;}}
-function doRegister(){if(window._fbDoRegister){window._fbDoRegister();return;}}
-function oauth(p){if(window._fbOauth){window._fbOauth(p);return;}setUser('oauth_user');closeLM();}
-function forgotPwd(){if(window._fbForgot){window._fbForgot();return;}alert('Password reset link will be sent to your email.');}
+function setUser(u){loggedIn=u;document.getElementById('usr-disp').textContent='👤 '+u.toUpperCase().slice(0,12);document.getElementById('logged-area').style.display='flex';document.getElementById('btn-login').style.display='none';document.getElementById('btn-reg').style.display='none';document.getElementById('btn-mypixels').style.display='';if(document.getElementById('lrem')?.checked)localStorage.setItem('mpa_usr',u);if(isAdmin())initAdminPanel();}
+
+// ── ADMIN ─────────────────────────────────────────────────
+const ADMIN_EMAIL='luckyansh.t@gmail.com';
+function isAdmin(){return window._fbAuth?.currentUser?.email===ADMIN_EMAIL;}
+
+function initAdminPanel(){
+  // Badge on username
+  document.getElementById('usr-disp').textContent='👑 ADMIN';
+  document.getElementById('usr-disp').style.cssText+='color:#FFD700;border-color:#FFD700;background:#000033;';
+  // Admin toolbar injected below nav-bar
+  if(document.getElementById('admin-bar'))return;
+  const bar=document.createElement('div');
+  bar.id='admin-bar';
+  bar.style.cssText='background:linear-gradient(90deg,#0a0020,#150030,#0a0020);border-bottom:2px solid #9900FF;padding:4px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:"Press Start 2P",monospace;font-size:7px;color:#CC88FF;z-index:999;position:relative;';
+  bar.innerHTML=`
+    <span style="color:#FF00FF;letter-spacing:1px;">👑 ADMIN MODE</span>
+    <div style="width:1px;background:#9900FF;height:16px;"></div>
+    <span style="color:#888;">FREE BID:</span><span style="color:#00FF00;">ON</span>
+    <div style="width:1px;background:#9900FF;height:16px;"></div>
+    <button onclick="adminSpeedTimer()" style="font-family:'Press Start 2P',monospace;font-size:6px;padding:3px 8px;background:#1a0033;color:#FF88FF;border:1px solid #9900FF;cursor:pointer;">⚡ SPEED TIMER</button>
+    <button onclick="adminShowHints()" style="font-family:'Press Start 2P',monospace;font-size:6px;padding:3px 8px;background:#1a0033;color:#FF88FF;border:1px solid #9900FF;cursor:pointer;">🥚 EGG HINTS</button>
+    <div style="width:1px;background:#9900FF;height:16px;margin-left:auto;"></div>
+    <span style="color:#555;">luckyansh.t@gmail.com</span>
+  `;
+  document.getElementById('nav-bar').after(bar);
+  // Adjust #main height to account for admin bar
+  const mainEl=document.getElementById('main');
+  mainEl.style.height='calc(100vh - 152px - 26px)';
+}
+
+function adminSpeedTimer(){
+  if(curMO===null){alert('Open an auction tile first.');return;}
+  const cell=cellMap.get(curMO),blk=cell?blkMap.get(cell.bId):null;
+  if(!blk||blk.status==='available'){alert('Tile has no active auction to speed up.');return;}
+  blk.mins=1; // set to 1 min remaining → triggers "ending" state
+  blk.status='ending';
+  ndraw=true;
+  // Update the visible timer in the open modal
+  const tmr=document.getElementById('motmr');
+  if(tmr){tmr.textContent='00 : 00 : 01 : 00';tmr.style.color='#FF4444';}
+  showRetroSaveToast('⚡ TIMER SET TO 1 MIN',true);
+}
+
+function adminClaimTile(){
+  if(curMO===null)return;
+  const cell=cellMap.get(curMO),blk=cell?blkMap.get(cell.bId):null;
+  if(!blk)return;
+  blk.status='sold';blk.owner=loggedIn;blk.bid=blk.bid||1;
+  soldCount++;updStats();ndraw=true;
+  closeMO();
+  tryMergeWithChoice(blk.id);
+  openPxEdit(blk.id);
+  showRetroSaveToast('👑 TILE CLAIMED (ADMIN)',true);
+}
+
+const EGG_HINTS=[
+  {id:'konami',  hint:'Try the famous video game cheat: ↑↑↓↓←→←→ then B then A on your keyboard.'},
+  {id:'fidget',  hint:'Click rapidly in circles on the pixel grid — spin it like a fidget spinner.'},
+  {id:'rickroll',hint:'Type the word "never" into the Go-to-cell search box.'},
+  {id:'harlem',  hint:'Type the word "harlem" anywhere on the page using your keyboard.'},
+  {id:'globe',   hint:'Click the 🌐 globe logo in the top-left header 10 times fast.'},
+  {id:'matrix',  hint:'Type the word "matrix" anywhere on the page using your keyboard.'},
+  {id:'doom',    hint:'Type the word "doom" anywhere on the page using your keyboard.'},
+  {id:'retro',   hint:'Type the word "retro" anywhere on the page using your keyboard.'},
+  {id:'pizza',   hint:'Type the word "pizza" anywhere on the page using your keyboard.'},
+  {id:'secret',  hint:'Double-click the live visitor counter (the green number) in the header.'},
+];
+
+function adminShowHints(){
+  // Remove if already open (toggle)
+  const existing=document.getElementById('admin-hints-panel');
+  if(existing){existing.remove();return;}
+  const panel=document.createElement('div');
+  panel.id='admin-hints-panel';
+  panel.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#0a0020;border:2px solid #9900FF;box-shadow:0 0 24px #9900FF88,4px 4px 0 rgba(0,0,0,0.6);z-index:9999;width:500px;max-width:96vw;max-height:80vh;overflow-y:auto;font-family:"Share Tech Mono",monospace;';
+  panel.innerHTML=`
+    <div style="background:linear-gradient(90deg,#1a0040,#2a0060,#1a0040);padding:8px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #9900FF;position:sticky;top:0;">
+      <span style="font-family:'Press Start 2P',monospace;font-size:8px;color:#FF00FF;">🥚 EASTER EGG HINTS</span>
+      <div onclick="document.getElementById('admin-hints-panel').remove()" style="width:18px;height:16px;background:#1a0040;border:1px solid #9900FF;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:#FF88FF;">✕</div>
+    </div>
+    <div style="padding:12px;">
+      ${EGG_HINTS.map((e,i)=>{
+        const egg=EGGS.find(x=>x.id===e.id);
+        const found=foundEggs.has(e.id);
+        return `<div style="padding:8px 10px;margin-bottom:6px;background:${found?'#001a00':'#0d0025'};border:1px solid ${found?'#00CC00':'#440088'};">
+          <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:${found?'#00FF00':'#CC88FF'};margin-bottom:5px;">${egg?.icon||'🥚'} ${egg?.name||e.id} ${found?'✓ FOUND':''}</div>
+          <div style="font-size:12px;color:${found?'#AAFFAA':'#AAAAAA'};line-height:1.6;">${e.hint}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+  document.body.appendChild(panel);
+}
+// ── FIREBASE READY QUEUE ─────────────────────────────────
+// The Firebase module is async — queue calls until it's loaded
+window._fbReady = false;
+window._fbQueue = [];
+window._fbOnReady = function(fn){ window._fbReady ? fn() : window._fbQueue.push(fn); };
+window._fbMarkReady = function(){
+  window._fbReady=true;
+  window._fbQueue.forEach(fn=>fn());
+  window._fbQueue=[];
+};
+
+function doLogin(){
+  window._fbOnReady(()=>{
+    if(window._fbDoLogin) window._fbDoLogin();
+    else showAuthError('le-err','Firebase failed to load. Refresh the page.');
+  });
+}
+function doRegister(){
+  window._fbOnReady(()=>{
+    if(window._fbDoRegister) window._fbDoRegister();
+    else showAuthError('re-err','Firebase failed to load. Refresh the page.');
+  });
+}
+function oauth(p){
+  window._fbOnReady(()=>{
+    if(window._fbOauth) window._fbOauth(p);
+    else showAuthError('le-err','Firebase failed to load. Refresh the page.');
+  });
+}
+function forgotPwd(){
+  window._fbOnReady(()=>{
+    if(window._fbForgot) window._fbForgot();
+    else showAuthError('le-err','Enter email above, then try again.');
+  });
+}
+function doLogout(){ if(window._fbDoLogout){window._fbDoLogout();return;} }
+
+function showAuthError(elId, msg){
+  const el=document.getElementById(elId);
+  if(!el) return;
+  el.textContent=msg; el.style.display='block';
+}
 
 // SECTION NAV
 function showSec(name){
   ['grid','auctions','ending','leaderboard','badges','how','mypixels'].forEach(s=>{document.getElementById('btn-'+s)?.classList.remove('active');});
   document.getElementById('btn-'+name)?.classList.add('active');
   const sv=document.getElementById('sv'),ml=document.getElementById('main');
-  if(name==='grid'){sv.style.display='none';ml.style.display='flex';resizeC();ndraw=true;return;}
-  ml.style.display='none';sv.style.display='block';sv.innerHTML='';
+  const gridSec=document.getElementById('grid-sec'),sidebar=document.getElementById('sidebar');
+  if(name==='grid'){
+    sv.style.display='none';
+    gridSec.style.display='flex';sidebar.style.display='flex';
+    ml.style.display='flex';resizeC();ndraw=true;return;
+  }
+  ml.style.display='flex';
+  gridSec.style.display='none';sidebar.style.display='none';
+  const navBot=document.getElementById('nav-bar').getBoundingClientRect().bottom;
+  sv.style.top=navBot+'px';
+  sv.style.display='block';sv.innerHTML='';
   if(name==='mypixels'){showMyPixels();return;}
   if(name==='auctions'){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🔨 ACTIVE AUCTIONS</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No active auctions yet. Click any square on the grid to start bidding!</div>`;}
   else if(name==='ending'){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#CC0000;margin-bottom:12px;">⏰ ENDING SOON</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No ending auctions. Check back once bidding starts!</div>`;}
@@ -1222,7 +1370,19 @@ function openPxEdit(blockId){
   document.getElementById('pxedit-mo').classList.add('open');
 }
 function closePxEdit(){document.getElementById('pxedit-mo').classList.remove('open');pxEditId=null;pxEditImgData=null;}
-function handleImgUpload(inp){const file=inp.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{pxEditImgData=e.target.result;document.getElementById('pxedit-preview').innerHTML=`<img src="${pxEditImgData}" alt="preview">`;};reader.readAsDataURL(file);}
+function handleImgUpload(inp){
+  const file=inp.files[0];if(!file)return;
+  if(file.size>200*1024){
+    alert('⚠ IMAGE TOO LARGE — MAX 200KB!\nTry compressing at tinypng.com first.');
+    inp.value='';return;
+  }
+  const reader=new FileReader();
+  reader.onload=e=>{
+    pxEditImgData=e.target.result;
+    document.getElementById('pxedit-preview').innerHTML=`<img src="${pxEditImgData}" alt="preview" style="max-width:100%;max-height:100%;object-fit:contain;">`;
+  };
+  reader.readAsDataURL(file);
+}
 function savePxEdit(){if(window._fbSavePxEdit){window._fbSavePxEdit();return;}}
 
 // CANVAS EXPANSION
@@ -1356,8 +1516,6 @@ import { getFirestore, doc, getDoc, setDoc, collection,
          onSnapshot, serverTimestamp }                      from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 import { getDatabase, ref, set, onValue,
          onDisconnect, serverTimestamp as rtTs }            from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
-import { getStorage, ref as sRef,
-         uploadBytes, getDownloadURL }                      from "https://www.gstatic.com/firebasejs/12.11.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyDL5P_Ypreozb1cssXqKj9s3LLM2j0r0oM",
@@ -1374,14 +1532,19 @@ const analytics= getAnalytics(app);
 const auth     = getAuth(app);
 const db       = getFirestore(app);
 const rtdb     = getDatabase(app);
-const storage  = getStorage(app);
 const gProvider= new GoogleAuthProvider();
-gProvider.setCustomParameters({ prompt: 'select_account' });
+window._fbAuth = auth;
 
-async function applyAuthPersistence() {
-  const remember = !!document.getElementById('lrem')?.checked;
-  await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
-}
+// ── GUEST PRESENCE — counts all visitors including non-logged-in ──
+(function(){
+  const sid = window._guestSid||('g_'+Math.random().toString(36).slice(2));
+  const gRef = ref(rtdb,'presence/'+sid);
+  onValue(ref(rtdb,'.info/connected'), snap=>{
+    if(!snap.val())return;
+    onDisconnect(gRef).remove();
+    set(gRef,{name:'guest',ts:Date.now()});
+  });
+})();
 
 // ── helpers ──────────────────────────────────────────────
 function showErr(id,msg){const e=document.getElementById(id);if(!e)return;e.textContent=msg;e.style.display='block';}
@@ -1493,79 +1656,69 @@ async function loadSpotlight() {
   } catch(e){}
 }
 
+// ── AUTH PERSISTENCE ─────────────────────────────────────
+async function applyAuthPersistence() {
+  const remember = !!document.getElementById('lrem')?.checked;
+  await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
+}
+
 // ── LOGIN ─────────────────────────────────────────────────
 window._fbDoLogin = async function() {
   clearErr('le-err');
-  const email = document.getElementById('le').value.trim();
-  const pass = document.getElementById('lp').value;
-  if(!email || !pass){ showErr('le-err','Enter email and password.'); return; }
-  const btn = document.querySelector('#lf-l .lmsub');
-  if(btn){ btn.textContent = '...'; btn.disabled = true; }
+  const email=document.getElementById('le').value.trim();
+  const pass=document.getElementById('lp').value;
+  if(!email||!pass){showErr('le-err','Enter email and password.');return;}
   try {
     await applyAuthPersistence();
-    await signInWithEmailAndPassword(auth, email, pass);
+    await signInWithEmailAndPassword(auth,email,pass);
     closeLM();
-  } catch(e) {
-    showErr('le-err', authErr(e.code));
-  } finally {
-    if(btn){ btn.textContent = '▶ LOG IN'; btn.disabled = false; }
   }
+  catch(e){ showErr('le-err',authErr(e.code)); }
 };
 
 // ── REGISTER ──────────────────────────────────────────────
 window._fbDoRegister = async function() {
   clearErr('re-err');
-  const u = document.getElementById('ru').value.trim();
-  const e = document.getElementById('re').value.trim();
-  const p = document.getElementById('rp').value;
-  if(!u || !e || !p){ showErr('re-err','All fields required.'); return; }
-  if(p.length < 8){ showErr('re-err','Password must be 8+ chars.'); return; }
-  if(u.length < 3){ showErr('re-err','Username min 3 characters.'); return; }
-  const btn = document.querySelector('#lf-r .lmsub');
-  if(btn){ btn.textContent = '...'; btn.disabled = true; }
+  const u=document.getElementById('ru').value.trim();
+  const e=document.getElementById('re').value.trim();
+  const p=document.getElementById('rp').value;
+  if(!u||!e||!p){showErr('re-err','All fields required.');return;}
+  if(p.length<8){showErr('re-err','Password must be 8+ chars.');return;}
+  if(u.length<3){showErr('re-err','Username min 3 characters.');return;}
   try {
     await applyAuthPersistence();
-    const cred = await createUserWithEmailAndPassword(auth, e, p);
-    await updateProfile(cred.user, { displayName: u });
-    await setDoc(doc(db, 'users', cred.user.uid), {
-      username: u,
-      email: e,
-      uid: cred.user.uid,
-      createdAt: serverTimestamp()
-    });
+    const cred=await createUserWithEmailAndPassword(auth,e,p);
+    await updateProfile(cred.user,{displayName:u});
+    await setDoc(doc(db,'users',cred.user.uid),{username:u,email:e,uid:cred.user.uid,createdAt:serverTimestamp(),provider:'email'});
     closeLM();
-  } catch(err) {
-    showErr('re-err', authErr(err.code));
-  } finally {
-    if(btn){ btn.textContent = '▶ CREATE ACCOUNT'; btn.disabled = false; }
   }
+  catch(err){ showErr('re-err',authErr(err.code)); }
 };
 
 // ── GOOGLE OAUTH ──────────────────────────────────────────
 window._fbOauth = async function(provider) {
-  if(provider !== 'google') return;
+  if(provider!=='google') return;
   try {
     await applyAuthPersistence();
-    const result = await signInWithPopup(auth, gProvider);
-    const snap = await getDoc(doc(db, 'users', result.user.uid));
+    const result=await signInWithPopup(auth,gProvider);
+    const snap=await getDoc(doc(db,'users',result.user.uid));
     if(!snap.exists()){
-      await setDoc(doc(db, 'users', result.user.uid), {
-        username: result.user.displayName || result.user.email.split('@')[0],
-        email: result.user.email,
-        uid: result.user.uid,
-        createdAt: serverTimestamp()
+      await setDoc(doc(db,'users',result.user.uid),{
+        username:result.user.displayName||result.user.email.split('@')[0],
+        email:result.user.email, uid:result.user.uid, createdAt:serverTimestamp(),
+        provider:'google', photoURL:result.user.photoURL||null
       });
     }
     closeLM();
-  } catch(e) {
-    if(e.code !== 'auth/popup-closed-by-user') showErr('le-err', authErr(e.code));
+  } catch(e){
+    if(e.code!=='auth/popup-closed-by-user') showErr('le-err',authErr(e.code));
   }
 };
 
 // ── LOGOUT ────────────────────────────────────────────────
 window._fbDoLogout = async function() {
-  if(window._fbUid) { try { await set(ref(rtdb,'presence/'+window._fbUid), null); } catch(e) {} }
-  try { await signOut(auth); } catch(e) {}
+  if(window._fbUid) { try{ await set(ref(rtdb,'presence/'+window._fbUid),null); }catch(e){} }
+  try{ await signOut(auth); }catch(e){}
 };
 
 // ── FORGOT PASSWORD ───────────────────────────────────────
@@ -1578,6 +1731,71 @@ window._fbForgot = async function() {
     if(el){el.textContent='✓ Reset email sent! Check your inbox.';el.style.display='block';el.style.color='#008000';el.style.background='#DFFFDF';el.style.borderColor='#008000';}
   } catch(e){ showErr('le-err',authErr(e.code)); }
 };
+
+// ── PAYMENT INTEGRATION ───────────────────────────────────
+const BACKEND_URL='https://your-server.com'; // ← replace with your deployed server URL
+
+async function getAuthToken(){
+  try{return await auth.currentUser?.getIdToken();}catch(e){return null;}
+}
+window._fbChoosePay = async function(method){
+  if(!loggedIn){openLM('login');return;}
+  if(curMO===null)return;
+  const cell=cellMap.get(curMO),blk=cell?blkMap.get(cell.bId):blkMap.get(curMO);
+  if(!blk)return;
+  if(blk.bid<1){setPayStatus('⚠ PLACE A BID FIRST','error');return;}
+  if(blk.paid){setPayStatus('█ ALREADY PAID FOR THIS PIXEL █','success');return;}
+  const token=await getAuthToken();
+  if(!token){openLM('login');return;}
+  if(method==='stripe')await payWithStripe(blk,token);
+  if(method==='paypal')await payWithPayPal(blk,token);
+};
+async function payWithStripe(blk,token){
+  setPayStatus('▓░░░░ CONNECTING TO STRIPE...','loading');
+  try{
+    const res=await fetch(`${BACKEND_URL}/api/payment/create-checkout`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({blockId:blk.id,amount:blk.bid,pixelTitle:blk.title||`Pixel #${String(blk.id).padStart(6,'0')}`})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Stripe error');
+    setPayStatus('▓▓▓▓▓ REDIRECTING TO STRIPE...','success');
+    window.location.href=data.url;
+  }catch(e){setPayStatus('⚠ STRIPE ERR: '+e.message.slice(0,24),'error');}
+}
+async function payWithPayPal(blk,token){
+  setPayStatus('▓░░░░ CONNECTING TO PAYPAL...','loading');
+  try{
+    const res=await fetch(`${BACKEND_URL}/api/payment/paypal/create-order`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({blockId:blk.id,amount:blk.bid})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'PayPal error');
+    setPayStatus('▓▓▓▓▓ REDIRECTING TO PAYPAL...','success');
+    window.location.href=data.approveUrl;
+  }catch(e){setPayStatus('⚠ PAYPAL ERR: '+e.message.slice(0,24),'error');}
+}
+function setPayStatus(msg,type){
+  const el=document.getElementById('pay-status');if(!el)return;
+  el.style.display='block';el.textContent=msg;
+  el.style.background=type==='error'?'#1a0000':type==='success'?'#001a00':'#1a1000';
+  el.style.color=type==='error'?'#FF4444':type==='success'?'#00FF00':'#FFAA00';
+  el.style.borderColor=type==='error'?'#CC0000':type==='success'?'#00CC00':'#CC8800';
+}
+// Check if returning from payment
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  if(params.get('payment')==='success'){
+    const blockId=params.get('block');
+    const n=document.createElement('div');
+    n.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#001a00;color:#00FF00;font-family:"Press Start 2P",monospace;font-size:10px;padding:24px 32px;z-index:9999;border-top:2px solid #00FF00;border-left:2px solid #00FF00;border-right:2px solid #006600;border-bottom:2px solid #006600;text-align:center;line-height:2.2;box-shadow:0 0 32px #00FF0055,4px 4px 0 rgba(0,0,0,0.6);text-shadow:0 0 8px #00FF00;';
+    n.innerHTML='█ PAYMENT CONFIRMED █<br><span style="font-size:7px;color:#AAFFAA;">PIXEL #'+(blockId||'').padStart(6,'0')+' IS YOURS FOREVER</span><br><br><button onclick="this.parentElement.remove();window.history.replaceState({},'\'\'','\'\/\');" style="font-family:\'Press Start 2P\',monospace;font-size:7px;padding:7px 16px;background:#003300;color:#00FF00;border:2px solid #00CC00;cursor:pointer;text-shadow:0 0 4px #00FF00;">[ CONTINUE ]</button>';
+    document.body.appendChild(n);
+    window.history.replaceState({},'','/');
+  }
+  if(params.get('payment')==='cancelled'){
+    const n=document.createElement('div');
+    n.style.cssText='position:fixed;bottom:50px;left:50%;transform:translateX(-50%);background:#1a0800;color:#FFAA00;font-family:"Press Start 2P",monospace;font-size:7px;padding:10px 18px;z-index:9999;white-space:nowrap;border-top:2px solid #FFAA00;border-left:2px solid #FFAA00;border-right:2px solid #664400;border-bottom:2px solid #664400;';
+    n.textContent='⚠ PAYMENT CANCELLED — BID STILL ACTIVE';
+    document.body.appendChild(n);setTimeout(()=>n.remove(),4000);
+    window.history.replaceState({},'','/');
+  }
+})();
 
 // ── PLACE BID (Firestore) ─────────────────────────────────
 window._fbPlaceBid = async function() {
@@ -1621,7 +1839,19 @@ window._fbPlaceBid = async function() {
   }
 };
 
-// ── SAVE PIXEL EDIT (Firebase Storage + Firestore) ────────
+// ── RETRO SAVE TOAST ──────────────────────────────────────
+function showRetroSaveToast(msg,ok){
+  const n=document.createElement('div');
+  n.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);font-family:"Press Start 2P",monospace;font-size:9px;padding:12px 20px;z-index:9999;white-space:nowrap;border-style:solid;border-width:2px;'+(ok?'background:#003300;color:#00FF00;border-top-color:#00FF00;border-left-color:#00FF00;border-right-color:#006600;border-bottom-color:#006600;text-shadow:0 0 6px #00FF00;':'background:#330000;color:#FF4444;border-top-color:#FF4444;border-left-color:#FF4444;border-right-color:#660000;border-bottom-color:#660000;');
+  n.textContent=msg;document.body.appendChild(n);setTimeout(()=>n.remove(),2800);
+}
+
+// ── RETRO SAVE PROGRESS (animates the button text) ────────
+function retroSaveAnim(btn,frames,interval,done){
+  let i=0;const t=setInterval(()=>{if(!btn||done())return clearInterval(t);btn.textContent=frames[i++%frames.length];},interval);
+}
+
+// ── SAVE PIXEL EDIT (base64 stored directly in Firestore — no Storage cost) ──
 window._fbSavePxEdit = async function() {
   if(pxEditId===null||!window._fbUid) return;
   const cell=cellMap.get(pxEditId),blk=blkMap.get(cell?cell.bId:pxEditId);
@@ -1631,32 +1861,30 @@ window._fbSavePxEdit = async function() {
   let safeUrl='';
   if(url){try{const u=new URL(url);if(['http:','https:'].includes(u.protocol))safeUrl=url;}catch(e){}}
   const btn=document.querySelector('.pxedit-submit');
-  if(btn){btn.textContent='⏳ Saving...';btn.disabled=true;}
-  let imageUrl=pxEditImgData;
-  // Upload to Firebase Storage if it's a local data URL
-  if(pxEditImgData&&pxEditImgData.startsWith('data:')){
-    try{
-      const res=await fetch(pxEditImgData);const blob=await res.blob();
-      const fileRef=sRef(storage,'pixels/'+window._fbUid+'/'+pxEditId+'.jpg');
-      await uploadBytes(fileRef,blob);
-      imageUrl=await getDownloadURL(fileRef);
-    }catch(e){console.warn('Image upload:',e);}
+  let done=false;
+  if(btn){
+    btn.disabled=true;
+    retroSaveAnim(btn,['▓▓▓░░░ SAVING...','▓▓▓▓░░ SAVING...','▓▓▓▓▓░ SAVING...','▓▓▓▓▓▓ SAVING...','░▓▓▓▓▓ SAVING...','░░▓▓▓▓ SAVING...','░░░▓▓▓ SAVING...','░░░░▓▓ SAVING...'],160,()=>done);
   }
+  // Use new base64 if user picked one, otherwise keep existing image
+  const finalImg=(pxEditImgData&&pxEditImgData.startsWith('data:'))?pxEditImgData:(blk.image||null);
   try{
     await setDoc(doc(db,'blocks',String(blk.id).padStart(6,'0')),{
       id:blk.id,owner:loggedIn,uid:window._fbUid,
-      image:imageUrl||null,url:safeUrl,title,status:'sold'
+      image:finalImg||null,url:safeUrl,title,status:'sold'
     },{merge:true});
-    blk.image=imageUrl||null;blk.url=safeUrl;blk.title=title;
+    blk.image=finalImg||null;blk.url=safeUrl;blk.title=title;
     if(blk.image){const img=new Image();img.onload=()=>{blk._imgObj=img;ndraw=true;};img.src=blk.image;}
     else blk._imgObj=null;
     ndraw=true;closePxEdit();
     if(document.getElementById('btn-mypixels')?.classList.contains('active'))showMyPixels();
-    const n=document.createElement('div');
-    n.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#008000;color:white;font-family:"Press Start 2P",monospace;font-size:9px;padding:10px 18px;z-index:9999;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;white-space:nowrap;';
-    n.textContent='✓ PIXEL SAVED!';document.body.appendChild(n);setTimeout(()=>n.remove(),2500);
-  }catch(e){ alert('Save failed: '+e.message); }
-  finally{ if(btn){btn.textContent='▶ SAVE CHANGES';btn.disabled=false;} }
+    showRetroSaveToast('█ PIXEL DATA WRITTEN TO DB █',true);
+  }catch(e){
+    showRetroSaveToast('⚠ WRITE ERROR: '+e.message.slice(0,28),false);
+  }finally{
+    done=true;
+    if(btn){btn.textContent='▶ SAVE CHANGES';btn.disabled=false;}
+  }
 };
 
 // ── SUBMIT SPOTLIGHT (Firestore) ──────────────────────────
@@ -1686,6 +1914,7 @@ window.submitSpotlight = async function() {
 };
 
 console.log('🔥 Firebase connected — millionpixelauction');
+window._fbMarkReady();
 </script>
 </body>
 </html>
