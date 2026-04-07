@@ -1524,16 +1524,17 @@ window.addEventListener('load',()=>{
 
 
 <script type="module">
-import { initializeApp }                                   from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getAnalytics }                                    from "https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics.js";
+import { initializeApp }                                   from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getAnalytics }                                    from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
 import { getAuth, signInWithEmailAndPassword,
          createUserWithEmailAndPassword, signInWithPopup,
+         signInWithRedirect, getRedirectResult,
          GoogleAuthProvider, signOut, onAuthStateChanged,
-         sendPasswordResetEmail, updateProfile }            from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+         sendPasswordResetEmail, updateProfile }            from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, collection,
-         onSnapshot, serverTimestamp }                      from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+         onSnapshot, serverTimestamp }                      from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 import { getDatabase, ref, set, onValue,
-         onDisconnect, serverTimestamp as rtTs }            from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+         onDisconnect, serverTimestamp as rtTs }            from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyDL5P_Ypreozb1cssXqKj9s3LLM2j0r0oM",
@@ -1552,6 +1553,11 @@ const db       = getFirestore(app);
 const rtdb     = getDatabase(app);
 const gProvider= new GoogleAuthProvider();
 window._fbAuth = auth;
+
+// ── Handle redirect result (popup-blocked fallback) ──────
+getRedirectResult(auth).catch(e => {
+  if (e && e.code !== 'auth/no-auth-event') console.warn('Redirect result error:', e.message);
+});
 
 // ── GUEST PRESENCE — counts all visitors including non-logged-in ──
 (function(){
@@ -1586,7 +1592,17 @@ onAuthStateChanged(auth, async user => {
     let name = user.displayName || user.email.split('@')[0];
     try {
       const snap = await getDoc(doc(db,'users',user.uid));
-      if(snap.exists()&&snap.data().username) name = snap.data().username;
+      if(snap.exists()&&snap.data().username) {
+        name = snap.data().username;
+      } else if(!snap.exists()) {
+        // First time — save user to Firestore (covers Google sign-in too)
+        await setDoc(doc(db,'users',user.uid),{
+          username: user.displayName || user.email.split('@')[0],
+          email: user.email, uid: user.uid, createdAt: serverTimestamp(),
+          provider: user.providerData[0]?.providerId || 'email',
+          photoURL: user.photoURL || null
+        });
+      }
     } catch(e){}
     window._fbUid = user.uid;
     setUser(name);
@@ -1713,29 +1729,25 @@ window._fbDoRegister = async function() {
 // ── GOOGLE OAUTH ──────────────────────────────────────────
 window._fbOauth = async function(provider) {
   if(provider!=='google') return;
+  const errEl = document.getElementById('le-err') || document.getElementById('re-err');
   try {
-    const result=await signInWithPopup(auth,gProvider);
-    const snap=await getDoc(doc(db,'users',result.user.uid));
-    if(!snap.exists()){
-      await setDoc(doc(db,'users',result.user.uid),{
-        username:result.user.displayName||result.user.email.split('@')[0],
-        email:result.user.email, uid:result.user.uid, createdAt:serverTimestamp(),
-        provider:'google', photoURL:result.user.photoURL||null
-      });
-    }
-  } catch(e){
-    if(e.code==='auth/popup-closed-by-user') return;
-    if(e.code==='auth/popup-blocked'){
-      showErr('le-err','Popup was blocked. Please allow popups for this site and try again.');
-      showErr('re-err','Popup was blocked. Please allow popups for this site and try again.');
-    } else if(e.code==='auth/unauthorized-domain'){
+    await signInWithPopup(auth, gProvider);
+  } catch(e) {
+    if(e.code==='auth/popup-blocked' || e.code==='auth/popup-closed-by-user') {
+      if(e.code==='auth/popup-blocked') {
+        showErr('le-err','Popup blocked — redirecting to Google...');
+        showErr('re-err','Popup blocked — redirecting to Google...');
+        await signInWithRedirect(auth, gProvider);
+      }
+      // popup-closed-by-user: do nothing, user cancelled
+    } else if(e.code==='auth/unauthorized-domain') {
       showErr('le-err','This domain is not authorized in Firebase. Add it to Firebase Console → Auth → Authorized Domains.');
       showErr('re-err','This domain is not authorized in Firebase. Add it to Firebase Console → Auth → Authorized Domains.');
-    } else {
+    } else if(e.code!=='auth/cancelled-popup-request') {
       showErr('le-err', authErr(e.code));
       showErr('re-err', authErr(e.code));
+      console.warn('Google OAuth error:', e.code, e.message);
     }
-    console.warn('Google OAuth error:', e.code, e.message);
   }
 };
 
