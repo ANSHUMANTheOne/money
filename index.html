@@ -739,7 +739,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 const G=1000,TOTAL=1000000;
 const canvas=document.getElementById('gc'),ctx=canvas.getContext('2d');
 const mmc=document.getElementById('mmc'),mmx=mmc.getContext('2d');
-let CELL=8,zi=3;const ZL=[2,3,5,8,12,18,40],ZN=['0.25×','0.4×','0.6×','1×','1.5×','2×','5×'];
+let CELL=8,zi=3;const ZL=[2,3,5,8,12,18,40,80],ZN=['0.25×','0.4×','0.6×','1×','1.5×','2×','5×','10×'];
 const sc={x:0,y:0};let drag=false,dS={x:0,y:0},sS={x:0,y:0},ndraw=true;
 function markDirty(withMinimap=false){ndraw=true;if(withMinimap)mmDirty=true;}
 let loggedIn=null;
@@ -792,6 +792,73 @@ function updStats(){
   const pct=(soldCount/TOTAL*100).toFixed(3);
   document.getElementById('prog-fill').style.width=pct+'%';
   document.getElementById('prog-pct').textContent=pct+'%';
+}
+
+// ── AUCTION COUNTDOWN + EXPIRY ENGINE ──────────────────────
+// Runs every second: ticks down endsAt, fires expiry, notifies winner
+const notifiedExpired=new Set();
+setInterval(()=>{
+  const now=Date.now();
+  let needDraw=false;
+  for(const [,blk] of blkMap){
+    if((blk.status==='active'||blk.status==='ending')&&blk.endsAt){
+      const remMs=blk.endsAt-now;
+      const remMins=Math.max(0,Math.floor(remMs/60000));
+      // Update mins for display
+      if(blk.mins!==remMins){blk.mins=remMins;needDraw=true;}
+      // Transition to ending when <2 hours left
+      if(remMs>0&&remMs<120*60*1000&&blk.status==='active'){blk.status='ending';needDraw=true;mmDirty=true;}
+      // Expire when time is up
+      if(remMs<=0&&!notifiedExpired.has(blk.id)){
+        notifiedExpired.add(blk.id);
+        blk.status='sold';blk.owner=blk.bidder||blk.owner;blk.mins=0;
+        needDraw=true;mmDirty=true;soldCount++;updStats();
+        // Notify winner if it's the current user
+        if(blk.bidder&&blk.bidder===loggedIn){
+          showWinnerNotif(blk);
+        } else {
+          showToast(`⏰ Auction ended — Block #${String(blk.id).padStart(6,'0')}${blk.bidder?' won by '+blk.bidder:' — no bids'}`, '#CC6600', 5000);
+        }
+      }
+    }
+  }
+  // Update open auction modal timer
+  if(curMO!==null){
+    const cell=cellMap.get(curMO),blk=cell?blkMap.get(cell.bId):null;
+    if(blk&&blk.endsAt){
+      const remMs=Math.max(0,blk.endsAt-now);
+      const hh=Math.floor(remMs/3600000),mm=Math.floor((remMs%3600000)/60000),ss=Math.floor((remMs%60000)/1000);
+      const tmr=document.getElementById('motmr');
+      if(tmr&&(blk.status==='active'||blk.status==='ending')){
+        tmr.textContent=`${String(hh).padStart(2,'0')} : ${String(mm).padStart(2,'0')} : ${String(ss).padStart(2,'0')}`;
+        tmr.style.color=blk.status==='ending'?'#FF4444':'#00FF00';
+      }
+    }
+  }
+  if(needDraw){ndraw=true;}
+},1000);
+
+function showWinnerNotif(blk){
+  const sz=blk.size>=5?'5×5 PREMIUM':blk.size>=2?'2×2 STANDARD':'1×1 BASIC';
+  const w=document.createElement('div');
+  w.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#000080;color:#FFD700;font-family:"Press Start 2P",monospace;padding:24px 32px;z-index:9999;border-top:3px solid #4444FF;border-left:3px solid #4444FF;border-right:3px solid #000044;border-bottom:3px solid #000044;text-align:center;box-shadow:0 0 40px rgba(0,0,255,0.5);max-width:90vw;';
+  w.innerHTML=`<div style="font-size:28px;margin-bottom:12px;">🏆</div>
+    <div style="font-size:10px;margin-bottom:8px;color:#FFFF00;animation:blink 0.5s step-end infinite;">★ YOU WON! ★</div>
+    <div style="font-size:8px;margin-bottom:6px;">BLOCK #${String(blk.id).padStart(6,'0')}</div>
+    <div style="font-size:8px;margin-bottom:14px;color:#AAFFAA;">${sz} — $${blk.bid||0}</div>
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <button onclick="this.closest('div[style]').remove();openPxEdit(${blk.id});" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#008000;color:white;border:none;cursor:pointer;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;">✏ CUSTOMIZE PIXEL</button>
+      <button onclick="this.closest('div[style]').remove();" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#444;color:white;border:none;cursor:pointer;">CLOSE</button>
+    </div>`;
+  document.body.appendChild(w);
+  // Auto-remove after 30s
+  setTimeout(()=>w.isConnected&&w.remove(),30000);
+}
+
+function showToast(msg, color='#000080', duration=3000){
+  const n=document.createElement('div');
+  n.style.cssText=`position:fixed;bottom:50px;left:50%;transform:translateX(-50%);background:${color};color:white;font-family:"Press Start 2P",monospace;font-size:8px;padding:10px 16px;z-index:9998;white-space:nowrap;max-width:90vw;white-space:normal;text-align:center;border-top:2px solid rgba(255,255,255,0.3);border-left:2px solid rgba(255,255,255,0.3);border-right:2px solid rgba(0,0,0,0.3);border-bottom:2px solid rgba(0,0,0,0.3);`;
+  n.textContent=msg;document.body.appendChild(n);setTimeout(()=>n.isConnected&&n.remove(),duration);
 }
 
 function resizeC(){const w=document.getElementById('gw').clientWidth,h=document.getElementById('gw').clientHeight;canvas.width=w;canvas.height=h;ndraw=true;}
@@ -1773,27 +1840,37 @@ function authErr(code){
 
 // ── AUTH STATE ───────────────────────────────────────────
 // Track all visitors (logged in or not) via anonymous session presence
-const anonVisitorId = 'anon_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now();
-(function initAnonPresence(){
+const anonVisitorId = 'anon_' + Math.random().toString(36).slice(2,10) + '_' + Date.now();
+let presenceRef = null;
+
+function setupPresenceRef(refPath, displayName, isAnon){
   const connRef = ref(rtdb, '.info/connected');
-  const myRef   = ref(rtdb, 'presence/' + anonVisitorId);
+  const myRef   = ref(rtdb, refPath);
+  presenceRef   = myRef;
   onValue(connRef, snap => {
     if(!snap.val()) return;
-    onDisconnect(myRef).remove();
-    set(myRef, { name: 'visitor', ts: Date.now(), anon: true });
+    onDisconnect(myRef).remove().catch(()=>{});
+    set(myRef, {name:displayName, ts:Date.now(), anon:isAnon}).catch(e=>{
+      console.warn('Presence write failed (check RTDB rules):', e.message);
+    });
   });
-  // Update vis counter for everyone
-  onValue(ref(rtdb,'presence'), snap => {
-    const count = snap.exists() ? Object.keys(snap.val()).length : 0;
-    document.getElementById('vis-cnt').textContent = String(count).padStart(8,'0');
-    document.getElementById('h-on').textContent    = count;
-    visCount = Math.max(visCount, count);
-    const nb = document.getElementById('nxt-bl');
-    if(nb) nb.textContent = 'Next: '+Math.ceil((count+1)/100)*100+' users';
-    if(count>0 && count%100===0) spawnBlimp();
-  });
-})();
-// Also load grid state for everyone on page load — called after function defs below
+}
+
+// Listen to presence count — works for everyone
+onValue(ref(rtdb,'presence'), snap => {
+  const count = snap.exists() ? Object.keys(snap.val()).length : 0;
+  document.getElementById('vis-cnt').textContent = String(count).padStart(8,'0');
+  document.getElementById('h-on').textContent    = count;
+  visCount = Math.max(visCount, count);
+  const nb = document.getElementById('nxt-bl');
+  if(nb) nb.textContent = 'Next: '+Math.ceil((count+1)/100)*100+' users';
+  if(count>0 && count%100===0) spawnBlimp();
+}, e=>console.warn('Presence read failed:', e.message));
+
+// Register this visitor (anon) immediately
+setupPresenceRef('presence/'+anonVisitorId, 'visitor', true);
+
+// Also load grid state for everyone — called after function defs below
 // (moved to bottom of module)
 
 onAuthStateChanged(auth, async user => {
@@ -1805,19 +1882,11 @@ onAuthStateChanged(auth, async user => {
     } catch(e){}
     window._fbUid = user.uid;
     setUser(name, user.email);
-    // Replace anon presence with named presence
-    try {
-      const connRef = ref(rtdb, '.info/connected');
-      const myRef   = ref(rtdb, 'presence/' + user.uid);
-      const anonRef = ref(rtdb, 'presence/' + anonVisitorId);
-      // Remove anon entry, add named entry
-      await set(anonRef, null);
-      onValue(connRef, snap => {
-        if(!snap.val()) return;
-        onDisconnect(myRef).remove();
-        set(myRef, { name, ts: Date.now(), anon: false });
-      });
-    } catch(e){}
+    // Remove anon presence, register named presence
+    try { await set(ref(rtdb,'presence/'+anonVisitorId), null); } catch(e){}
+    setupPresenceRef('presence/'+user.uid, name, false);
+    loadGridState();
+    loadSpotlight();
   } else {
     window._fbUid = null;
     loggedIn = null;
@@ -1845,26 +1914,46 @@ async function loadGridState() {
       updStats();
     }
   } catch(e){}
-  // Real-time listener
+  // Real-time listener for block changes
   onSnapshot(collection(db,'blocks'), snap => {
     snap.docChanges().forEach(change => {
-      if(change.type==='removed') return;
       const d = change.doc.data();
+      if(change.type==='removed'){
+        // Block unclaimed — reset local state
+        const blk=blkMap.get(d.id);
+        if(blk){blk.status='available';blk.owner=null;blk.bid=0;blk.bids=0;blk.bidder=null;blk.image=null;blk.url=null;blk.title=null;blk._imgObj=null;blk.mins=1440;blk.endsAt=null;ndraw=true;mmDirty=true;}
+        return;
+      }
       const blk = blkMap.get(d.id);
       if(!blk) return;
       const wasAvail = blk.status==='available';
-      Object.assign(blk, {
-        status:d.status||blk.status, bid:d.bid||blk.bid,
-        bids:d.bids||blk.bids, bidder:d.bidder||blk.bidder,
-        owner:d.owner||blk.owner, image:d.image||blk.image,
-        url:d.url||blk.url, title:d.title||blk.title, mins:d.mins||blk.mins
-      });
-      if(blk.image && !blk._imgObj){
-        const img=new Image();img.onload=()=>{blk._imgObj=img;ndraw=true;};img.src=blk.image;
+      // Preserve endsAt as ms timestamp
+      let endsAtMs = blk.endsAt||null;
+      if(d.endsAt){
+        endsAtMs = d.endsAt?.toMillis ? d.endsAt.toMillis() : (typeof d.endsAt==='number'?d.endsAt:d.endsAt?.seconds?d.endsAt.seconds*1000:null);
       }
+      Object.assign(blk, {
+        status:d.status||blk.status,
+        bid:d.bid||blk.bid,
+        bids:d.bids||blk.bids,
+        bidder:d.bidder||blk.bidder,
+        owner:d.owner||blk.owner,
+        image:d.image!==undefined?d.image:blk.image,
+        url:d.url!==undefined?d.url:blk.url,
+        title:d.title!==undefined?d.title:blk.title,
+        mins:d.mins||blk.mins,
+        endsAt:endsAtMs
+      });
+      // Load image without crossOrigin (Firebase Storage is public)
+      if(blk.image && !blk._imgObj){
+        const img=new Image();
+        img.onload=()=>{blk._imgObj=img;ndraw=true;mmDirty=true;};
+        img.onerror=()=>{blk._imgObj=null;};
+        img.src=blk.image+'?t='+Date.now();
+      }
+      if(!blk.image) blk._imgObj=null;
       if(blk.status!=='available' && wasAvail) addFeed(blk.bidder||blk.owner||'?',blk.bid,blk.id,blk.size,true);
-      if(blk.status==='sold' && blk.owner===loggedIn){ tryMergeWithChoice(blk.id); openPxEdit(blk.id); }
-      ndraw=true;
+      ndraw=true;mmDirty=true;
     });
   });
 }
@@ -2029,10 +2118,25 @@ window._fbPlaceBid = async function() {
   }
 };
 
+// ── IMAGE COMPRESS HELPER ────────────────────────────────
+function compressImage(dataUrl, maxDim=300, quality=0.75){
+  return new Promise((resolve)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const scale=Math.min(1, maxDim/Math.max(img.width,img.height));
+      const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(c.toDataURL('image/jpeg',quality));
+    };
+    img.onerror=()=>resolve(dataUrl); // fallback to original on error
+    img.src=dataUrl;
+  });
+}
+
 // ── SAVE PIXEL EDIT (Firebase Storage + Firestore) ────────
 window._fbSavePxEdit = async function() {
   if(pxEditId===null||!window._fbUid) return;
-  // Resolve block: pxEditId may be any cell within a multi-cell block
   const cell=cellMap.get(pxEditId);
   const blk=blkMap.get(cell?cell.bId:pxEditId);
   if(!blk){ alert('Block not found. Please close and try again.'); return; }
@@ -2042,33 +2146,43 @@ window._fbSavePxEdit = async function() {
   if(url){try{const u=new URL(url);if(['http:','https:'].includes(u.protocol))safeUrl=url;}catch(e){}}
   const btn=document.querySelector('.pxedit-submit');
   if(btn){btn.textContent='⏳ Saving...';btn.disabled=true;}
-  let imageUrl=pxEditImgData;
-  // Upload to Firebase Storage only if it's a new local data URL
+
+  let imageUrl=pxEditImgData; // may be existing https:// URL or new data: URL
+
+  // Only re-upload if it's a new local data URL
   if(pxEditImgData&&pxEditImgData.startsWith('data:')){
     try{
-      const res=await fetch(pxEditImgData);
+      if(btn)btn.textContent='⏳ Compressing...';
+      // Compress to max 300px JPEG — keeps upload under ~30KB
+      const compressed=await compressImage(pxEditImgData, 300, 0.75);
+      if(btn)btn.textContent='⏳ Uploading...';
+      const res=await fetch(compressed);
       const blob=await res.blob();
       const fileRef=sRef(storage,'pixels/'+window._fbUid+'/'+blk.id+'.jpg');
-      await uploadBytes(fileRef,blob);
-      imageUrl=await getDownloadURL(fileRef);
+      // 15-second upload timeout
+      const uploadPromise=uploadBytes(fileRef,blob).then(()=>getDownloadURL(fileRef));
+      const timeoutPromise=new Promise((_,rej)=>setTimeout(()=>rej(new Error('Upload timed out')),15000));
+      imageUrl=await Promise.race([uploadPromise, timeoutPromise]);
     }catch(e){
-      console.warn('Image upload failed, saving without image:',e);
-      imageUrl=null; // Don't block save on image upload failure
+      console.warn('Image upload failed, saving without image:',e.message);
+      imageUrl=null;
     }
   }
+
   try{
+    if(btn)btn.textContent='⏳ Saving...';
     const docId=String(blk.id).padStart(6,'0');
     await setDoc(doc(db,'blocks',docId),{
       id:blk.id,owner:loggedIn,uid:window._fbUid,
       image:imageUrl||null,url:safeUrl,title:title||'',status:'sold'
     },{merge:true});
-    blk.image=imageUrl||null;blk.url=safeUrl;blk.title=title||'';
+    blk.image=imageUrl||null;blk.url=safeUrl;blk.title=title||'';blk.status='sold';
     if(blk.image){
       const img=new Image();
-      img.crossOrigin='anonymous';
-      img.onload=()=>{blk._imgObj=img;ndraw=true;};
+      // No crossOrigin — Firebase Storage URLs are public and don't need it for display
+      img.onload=()=>{blk._imgObj=img;ndraw=true;mmDirty=true;};
       img.onerror=()=>{blk._imgObj=null;ndraw=true;};
-      img.src=blk.image;
+      img.src=blk.image+'?t='+Date.now(); // cache-bust
     } else {
       blk._imgObj=null;
     }
