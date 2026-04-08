@@ -639,10 +639,24 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
         <div class="payn" id="payn">🔒 Card authorized only — charged if you win. Released if outbid.</div>
         <div class="payn" style="color:#CC0000;margin-top:3px;">⚠ Real payments require backend: POST /api/bids with Stripe/PayPal integration.</div>
         <div id="mo-admin-row" style="display:none;margin-top:10px;padding-top:10px;border-top:2px solid #FFD700;">
-          <button onclick="adminClaimCurrent()" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#CC6600;color:white;border-top:2px solid #FFD700;border-left:2px solid #FFD700;border-right:2px solid #884400;border-bottom:2px solid #884400;cursor:pointer;width:100%;">⚡ ADMIN: CLAIM THIS PIXEL FREE</button>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button onclick="adminClaimCurrent()" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#CC6600;color:white;border-top:2px solid #FFD700;border-left:2px solid #FFD700;border-right:2px solid #884400;border-bottom:2px solid #884400;cursor:pointer;flex:1;">⚡ ADMIN CLAIM FREE</button>
+          <button onclick="adminUnclaimCurrent()" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#CC0000;color:white;border-top:2px solid #FF4444;border-left:2px solid #FF4444;border-right:2px solid #880000;border-bottom:2px solid #880000;cursor:pointer;flex:1;">🗑 ADMIN UNCLAIM</button>
+          </div>
         </div>
       </div>
       <div style="margin-top:12px;"><div class="sechd">BID HISTORY</div><div id="bhlist"><div style="padding:8px;color:#888;font-family:'VT323',monospace;font-size:15px;">No bids yet — be the first! 🚀</div></div></div>
+      <!-- SOLD PIXEL VIEW -->
+      <div id="mo-sold-view" style="display:none;">
+        <div class="sechd">✅ PIXEL SOLD — OWNER INFO</div>
+        <div style="background:#DFFFDF;border:2px solid #008000;padding:12px;margin-bottom:10px;font-family:'VT323',monospace;font-size:16px;">
+          <div style="margin-bottom:6px;"><span style="color:#555;">Owner: </span><span id="mo-sold-owner" style="color:#000080;font-weight:bold;">—</span></div>
+          <div style="margin-bottom:6px;"><span style="color:#555;">Title: </span><span id="mo-sold-title" style="color:#333;">—</span></div>
+          <div style="margin-bottom:6px;"><span style="color:#555;">Link: </span><a id="mo-sold-url" href="#" target="_blank" rel="noopener noreferrer" style="color:#0000EE;text-decoration:underline;word-break:break-all;"></a></div>
+        </div>
+        <img id="mo-sold-img" src="" alt="Pixel image" style="display:none;max-width:100%;max-height:160px;object-fit:contain;border:2px solid #CCC;margin-bottom:8px;">
+        <div style="font-family:'VT323',monospace;font-size:15px;color:#888;">This pixel has been claimed and is no longer available for auction.</div>
+      </div>
     </div>
   </div>
 </div>
@@ -725,31 +739,16 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 const G=1000,TOTAL=1000000;
 const canvas=document.getElementById('gc'),ctx=canvas.getContext('2d');
 const mmc=document.getElementById('mmc'),mmx=mmc.getContext('2d');
-let CELL=8,zi=2;const ZL=[3,5,8,12,18],ZN=['0.4×','0.6×','1×','1.5×','2×'];
+let CELL=8,zi=3;const ZL=[2,3,5,8,12,18,40],ZN=['0.25×','0.4×','0.6×','1×','1.5×','2×','5×'];
 const sc={x:0,y:0};let drag=false,dS={x:0,y:0},sS={x:0,y:0},ndraw=true;
+function markDirty(withMinimap=false){ndraw=true;if(withMinimap)mmDirty=true;}
 let loggedIn=null;
 let isAdmin=false;
 const ADMIN_EMAIL='luckyansh.t@gmail.com';
 const cellMap=new Map(),blkMap=new Map();
 let visCount=1,totalBids=0,soldCount=0;
 
-const rng=((s)=>{let n=s;return()=>{n=(n*1664525+1013904223)&0xFFFFFFFF;return(n>>>0)/0xFFFFFFFF;}})(0xABCD1234);
-
-function genLayout(){
-  const occ=new Uint8Array(TOTAL);
-  function place(r,c,sz){
-    for(let dr=0;dr<sz;dr++)for(let dc=0;dc<sz;dc++)if(occ[(r+dr)*G+(c+dc)])return false;
-    for(let dr=0;dr<sz;dr++)for(let dc=0;dc<sz;dc++)occ[(r+dr)*G+(c+dc)]=1;
-    const id=r*G+c;
-    blkMap.set(id,{id,row:r,col:c,size:sz,status:'available',bid:0,bids:0,mins:1440,bidder:null,owner:null,image:null,url:null});
-    for(let dr=0;dr<sz;dr++)for(let dc=0;dc<sz;dc++)cellMap.set((r+dr)*G+(c+dc),{bId:id,sz});
-    return true;
-  }
-  place(0,1,2);place(0,67,5);place(0,75,5);place(1,0,2);
-  for(let a=0,p=0;a<5000&&p<180;a++){const c=Math.floor(rng()*(G-4)),r=Math.floor(rng()*(G-4));if(place(r,c,5))p++;}
-  for(let a=0,p=0;a<20000&&p<2000;a++){const c=Math.floor(rng()*(G-1)),r=Math.floor(rng()*(G-1));if(place(r,c,2))p++;}
-  for(let a=0,p=0;a<100000&&p<15000;a++){const c=Math.floor(rng()*G),r=Math.floor(rng()*G);const id=r*G+c;if(occ[id])continue;occ[id]=1;blkMap.set(id,{id,row:r,col:c,size:1,status:'available',bid:0,bids:0,mins:1440,bidder:null,owner:null,image:null,url:null});cellMap.set(id,{bId:id,sz:1});p++;}
-}
+// Layout generated via genLayoutChunked on window load
 
 function tryMergeBlocks(newBlockId){
   if(!loggedIn)return;
@@ -767,7 +766,7 @@ function tryMergeBlocks(newBlockId){
     blkMap.delete(newBlockId);blkMap.delete(other.id);
     const merged={id:mergedId,row:minRow,col:minCol,size:mergedSize,status:'sold',owner:loggedIn,bid:Math.max(newBlk.bid,other.bid),bids:newBlk.bids+other.bids,image:other.image||newBlk.image,url:other.url||newBlk.url,merged:true};
     for(let dr=0;dr<mergedSize;dr++)for(let dc=0;dc<mergedSize;dc++)cellMap.set((minRow+dr)*G+(minCol+dc),{bId:mergedId,sz:mergedSize});
-    blkMap.set(mergedId,merged);ndraw=true;
+    blkMap.set(mergedId,merged);ndraw=true;mmDirty=true;
     const d=document.createElement('div');
     d.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#000080;color:#FFD700;font-family:"Press Start 2P",monospace;font-size:9px;padding:12px 20px;border-top:2px solid #4444FF;border-left:2px solid #4444FF;border-right:2px solid #000044;border-bottom:2px solid #000044;z-index:9999;animation:spop 0.3s ease;white-space:nowrap;';
     d.textContent='CANVAS EXPANDED TO '+mergedSize+'x'+mergedSize+'!';
@@ -781,8 +780,8 @@ function blocksAdjacent(a,b){
 }
 
 function handleWS(d){
-  if(d.type==='bid'){const blk=blkMap.get(d.blockId);if(blk){blk.bid=d.amount;blk.bids++;blk.status=d.minsLeft<120?'ending':'active';blk.bidder=d.user;blk.mins=d.minsLeft;}ndraw=true;addFeed(d.user,d.amount,d.blockId,d.size,true);totalBids++;document.getElementById('h-bids').textContent=totalBids;}
-  if(d.type==='won'){const blk=blkMap.get(d.blockId);if(blk){blk.status='sold';blk.owner=d.user;}ndraw=true;soldCount++;updStats();
+  if(d.type==='bid'){const blk=blkMap.get(d.blockId);if(blk){blk.bid=d.amount;blk.bids++;blk.status=d.minsLeft<120?'ending':'active';blk.bidder=d.user;blk.mins=d.minsLeft;}ndraw=true;mmDirty=true;addFeed(d.user,d.amount,d.blockId,d.size,true);totalBids++;document.getElementById('h-bids').textContent=totalBids;}
+  if(d.type==='won'){const blk=blkMap.get(d.blockId);if(blk){blk.status='sold';blk.owner=d.user;}ndraw=true;mmDirty=true;soldCount++;updStats();
     if(d.user===loggedIn){tryMergeWithChoice(d.blockId);openPxEdit(d.blockId);}}
   if(d.type==='online'){document.getElementById('h-on').textContent=d.count;visCount=Math.max(visCount,d.count);}
   if(d.type==='blimp')spawnBlimp();
@@ -820,21 +819,22 @@ function blkCol(blk){
 // ── Draw helper that handles retro gradients & images ──────
 function drawBlockWithRetro(blk,bx,by,bw){
   const col=blkCol(blk);
+  const gap=CELL>=5?1:0; // no gap at tiny zoom levels
   if(blk.status==='sold'&&!blk.image){
     const p=RETRO_PALETTES[blk.id%RETRO_PALETTES.length];
     const grad=ctx.createLinearGradient(bx,by,bx+bw,by+bw);
     grad.addColorStop(0,p[0]+'99');grad.addColorStop(1,p[1]+'99');
-    ctx.fillStyle=grad;ctx.fillRect(bx+1,by+1,bw-2,bw-2);
-    ctx.strokeStyle=p[0];ctx.lineWidth=col.lw||1;ctx.strokeRect(bx+0.5,by+0.5,bw-1,bw-1);
+    ctx.fillStyle=grad;ctx.fillRect(bx+gap,by+gap,bw-gap*2,bw-gap*2);
+    ctx.strokeStyle=p[0];ctx.lineWidth=Math.max(1,col.lw||1);ctx.strokeRect(bx+0.5,by+0.5,bw-1,bw-1);
     return;
   }
   if(blk.status==='sold'&&blk.image&&blk._imgObj){
-    ctx.drawImage(blk._imgObj,bx+1,by+1,bw-2,bw-2);
-    ctx.strokeStyle=col.b||'#FFD700';ctx.lineWidth=2;ctx.strokeRect(bx+0.5,by+0.5,bw-1,bw-1);
+    ctx.drawImage(blk._imgObj,bx+gap,by+gap,bw-gap*2,bw-gap*2);
+    ctx.strokeStyle=col.b||'#FFD700';ctx.lineWidth=Math.max(1,2);ctx.strokeRect(bx+0.5,by+0.5,bw-1,bw-1);
     return;
   }
-  ctx.fillStyle=col.f;ctx.fillRect(bx+1,by+1,bw-2,bw-2);
-  ctx.strokeStyle=col.b;ctx.lineWidth=col.lw||1;ctx.strokeRect(bx+0.5,by+0.5,bw-1,bw-1);
+  ctx.fillStyle=col.f;ctx.fillRect(bx+gap,by+gap,bw-gap*2,bw-gap*2);
+  ctx.strokeStyle=col.b;ctx.lineWidth=Math.max(1,col.lw||1);ctx.strokeRect(bx+0.5,by+0.5,bw-1,bw-1);
 }
 
 // ── RETRO PALETTES ─────────────────────────────────────────
@@ -847,43 +847,101 @@ function retroGradient(id){const p=RETRO_PALETTES[id%RETRO_PALETTES.length];retu
 const RETRO_EMOJIS=['👾','🌈','💾','🕹️','⚡','🔮','🎮','💿','🌀','🎲'];
 function retroEmoji(id){return RETRO_EMOJIS[id%RETRO_EMOJIS.length];}
 
+// ── MINIMAP CACHE ───────────────────────────────────────────
+// Pre-render the minimap once to an offscreen canvas; only redraw when blocks change
+const mmOff=document.createElement('canvas');mmOff.width=100;mmOff.height=100;
+const mmOx=mmOff.getContext('2d');
+let mmDirty=true; // set true whenever a block status changes
+function rebuildMinimap(){
+  mmDirty=false;
+  const mscale=100/G;
+  mmOx.fillStyle='#FFFFFF';mmOx.fillRect(0,0,100,100);
+  for(const [,blk] of blkMap){
+    const bc=blkCol(blk);
+    mmOx.fillStyle=bc.b; // use border color for visibility
+    mmOx.fillRect(blk.col*mscale,blk.row*mscale,Math.max(1,blk.size*mscale),Math.max(1,blk.size*mscale));
+  }
+}
+
 // ── MAIN DRAW LOOP ─────────────────────────────────────────
+// Batch same-color fills to minimize ctx state changes
 function drawGrid(){
   if(!ndraw)return;ndraw=false;
-  const cs=CELL,ox=sc.x,oy=sc.y,sc2=Math.floor(ox/cs),sr=Math.floor(oy/cs);
-  const ec=Math.min(G,sc2+Math.ceil(canvas.width/cs)+2),er=Math.min(G,sr+Math.ceil(canvas.height/cs)+2);
+  const cs=CELL,ox=sc.x,oy=sc.y;
+  const sc2=Math.max(0,Math.floor(ox/cs)),sr=Math.max(0,Math.floor(oy/cs));
+  const ec=Math.min(G,sc2+Math.ceil(canvas.width/cs)+2);
+  const er=Math.min(G,sr+Math.ceil(canvas.height/cs)+2);
+
   ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  const gap=cs>=5?1:0;
+
+  // --- Pass 1: batch-draw all plain available 1×1 cells in one fillRect pass ---
+  ctx.fillStyle='#F0F0F0';
+  for(let r=sr;r<er;r++){
+    for(let c=sc2;c<ec;c++){
+      const id=r*G+c;
+      const cell=cellMap.get(id);
+      if(cell){if(cell.sz===1){const blk=blkMap.get(cell.bId);if(blk&&blk.status==='available'){const x=Math.floor(c*cs-ox),y=Math.floor(r*cs-oy);ctx.fillRect(x+gap,y+gap,cs-gap*2,cs-gap*2);}}}
+      else{const x=Math.floor(c*cs-ox),y=Math.floor(r*cs-oy);ctx.fillRect(x+gap,y+gap,cs-gap*2,cs-gap*2);}
+    }
+  }
+  // Stroke all available 1×1 cells
+  if(cs>=4){
+    ctx.strokeStyle='#CCCCCC';ctx.lineWidth=1;
+    for(let r=sr;r<er;r++){
+      for(let c=sc2;c<ec;c++){
+        const id=r*G+c;
+        const cell=cellMap.get(id);
+        const isAvail1=cell?cell.sz===1&&blkMap.get(cell.bId)?.status==='available':true;
+        if(isAvail1){const x=Math.floor(c*cs-ox),y=Math.floor(r*cs-oy);ctx.strokeRect(x+0.5,y+0.5,cs-1,cs-1);}
+      }
+    }
+  }
+
+  // --- Pass 2: draw special blocks (multi-cell, active, ending, sold) ---
+  // Collect unique special blocks visible in viewport
   const drawn=new Set();
-  for(let r=sr;r<er;r++)for(let c=sc2;c<ec;c++){
-    const id=r*G+c,cell=cellMap.get(id);
-    if(cell){
+  for(let r=sr;r<er;r++){
+    for(let c=sc2;c<ec;c++){
+      const id=r*G+c;
+      const cell=cellMap.get(id);
+      if(!cell)continue;
       const blk=blkMap.get(cell.bId);
-      if(cell.bId!==id||drawn.has(cell.bId))continue;
+      if(!blk)continue;
+      // Skip plain available 1×1 (already drawn in pass 1)
+      if(blk.size===1&&blk.status==='available')continue;
+      if(drawn.has(cell.bId))continue;
       drawn.add(cell.bId);
       const bx=Math.floor(blk.col*cs-ox),by=Math.floor(blk.row*cs-oy),bw=blk.size*cs;
       drawBlockWithRetro(blk,bx,by,bw);
-    } else {
-      // ── FIX: unregistered cells rendered identically to 1×1 available blocks ──
-      const x=Math.floor(c*cs-ox),y=Math.floor(r*cs-oy);
-      ctx.fillStyle='#F0F0F0';
-      ctx.fillRect(x+1,y+1,cs-2,cs-2);
-      ctx.strokeStyle='#BBBBBB';
-      ctx.lineWidth=1;
-      ctx.strokeRect(x+0.5,y+0.5,cs-1,cs-1);
     }
   }
+
   // Highlight
   if(hlCell){const hx=hlCell.col*CELL-sc.x,hy=hlCell.row*CELL-sc.y,hsz=(hlCell.size||1)*CELL;ctx.save();ctx.strokeStyle=`rgba(255,220,0,${hlAlpha})`;ctx.lineWidth=3;ctx.shadowColor='rgba(255,220,0,0.9)';ctx.shadowBlur=16;ctx.strokeRect(hx+2,hy+2,hsz-4,hsz-4);ctx.fillStyle=`rgba(255,220,0,${hlAlpha*0.15})`;ctx.fillRect(hx+2,hy+2,hsz-4,hsz-4);ctx.restore();hlAlpha+=hlDir*0.035;if(hlAlpha<=0){if(hlDir<0){hlDir=1;hlAlpha=0;}else{hlCell=null;}}else if(hlAlpha>=1){hlDir=-1;}ndraw=true;}
-  // Minimap
-  const mscale=100/G;mmx.fillStyle='#FFFFFF';mmx.fillRect(0,0,100,100);
-  for(const [id,blk] of blkMap){
-    const bc=blkCol(blk);mmx.fillStyle=bc.f;mmx.fillRect(blk.col*mscale,blk.row*mscale,Math.max(1,blk.size*mscale),Math.max(1,blk.size*mscale));
-  }
-  const vx=sc.x/G/CELL*100,vy=sc.y/G/CELL*100,vw=canvas.width/G/CELL*100,vh2=canvas.height/G/CELL*100;
-  const mv=document.getElementById('mmv');if(mv){mv.style.left=vx+'px';mv.style.top=vy+'px';mv.style.width=Math.min(100,vw)+'px';mv.style.height=Math.min(100,vh2)+'px';}
+
+  // Minimap — blit from cache, only rebuild when dirty
+  if(mmDirty)rebuildMinimap();
+  mmx.drawImage(mmOff,0,0);
+  const vx=(sc.x/(G*CELL))*100,vy=(sc.y/(G*CELL))*100;
+  const vw=(canvas.width/(G*CELL))*100,vh2=(canvas.height/(G*CELL))*100;
+  const mv=document.getElementById('mmv');
+  if(mv){mv.style.left=Math.max(0,vx)+'px';mv.style.top=Math.max(0,vy)+'px';mv.style.width=Math.min(100,vw)+'px';mv.style.height=Math.min(100,vh2)+'px';}
+
+  // Status bar block count
+  const visBlocks=drawn.size;
+  document.getElementById('sb-status').textContent=`${visBlocks} blocks visible`;
 }
 
-let lastR=0;function loop(ts){if(ts-lastR>16){lastR=ts;drawGrid();}requestAnimationFrame(loop);}
+let lastR=0;
+// Detect low-end device: limit to 30fps if memory < 4GB or hardware concurrency <= 2
+const targetFPS = (navigator.hardwareConcurrency<=2||(navigator.deviceMemory&&navigator.deviceMemory<4)) ? 30 : 60;
+const frameBudget = 1000/targetFPS;
+function loop(ts){
+  if(ts-lastR>=frameBudget){lastR=ts;drawGrid();}
+  requestAnimationFrame(loop);
+}
 
 function hitCell(mx,my){const col=Math.floor((mx+sc.x)/CELL),row=Math.floor((my+sc.y)/CELL);if(col<0||col>=G||row<0||row>=G)return null;return{col,row,id:row*G+col};}
 let ttt;
@@ -893,7 +951,15 @@ canvas.addEventListener('mousemove',e=>{
   if(mouseIsDown&&Math.sqrt((e.clientX-dS.x)**2+(e.clientY-dS.y)**2)>4)drag=true;
   if(drag){sc.x=sS.x+(dS.x-e.clientX);sc.y=sS.y+(dS.y-e.clientY);clampSc();ndraw=true;hideTT();return;}
   const h=hitCell(mx,my);if(!h){hideTT();return;}
-  document.getElementById('sb-cell').textContent=`Cell: #${h.id} (${h.col},${h.row})`;
+  // Resolve to parent block if this cell belongs to a multi-cell block
+  const hCell=cellMap.get(h.id);
+  const hBlk=hCell?blkMap.get(hCell.bId):null;
+  const dispId=hBlk?hBlk.id:h.id;
+  const dispCol=hBlk?hBlk.col:h.col;
+  const dispRow=hBlk?hBlk.row:h.row;
+  const dispSz=hBlk?hBlk.size:1;
+  const szLabel=dispSz>=5?'[5×5]':dispSz>=2?'[2×2]':'';
+  document.getElementById('sb-cell').textContent=`${szLabel} #${String(dispId).padStart(6,'0')} (${dispCol},${dispRow})`;
   clearTimeout(ttt);ttt=setTimeout(()=>showTT(h,e.clientX,e.clientY),70);
 });
 canvas.addEventListener('mousedown',e=>{
@@ -914,7 +980,10 @@ canvas.addEventListener('wheel',e=>{e.preventDefault();sc.x+=e.deltaX*2;sc.y+=e.
 
 function showTT(h,cx,cy){
   const cell=cellMap.get(h.id),tt=document.getElementById('tt');
-  document.getElementById('tthd').textContent=`GRID #${String(h.id).padStart(6,'0')}`;
+  const blk=cell?blkMap.get(cell.bId):null;
+  // Always show the canonical block ID in the tooltip header
+  const dispId=blk?blk.id:h.id;
+  document.getElementById('tthd').textContent=`GRID #${String(dispId).padStart(6,'0')}`;
   if(!cell){document.getElementById('tt-sz').textContent='1×1 BASIC';document.getElementById('tt-bid').textContent='No bids';document.getElementById('tt-bids').textContent='0';document.getElementById('tt-tm').textContent='24h on first bid';document.getElementById('tt-st').textContent='AVAILABLE';document.getElementById('tt-st').style.color='#008000';
     const pRow=document.getElementById('tt-price-row');if(pRow)pRow.style.display='none';
     const oRow=document.getElementById('tt-owner-row');if(oRow)oRow.style.display='none';}
@@ -938,7 +1007,7 @@ function gotoCell(){
   const cell=cellMap.get(v);
   const blk=cell?blkMap.get(cell.bId):null;
   const sz=blk?blk.size:1;
-  const targetZi=sz>=5?1:sz>=2?2:3;
+  const targetZi=sz>=5?2:sz>=2?3:4;
   if(zi!==targetZi){const p=CELL;zi=targetZi;CELL=ZL[zi];document.getElementById('zlbl').textContent=ZN[zi];document.getElementById('sb-zoom').textContent='Zoom: '+ZN[zi];}
   const bCol=blk?blk.col:col,bRow=blk?blk.row:row;
   sc.x=bCol*CELL+(sz*CELL/2)-canvas.width/2;sc.y=bRow*CELL+(sz*CELL/2)-canvas.height/2;
@@ -947,19 +1016,56 @@ function gotoCell(){
 
 let curMO=null;
 function openMO(id){
-  curMO=id;const cell=cellMap.get(id),blk=cell?blkMap.get(cell.bId):null;
+  // Always resolve to the block's top-left id
+  const cell=cellMap.get(id),blk=cell?blkMap.get(cell.bId):null;
+  const resolvedId=blk?blk.id:id;
+  curMO=resolvedId;
   const sz=blk?blk.size:1,sp=sz===5?20:sz===2?5:1,minB=blk&&blk.bid?blk.bid+1:sp;
-  document.getElementById('motit').textContent=`AUCTION — GRID #${String(id).padStart(6,'0')}`;
-  document.getElementById('m-id').textContent='#'+String(id).padStart(6,'0');
+  const isSold=blk&&blk.status==='sold';
+
+  document.getElementById('motit').textContent=(isSold?'PIXEL — ':'AUCTION — ')+`GRID #${String(resolvedId).padStart(6,'0')}`;
+  document.getElementById('m-id').textContent='#'+String(resolvedId).padStart(6,'0');
   document.getElementById('m-sz').textContent=sz===5?'5×5 PREMIUM':sz===2?'2×2 STANDARD':'1×1 BASIC';
   document.getElementById('m-bid').textContent=blk&&blk.bid?'$'+blk.bid:'No bids';
   document.getElementById('m-min').textContent='$'+minB;
   document.getElementById('bidinp').value=minB;document.getElementById('bidinp').min=minB;
+
   const tmr=document.getElementById('motmr');
-  if(blk&&blk.status==='sold'){tmr.textContent='-- AUCTION ENDED --';tmr.style.color='#FF4444';}else{const h=Math.floor((blk?blk.mins:1440)/60),m=(blk?blk.mins:1440)%60;tmr.textContent=`00 : ${String(h).padStart(2,'0')} : ${String(m).padStart(2,'0')} : 00`;tmr.style.color=(blk&&blk.status==='ending')?'#FF4444':'#00FF00';}
+  if(isSold){
+    tmr.textContent='-- AUCTION ENDED --';tmr.style.color='#FF4444';
+  } else {
+    const h=Math.floor((blk?blk.mins:1440)/60),m=(blk?blk.mins:1440)%60;
+    tmr.textContent=`00 : ${String(h).padStart(2,'0')} : ${String(m).padStart(2,'0')} : 00`;
+    tmr.style.color=(blk&&blk.status==='ending')?'#FF4444':'#00FF00';
+  }
+
   document.getElementById('bhlist').innerHTML='<div style="padding:8px;color:#888;font-family:VT323,monospace;font-size:15px;">No bids yet — be the first! Starting at $'+minB+'</div>';
-  const gate=document.getElementById('mo-gate'),bsec=document.getElementById('mo-bid-sec');
-  if(loggedIn){gate.style.display='none';bsec.style.display='block';}else{gate.style.display='block';bsec.style.display='none';}
+
+  const gate=document.getElementById('mo-gate');
+  const bsec=document.getElementById('mo-bid-sec');
+  const soldView=document.getElementById('mo-sold-view');
+
+  if(isSold){
+    // Show sold pixel info — everyone can see it
+    gate.style.display='none';
+    bsec.style.display='none';
+    if(soldView){
+      soldView.style.display='block';
+      const ownerEl=soldView.querySelector('#mo-sold-owner');
+      const titleEl=soldView.querySelector('#mo-sold-title');
+      const urlEl=soldView.querySelector('#mo-sold-url');
+      const imgEl=soldView.querySelector('#mo-sold-img');
+      if(ownerEl)ownerEl.textContent=blk.owner||'Unknown';
+      if(titleEl)titleEl.textContent=blk.title||'No title set';
+      if(urlEl){if(blk.url){urlEl.href=blk.url;urlEl.textContent=blk.url;urlEl.style.display='';}else{urlEl.style.display='none';}}
+      if(imgEl){if(blk.image){imgEl.src=blk.image;imgEl.style.display='block';}else{imgEl.style.display='none';}}
+    }
+  } else {
+    if(soldView)soldView.style.display='none';
+    if(loggedIn){gate.style.display='none';bsec.style.display='block';}
+    else{gate.style.display='block';bsec.style.display='none';}
+  }
+
   document.getElementById('bidok').style.display='none';
   const adminRow=document.getElementById('mo-admin-row');
   if(adminRow)adminRow.style.display=isAdmin?'block':'none';
@@ -1180,9 +1286,27 @@ function showSec(name){
   sv.style.display='block';sv.innerHTML='';
   if(name==='mypixels'){showMyPixels();return;}
   if(name==='admin'){if(isAdmin)showAdminPanel();return;}
-  if(name==='auctions'){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🔨 ACTIVE AUCTIONS</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No active auctions yet. Click any square on the grid to start bidding!</div>`;}
-  else if(name==='ending'){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#CC0000;margin-bottom:12px;">⏰ ENDING SOON</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No ending auctions. Check back once bidding starts!</div>`;}
-  else if(name==='leaderboard'){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🏆 LEADERBOARD</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No winners yet. Be the first to win a pixel auction!<br><br>The leaderboard fills as pixels are sold. Win pixels → earn your place here!</div>`;}
+  if(name==='auctions'){
+    const active=[...blkMap.values()].filter(b=>b.status==='active'||b.status==='ending').sort((a,b2)=>b2.bid-a.bid);
+    if(!active.length){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🔨 ACTIVE AUCTIONS</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No active auctions yet. Click any square on the grid to start bidding!</div>`;return;}
+    let rows=active.map(b=>{const sn=b.size===5?'5×5 PREMIUM':b.size===2?'2×2 STANDARD':'1×1 BASIC';const h=Math.floor(b.mins/60),m=b.mins%60;return`<tr onclick="jumpToPixel(${b.id})" style="cursor:pointer;"><td style="padding:4px 8px;">#${String(b.id).padStart(6,'0')}</td><td style="padding:4px 8px;">${sn}</td><td style="padding:4px 8px;color:#008000;font-weight:bold;">$${b.bid}</td><td style="padding:4px 8px;color:#555;">${b.bidder||'—'}</td><td style="padding:4px 8px;color:${b.status==='ending'?'#CC0000':'#000080'}">${h}h ${m}m</td></tr>`;}).join('');
+    sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🔨 ACTIVE AUCTIONS (${active.length})</div><table class="at"><thead><tr><th>GRID ID</th><th>SIZE</th><th>TOP BID</th><th>BIDDER</th><th>TIME LEFT</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+  else if(name==='ending'){
+    const ending=[...blkMap.values()].filter(b=>b.status==='ending'||(b.status==='active'&&b.mins<120)).sort((a,b2)=>a.mins-b2.mins);
+    if(!ending.length){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#CC0000;margin-bottom:12px;">⏰ ENDING SOON</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No auctions ending soon. Check back once bidding starts!</div>`;return;}
+    let rows=ending.map(b=>{const sn=b.size===5?'5×5':b.size===2?'2×2':'1×1';const h=Math.floor(b.mins/60),m=b.mins%60;return`<tr onclick="jumpToPixel(${b.id})" style="cursor:pointer;"><td style="padding:4px 8px;">#${String(b.id).padStart(6,'0')}</td><td style="padding:4px 8px;">${sn}</td><td style="padding:4px 8px;color:#008000;font-weight:bold;">$${b.bid}</td><td style="padding:4px 8px;color:#555;">${b.bidder||'—'}</td><td style="padding:4px 8px;color:#CC0000;font-weight:bold;">${h}h ${m}m ⚠</td></tr>`;}).join('');
+    sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#CC0000;margin-bottom:12px;">⏰ ENDING SOON (${ending.length})</div><table class="at"><thead><tr><th>GRID ID</th><th>SIZE</th><th>TOP BID</th><th>BIDDER</th><th>TIME LEFT</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+  else if(name==='leaderboard'){
+    const sold=[...blkMap.values()].filter(b=>b.status==='sold'&&b.owner);
+    const byOwner=new Map();
+    sold.forEach(b=>{const e=byOwner.get(b.owner)||{user:b.owner,pixels:0,spent:0};e.pixels++;e.spent+=b.bid||0;byOwner.set(b.owner,e);});
+    const lb=[...byOwner.values()].sort((a,b2)=>b2.spent-a.spent).slice(0,50);
+    if(!lb.length){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🏆 LEADERBOARD</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No winners yet. Be the first to win a pixel auction!<br><br>The leaderboard fills as pixels are sold.</div>`;return;}
+    let rows=lb.map((e,i)=>`<tr class="${i===0?'lb-r1':''}"><td style="padding:3px 8px;">#${i+1}</td><td style="padding:3px 8px;color:#000080;font-weight:bold;">${e.user}</td><td style="padding:3px 8px;">${e.pixels}</td><td style="padding:3px 8px;color:#008000;font-weight:bold;">$${e.spent}</td></tr>`).join('');
+    sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🏆 LEADERBOARD — TOP PIXEL OWNERS</div><table class="lb-t"><thead><tr><th>#</th><th>USER</th><th>PIXELS</th><th>TOTAL SPENT</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
   else if(name==='badges'){
     // Admin sees real hints, users see ??? 
     const BDEFS=[
@@ -1284,14 +1408,16 @@ function showAdminPanel(){
 
     <!-- FREE PURCHASE -->
     <div style="background:white;border-top:2px solid #DDD;border-left:2px solid #DDD;border-right:2px solid #888;border-bottom:2px solid #888;padding:14px;">
-      <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#008000;margin-bottom:10px;border-bottom:2px solid #008000;padding-bottom:6px;">💰 FREE PURCHASE</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#008000;margin-bottom:10px;border-bottom:2px solid #008000;padding-bottom:6px;">💰 FREE PURCHASE / UNCLAIM</div>
       <div style="font-family:'VT323',monospace;font-size:16px;color:#333;margin-bottom:8px;">Instantly claim any pixel block for free (marks as sold, sets you as owner):</div>
-      <div style="display:flex;gap:7px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+      <div style="display:flex;gap:7px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
         <span style="font-size:12px;">Block ID:</span>
         <input type="number" id="adm-buy-id" placeholder="e.g. 0" style="width:90px;padding:4px 6px;font-family:'Share Tech Mono',monospace;font-size:13px;border-top:2px solid #888;border-left:2px solid #888;border-right:2px solid #DDD;border-bottom:2px solid #DDD;">
         <button onclick="adminFreePurchase()" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 10px;background:#008000;color:white;border:none;cursor:pointer;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;">CLAIM FREE</button>
+        <button onclick="adminUnclaim()" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 10px;background:#CC0000;color:white;border:none;cursor:pointer;border-top:2px solid #FF4444;border-left:2px solid #FF4444;border-right:2px solid #880000;border-bottom:2px solid #880000;">UNCLAIM</button>
       </div>
-      <div style="font-family:'VT323',monospace;font-size:15px;color:#555;margin-bottom:6px;">Or click any block on the grid and use the <b>Admin Claim</b> button in the auction modal.</div>
+      <div style="font-family:'VT323',monospace;font-size:15px;color:#555;margin-bottom:6px;">Unclaim resets block to <b>available</b> status, clearing owner/image/url/bid.</div>
+      <div style="font-family:'VT323',monospace;font-size:15px;color:#555;margin-bottom:6px;">Or click any block on the grid and use the <b>Admin Claim / Unclaim</b> buttons in the auction modal.</div>
       <div id="adm-buy-msg" style="font-family:'VT323',monospace;font-size:15px;color:#008000;min-height:18px;"></div>
     </div>
 
@@ -1357,7 +1483,7 @@ function adminFreePurchase(idOverride){
   if(isNaN(raw)||raw<0||raw>=TOTAL){if(msg){msg.textContent='⚠ Invalid block ID';msg.style.color='#CC0000';}return;}
   const cell=cellMap.get(raw),blk=cell?blkMap.get(cell.bId):blkMap.get(raw);
   if(!blk){if(msg){msg.textContent='⚠ Block not found';msg.style.color='#CC0000';}return;}
-  blk.status='sold';blk.owner=loggedIn;blk.bid=blk.bid||1;ndraw=true;
+  blk.status='sold';blk.owner=loggedIn;blk.bid=blk.bid||1;ndraw=true;mmDirty=true;
   soldCount++;updStats();
   if(window._fbAdminClaim){window._fbAdminClaim(blk.id,loggedIn,window._fbUid);}
   if(msg){msg.textContent=`✓ Claimed Block #${String(blk.id).padStart(6,'0')} for free!`;msg.style.color='#008000';setTimeout(()=>{if(msg)msg.textContent='';},3000);}
@@ -1380,6 +1506,27 @@ function adminClaimCurrent(){
   adminFreePurchase(curMO);
   closeMO();
   openPxEdit(curMO);
+}
+function adminUnclaim(idOverride){
+  if(!isAdmin)return;
+  const raw=idOverride!==undefined?idOverride:parseInt(document.getElementById('adm-buy-id')?.value);
+  const msg=document.getElementById('adm-buy-msg');
+  if(isNaN(raw)||raw<0||raw>=TOTAL){if(msg){msg.textContent='⚠ Invalid block ID';msg.style.color='#CC0000';}return;}
+  const cell=cellMap.get(raw),blk=cell?blkMap.get(cell.bId):blkMap.get(raw);
+  if(!blk){if(msg){msg.textContent='⚠ Block not found';msg.style.color='#CC0000';}return;}
+  // Reset to original available state
+  blk.status='available';blk.owner=null;blk.bidder=null;blk.bid=0;blk.bids=0;
+  blk.image=null;blk.url=null;blk.title=null;blk._imgObj=null;blk.mins=1440;
+  ndraw=true;mmDirty=true;
+  soldCount=Math.max(0,soldCount-1);updStats();{window._fbAdminUnclaim(blk.id);}
+  if(msg){msg.textContent=`✓ Block #${String(blk.id).padStart(6,'0')} unclaimed & reset`;msg.style.color='#008000';setTimeout(()=>{if(msg)msg.textContent='';},3000);}
+  const n=document.createElement('div');n.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#CC0000;color:white;font-family:"Press Start 2P",monospace;font-size:9px;padding:10px 18px;z-index:9999;border:2px solid #FF4444;white-space:nowrap;';
+  n.textContent='🗑 ADMIN UNCLAIM: Block #'+String(blk.id).padStart(6,'0');document.body.appendChild(n);setTimeout(()=>n.remove(),2500);
+}
+function adminUnclaimCurrent(){
+  if(!isAdmin||curMO===null)return;
+  adminUnclaim(curMO);
+  closeMO();
 }
 
 // PIXEL EDIT MODAL
@@ -1442,7 +1589,63 @@ function keepSeparate(){closeExpandMo();}
 })();
 
 window.addEventListener('load',()=>{
-  genLayout();resizeC();requestAnimationFrame(loop);updateSpotlightPanel();
+  // Show loading indicator while generating layout
+  const loadMsg=document.createElement('div');
+  loadMsg.id='layout-loading';
+  loadMsg.style.cssText='position:fixed;inset:0;background:#C0C0C0;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:12px;';
+  loadMsg.innerHTML='<div style="font-family:\'Press Start 2P\',monospace;font-size:10px;color:#000080;">LOADING GRID...</div><div style="width:200px;height:12px;background:#fff;border:2px inset #888;"><div id="ll-prog" style="height:100%;background:#000080;width:0%;transition:width 0.1s;"></div></div><div id="ll-pct2" style="font-family:\'Share Tech Mono\',monospace;font-size:12px;">0%</div>';
+  document.body.appendChild(loadMsg);
+
+  // Generate layout in chunks using setTimeout to yield to browser
+  function genLayoutChunked(done){
+    const occ=new Uint8Array(TOTAL);
+    const rng2=((s)=>{let n=s;return()=>{n=(n*1664525+1013904223)&0xFFFFFFFF;return(n>>>0)/0xFFFFFFFF;}})(0xABCD1234);
+    function place(r,c,sz){
+      for(let dr=0;dr<sz;dr++)for(let dc=0;dc<sz;dc++)if(occ[(r+dr)*G+(c+dc)])return false;
+      for(let dr=0;dr<sz;dr++)for(let dc=0;dc<sz;dc++)occ[(r+dr)*G+(c+dc)]=1;
+      const id=r*G+c;
+      blkMap.set(id,{id,row:r,col:c,size:sz,status:'available',bid:0,bids:0,mins:1440,bidder:null,owner:null,image:null,url:null});
+      for(let dr=0;dr<sz;dr++)for(let dc=0;dc<sz;dc++)cellMap.set((r+dr)*G+(c+dc),{bId:id,sz});
+      return true;
+    }
+    // Phase 1: fixed + 5x5 + 2x2 (fast)
+    place(0,1,2);place(0,67,5);place(0,75,5);place(1,0,2);
+    for(let a=0,p=0;a<5000&&p<180;a++){const c=Math.floor(rng2()*(G-4)),r=Math.floor(rng2()*(G-4));if(place(r,c,5))p++;}
+    for(let a=0,p=0;a<20000&&p<2000;a++){const c=Math.floor(rng2()*(G-1)),r=Math.floor(rng2()*(G-1));if(place(r,c,2))p++;}
+    // Phase 2: fill 1x1 in row chunks - yield to browser between chunks
+    const CHUNK=100; // rows per chunk — ~100k Map.set calls, fast on all devices
+    let row=0;
+    const prog=document.getElementById('ll-prog'),pct2=document.getElementById('ll-pct2');
+    const yieldFn=typeof requestIdleCallback!=='undefined'
+      ?(cb)=>requestIdleCallback(cb,{timeout:50})
+      :(cb)=>setTimeout(cb,0);
+    function fillChunk(){
+      const end=Math.min(G,row+CHUNK);
+      for(let r=row;r<end;r++){
+        for(let c=0;c<G;c++){
+          const id=r*G+c;
+          if(occ[id])continue;
+          occ[id]=1;
+          blkMap.set(id,{id,row:r,col:c,size:1,status:'available',bid:0,bids:0,mins:1440,bidder:null,owner:null,image:null,url:null});
+          cellMap.set(id,{bId:id,sz:1});
+        }
+      }
+      row=end;
+      const pct=Math.round(row/G*100);
+      if(prog)prog.style.width=pct+'%';
+      if(pct2)pct2.textContent=pct+'%';
+      if(row<G){yieldFn(fillChunk);}
+      else{loadMsg.remove();done();}
+    }
+    yieldFn(fillChunk);
+  }
+
+  genLayoutChunked(()=>{
+    resizeC();
+    requestAnimationFrame(loop);
+    updateSpotlightPanel();
+    mmDirty=true;ndraw=true;
+  });
   window.addEventListener('resize',()=>{resizeC();ndraw=true;});
   // Auth state managed by Firebase onAuthStateChanged
   document.addEventListener('keydown',e=>{
@@ -1524,7 +1727,7 @@ import { getAuth, signInWithEmailAndPassword,
          GoogleAuthProvider, signOut, onAuthStateChanged,
          sendPasswordResetEmail, updateProfile, setPersistence,
          browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, collection,
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection,
          onSnapshot, serverTimestamp }                      from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 import { getDatabase, ref, set, onValue,
          onDisconnect, serverTimestamp as rtTs }            from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
@@ -1569,6 +1772,30 @@ function authErr(code){
 }
 
 // ── AUTH STATE ───────────────────────────────────────────
+// Track all visitors (logged in or not) via anonymous session presence
+const anonVisitorId = 'anon_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now();
+(function initAnonPresence(){
+  const connRef = ref(rtdb, '.info/connected');
+  const myRef   = ref(rtdb, 'presence/' + anonVisitorId);
+  onValue(connRef, snap => {
+    if(!snap.val()) return;
+    onDisconnect(myRef).remove();
+    set(myRef, { name: 'visitor', ts: Date.now(), anon: true });
+  });
+  // Update vis counter for everyone
+  onValue(ref(rtdb,'presence'), snap => {
+    const count = snap.exists() ? Object.keys(snap.val()).length : 0;
+    document.getElementById('vis-cnt').textContent = String(count).padStart(8,'0');
+    document.getElementById('h-on').textContent    = count;
+    visCount = Math.max(visCount, count);
+    const nb = document.getElementById('nxt-bl');
+    if(nb) nb.textContent = 'Next: '+Math.ceil((count+1)/100)*100+' users';
+    if(count>0 && count%100===0) spawnBlimp();
+  });
+})();
+// Also load grid state for everyone on page load — called after function defs below
+// (moved to bottom of module)
+
 onAuthStateChanged(auth, async user => {
   if (user) {
     let name = user.displayName || user.email.split('@')[0];
@@ -1578,9 +1805,19 @@ onAuthStateChanged(auth, async user => {
     } catch(e){}
     window._fbUid = user.uid;
     setUser(name, user.email);
-    setupPresence(user.uid, name);
-    loadGridState();
-    loadSpotlight();
+    // Replace anon presence with named presence
+    try {
+      const connRef = ref(rtdb, '.info/connected');
+      const myRef   = ref(rtdb, 'presence/' + user.uid);
+      const anonRef = ref(rtdb, 'presence/' + anonVisitorId);
+      // Remove anon entry, add named entry
+      await set(anonRef, null);
+      onValue(connRef, snap => {
+        if(!snap.val()) return;
+        onDisconnect(myRef).remove();
+        set(myRef, { name, ts: Date.now(), anon: false });
+      });
+    } catch(e){}
   } else {
     window._fbUid = null;
     loggedIn = null;
@@ -1594,26 +1831,6 @@ onAuthStateChanged(auth, async user => {
     if(ab) ab.style.display = 'none';
   }
 });
-
-// ── VISITOR COUNTER (Realtime Database) ──────────────────
-function setupPresence(uid, name) {
-  const connRef   = ref(rtdb, '.info/connected');
-  const myRef     = ref(rtdb, 'presence/'+uid);
-  onValue(connRef, snap => {
-    if(!snap.val()) return;
-    onDisconnect(myRef).remove();
-    set(myRef, { name, ts: Date.now() });
-  });
-  onValue(ref(rtdb,'presence'), snap => {
-    const count = snap.exists() ? Object.keys(snap.val()).length : 0;
-    document.getElementById('vis-cnt').textContent = String(count).padStart(8,'0');
-    document.getElementById('h-on').textContent    = count;
-    visCount = Math.max(visCount, count);
-    const nb = document.getElementById('nxt-bl');
-    if(nb) nb.textContent = 'Next: '+Math.ceil((count+1)/100)*100+' users';
-    if(count>0 && count%100===0) spawnBlimp();
-  });
-}
 
 // ── GRID STATE (Firestore) ───────────────────────────────
 async function loadGridState() {
@@ -1761,14 +1978,30 @@ window._fbPlaceBid = async function() {
   const min=parseInt(document.getElementById('bidinp').min);
   if(isNaN(v)||v<min){document.getElementById('bidinp').style.borderColor='#CC0000';setTimeout(()=>document.getElementById('bidinp').style.borderColor='',1000);return;}
   if(curMO===null) return;
+  // Resolve to canonical block
   const cell=cellMap.get(curMO),blk=cell?blkMap.get(cell.bId):null,sz=blk?blk.size:1;
-  const docId=String(curMO).padStart(6,'0');
+  // Block bids on sold pixels
+  if(blk&&blk.status==='sold'){
+    const ok=document.getElementById('bidok');ok.style.display='block';
+    ok.style.cssText='display:block;background:#FFEEEE;border:2px solid #CC0000;padding:7px 10px;font-family:"Share Tech Mono",monospace;font-size:12px;color:#CC0000;margin-top:7px;';
+    ok.innerHTML='⚠ This pixel has already been sold. Auction is closed.';
+    return;
+  }
+  const canonId=blk?blk.id:curMO;
+  const docId=String(canonId).padStart(6,'0');
   const ok=document.getElementById('bidok');
   ok.style.display='block';ok.innerHTML='⏳ Placing bid...';
   ok.style.cssText='display:block;background:#FFF8DC;border:2px solid #CC8800;padding:7px 10px;font-family:"Share Tech Mono",monospace;font-size:12px;color:#CC6600;margin-top:7px;';
   try {
     const snap=await getDoc(doc(db,'blocks',docId));
     const ex=snap.exists()?snap.data():null;
+    // Double-check sold status from DB
+    if(ex&&ex.status==='sold'){
+      ok.innerHTML='⚠ This pixel was just sold. Auction is closed.';
+      ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
+      if(blk)blk.status='sold';ndraw=true;
+      return;
+    }
     if(ex&&ex.bid>=v){
       ok.innerHTML='⚠ Outbid! Min bid now: $'+(ex.bid+1);
       ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
@@ -1776,19 +2009,19 @@ window._fbPlaceBid = async function() {
       return;
     }
     await setDoc(doc(db,'blocks',docId),{
-      id:curMO,row:Math.floor(curMO/1000),col:curMO%1000,size:sz,
+      id:canonId,row:Math.floor(canonId/1000),col:canonId%1000,size:sz,
       status:'active',bid:v,bids:(ex?ex.bids||0:0)+1,
       bidder:loggedIn,uid:window._fbUid,mins:1440,
       endsAt:new Date(Date.now()+24*60*60*1000)
     },{merge:true});
-    if(blk){blk.bid=v;blk.bids++;blk.status='active';blk.bidder=loggedIn;ndraw=true;}
-    else{const nb={id:curMO,row:Math.floor(curMO/1000),col:curMO%1000,size:1,status:'active',bid:v,bids:1,mins:1440,bidder:loggedIn,owner:null,image:null,url:null,title:null,_imgObj:null};blkMap.set(curMO,nb);cellMap.set(curMO,{bId:curMO,sz:1});ndraw=true;}
+    if(blk){blk.bid=v;blk.bids++;blk.status='active';blk.bidder=loggedIn;ndraw=true;mmDirty=true;}
+    else{const nb={id:canonId,row:Math.floor(canonId/1000),col:canonId%1000,size:1,status:'active',bid:v,bids:1,mins:1440,bidder:loggedIn,owner:null,image:null,url:null,title:null,_imgObj:null};blkMap.set(canonId,nb);cellMap.set(canonId,{bId:canonId,sz:1});ndraw=true;}
     ok.innerHTML='✓ Bid of $'+v+' placed! Payment required at checkout.';
     ok.style.background='#DFFFDF';ok.style.borderColor='#008000';ok.style.color='#008000';
     document.getElementById('m-bid').textContent='$'+v;
     document.getElementById('m-min').textContent='$'+(v+1);
     document.getElementById('bidinp').value=v+1;document.getElementById('bidinp').min=v+1;
-    if(curMO!==null){const c2=cellMap.get(curMO);addFeed(loggedIn,v,curMO,c2?.sz||1,true);}
+    if(curMO!==null){const c2=cellMap.get(curMO);addFeed(loggedIn,v,canonId,c2?.sz||sz,true);}
     totalBids++;document.getElementById('h-bids').textContent=totalBids;
   } catch(e){
     ok.innerHTML='⚠ Error: '+e.message;
@@ -1799,8 +2032,10 @@ window._fbPlaceBid = async function() {
 // ── SAVE PIXEL EDIT (Firebase Storage + Firestore) ────────
 window._fbSavePxEdit = async function() {
   if(pxEditId===null||!window._fbUid) return;
-  const cell=cellMap.get(pxEditId),blk=blkMap.get(cell?cell.bId:pxEditId);
-  if(!blk) return;
+  // Resolve block: pxEditId may be any cell within a multi-cell block
+  const cell=cellMap.get(pxEditId);
+  const blk=blkMap.get(cell?cell.bId:pxEditId);
+  if(!blk){ alert('Block not found. Please close and try again.'); return; }
   const url=document.getElementById('pxedit-url').value.trim();
   const title=document.getElementById('pxedit-title').value.trim();
   let safeUrl='';
@@ -1808,30 +2043,46 @@ window._fbSavePxEdit = async function() {
   const btn=document.querySelector('.pxedit-submit');
   if(btn){btn.textContent='⏳ Saving...';btn.disabled=true;}
   let imageUrl=pxEditImgData;
-  // Upload to Firebase Storage if it's a local data URL
+  // Upload to Firebase Storage only if it's a new local data URL
   if(pxEditImgData&&pxEditImgData.startsWith('data:')){
     try{
-      const res=await fetch(pxEditImgData);const blob=await res.blob();
-      const fileRef=sRef(storage,'pixels/'+window._fbUid+'/'+pxEditId+'.jpg');
+      const res=await fetch(pxEditImgData);
+      const blob=await res.blob();
+      const fileRef=sRef(storage,'pixels/'+window._fbUid+'/'+blk.id+'.jpg');
       await uploadBytes(fileRef,blob);
       imageUrl=await getDownloadURL(fileRef);
-    }catch(e){console.warn('Image upload:',e);}
+    }catch(e){
+      console.warn('Image upload failed, saving without image:',e);
+      imageUrl=null; // Don't block save on image upload failure
+    }
   }
   try{
-    await setDoc(doc(db,'blocks',String(blk.id).padStart(6,'0')),{
+    const docId=String(blk.id).padStart(6,'0');
+    await setDoc(doc(db,'blocks',docId),{
       id:blk.id,owner:loggedIn,uid:window._fbUid,
-      image:imageUrl||null,url:safeUrl,title,status:'sold'
+      image:imageUrl||null,url:safeUrl,title:title||'',status:'sold'
     },{merge:true});
-    blk.image=imageUrl||null;blk.url=safeUrl;blk.title=title;
-    if(blk.image){const img=new Image();img.onload=()=>{blk._imgObj=img;ndraw=true;};img.src=blk.image;}
-    else blk._imgObj=null;
-    ndraw=true;closePxEdit();
+    blk.image=imageUrl||null;blk.url=safeUrl;blk.title=title||'';
+    if(blk.image){
+      const img=new Image();
+      img.crossOrigin='anonymous';
+      img.onload=()=>{blk._imgObj=img;ndraw=true;};
+      img.onerror=()=>{blk._imgObj=null;ndraw=true;};
+      img.src=blk.image;
+    } else {
+      blk._imgObj=null;
+    }
+    ndraw=true;mmDirty=true;
+    closePxEdit();
     if(document.getElementById('btn-mypixels')?.classList.contains('active'))showMyPixels();
     const n=document.createElement('div');
     n.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#008000;color:white;font-family:"Press Start 2P",monospace;font-size:9px;padding:10px 18px;z-index:9999;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;white-space:nowrap;';
     n.textContent='✓ PIXEL SAVED!';document.body.appendChild(n);setTimeout(()=>n.remove(),2500);
-  }catch(e){ alert('Save failed: '+e.message); }
-  finally{ if(btn){btn.textContent='▶ SAVE CHANGES';btn.disabled=false;} }
+  }catch(e){
+    alert('Save failed: '+e.message);
+  } finally {
+    if(btn){btn.textContent='▶ SAVE CHANGES';btn.disabled=false;}
+  }
 };
 
 // ── SUBMIT SPOTLIGHT (Firestore) ──────────────────────────
@@ -1887,6 +2138,23 @@ window._fbAdminClaim = async function(blockId, username, uid) {
   } catch(e){ console.warn('Admin claim error:',e); }
 };
 
+// ── ADMIN: UNCLAIM (Firestore) ────────────────────────────
+window._fbAdminUnclaim = async function(blockId) {
+  if(!isAdmin||!window._fbUid) return;
+  try {
+    const docId=String(blockId).padStart(6,'0');
+    await deleteDoc(doc(db,'blocks',docId));
+  } catch(e){
+    try {
+      const docId=String(blockId).padStart(6,'0');
+      await setDoc(doc(db,'blocks',docId),{
+        id:blockId,status:'available',owner:null,uid:null,
+        bid:0,bids:0,bidder:null,image:null,url:null,title:null,mins:1440
+      },{merge:false});
+    } catch(e2){ console.warn('Admin unclaim error:',e2); }
+  }
+};
+
 // ── ADMIN: SPOTLIGHT FREE (bypass payment) ────────────────
 // When admin submits spotlight, skip payment and go straight to active
 const _origSubmitSpotlight = window.submitSpotlight;
@@ -1897,6 +2165,10 @@ window.submitSpotlight = async function() {
   }
   if(_origSubmitSpotlight) _origSubmitSpotlight();
 };
+
+// ── INITIAL LOAD (for all visitors, logged in or not) ─────
+loadGridState();
+loadSpotlight();
 </script>
 </body>
 </html>
