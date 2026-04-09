@@ -815,12 +815,12 @@ setInterval(()=>{
       if(remMs>0&&remMs<120*60*1000&&blk.status==='active'){blk.status='ending';needDraw=true;mmDirty=true;}
       // Expire when time is up
       if(remMs<=0&&!notifiedExpired.has(blk.id)){
-        ackWin(blk.id);
         blk.status='sold';blk.owner=blk.bidder||blk.owner;blk.mins=0;
         needDraw=true;mmDirty=true;soldCount++;updStats();
         if(blk.bidder&&blk.bidder===loggedIn){
-          showWinnerNotif(blk);
+          showWinnerNotif(blk); // ackWin called inside after user dismisses
         } else {
+          ackWin(blk.id); // no popup needed, just mark done
           showToast(`⏰ Auction ended — Block #${String(blk.id).padStart(6,'0')}${blk.bidder?' won by '+blk.bidder:' — no bids'}`, '#CC6600', 5000);
         }
       }
@@ -843,21 +843,19 @@ setInterval(()=>{
 },1000);
 
 function showWinnerNotif(blk){
-  if(notifiedExpired.has(blk.id)) return; // already acknowledged
   const sz=blk.size>=5?'5×5 PREMIUM':blk.size>=2?'2×2 STANDARD':'1×1 BASIC';
   const w=document.createElement('div');
+  w.id='winner-notif-'+blk.id;
   w.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#000080;color:#FFD700;font-family:"Press Start 2P",monospace;padding:24px 32px;z-index:9999;border-top:3px solid #4444FF;border-left:3px solid #4444FF;border-right:3px solid #000044;border-bottom:3px solid #000044;text-align:center;box-shadow:0 0 40px rgba(0,0,255,0.5);max-width:90vw;';
-  const dismiss=`ackWin(${blk.id});this.closest('div').remove();`;
   w.innerHTML=`<div style="font-size:28px;margin-bottom:12px;">🏆</div>
     <div style="font-size:10px;margin-bottom:8px;color:#FFFF00;animation:blink 0.5s step-end infinite;">★ YOU WON! ★</div>
     <div style="font-size:8px;margin-bottom:6px;">BLOCK #${String(blk.id).padStart(6,'0')}</div>
     <div style="font-size:8px;margin-bottom:14px;color:#AAFFAA;">${sz} — $${blk.bid||0}</div>
     <div style="display:flex;gap:8px;justify-content:center;">
-      <button onclick="${dismiss}openPxEdit(${blk.id});" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#008000;color:white;border:none;cursor:pointer;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;">✏ CUSTOMIZE PIXEL</button>
-      <button onclick="${dismiss}" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#444;color:white;border:none;cursor:pointer;">CLOSE</button>
+      <button onclick="ackWin(${blk.id});this.closest('div').remove();openPxEdit(${blk.id});" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#008000;color:white;border:none;cursor:pointer;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;">✏ CUSTOMIZE PIXEL</button>
+      <button onclick="ackWin(${blk.id});this.closest('div').remove();" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#444;color:white;border:none;cursor:pointer;">CLOSE</button>
     </div>`;
   document.body.appendChild(w);
-  // Auto-remove after 30s and mark as acked
   setTimeout(()=>{if(w.isConnected){ackWin(blk.id);w.remove();}},30000);
 }
 
@@ -1859,22 +1857,24 @@ function authErr(code){
           'auth/network-request-failed':'Network error — check your connection.'}[code]||'Error: '+code);
 }
 
-// ── VISITOR PRESENCE (anonymous Firebase auth) ───────────
-// Every visitor (logged in or not) gets an anon Firebase UID so RTDB rules pass
-let _namedUid = null; // set when real user logs in
+// ── VISITOR PRESENCE ─────────────────────────────────────
+let _presenceUid = null;
 
 function setupPresenceRef(uid, displayName){
-  const connRef = ref(rtdb, '.info/connected');
-  const myRef   = ref(rtdb, 'presence/' + uid);
-  onValue(connRef, snap => {
+  // Clean up old presence slot when upgrading anon → real user
+  if(_presenceUid && _presenceUid !== uid){
+    set(ref(rtdb, 'presence/' + _presenceUid), null).catch(()=>{});
+  }
+  _presenceUid = uid;
+  const myRef = ref(rtdb, 'presence/' + uid);
+  onValue(ref(rtdb, '.info/connected'), snap => {
     if(!snap.val()) return;
     onDisconnect(myRef).remove();
-    // Include 'connected' field to satisfy .validate rule
     set(myRef, {connected: true, name: displayName, ts: Date.now()});
   });
 }
 
-// Listen to LIVE presence count → stats bar "VISITORS ONLINE" only
+// Live presence count → stats bar VISITORS ONLINE
 onValue(ref(rtdb,'presence'), snap => {
   const count = snap.exists() ? Object.keys(snap.val()).length : 0;
   document.getElementById('h-on').textContent = count;
@@ -1885,7 +1885,6 @@ onValue(ref(rtdb,'presence'), snap => {
 });
 
 // Total registered users counter → header "VISITORS: 00000001"
-// Reads from Firestore users collection — only ever goes up, never down
 async function loadUserCount(){
   try {
     const snap = await getDoc(doc(db,'meta','userCount'));
@@ -1893,8 +1892,6 @@ async function loadUserCount(){
       const n = snap.data().count||0;
       document.getElementById('vis-cnt').textContent = String(n).padStart(8,'0');
     } else {
-      // Counter doc doesn't exist yet — count actual users and seed it
-      // (runs once on first ever page load after deploy)
       try {
         const {getDocs} = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js');
         const usersSnap = await getDocs(collection(db,'users'));
@@ -1905,7 +1902,6 @@ async function loadUserCount(){
     }
   } catch(e){}
 }
-// Also listen for real-time updates to the counter
 onSnapshot(doc(db,'meta','userCount'), snap => {
   if(snap.exists()){
     const n = snap.data().count||0;
@@ -1913,15 +1909,11 @@ onSnapshot(doc(db,'meta','userCount'), snap => {
   }
 });
 
-// Sign in anonymously immediately so we have a real UID for RTDB writes
-signInAnonymously(auth).then(cred => {
-  const anonUid = cred.user.uid;
-  setupPresenceRef(anonUid, 'visitor');
-}).catch(e => console.warn('Anon sign-in failed:', e.message));
+// Sign in anonymously — gives every visitor a real Firebase UID for RTDB writes
+signInAnonymously(auth).catch(e => console.warn('Anon sign-in failed:', e.message));
 
 onAuthStateChanged(auth, async user => {
-  if(!user) {
-    // Logged out — sign back in anonymously for visitor presence
+  if(!user){
     window._fbUid = null; loggedIn = null; isAdmin = false;
     document.getElementById('logged-area').style.display = 'none';
     document.getElementById('btn-login').style.display   = '';
@@ -1931,15 +1923,15 @@ onAuthStateChanged(auth, async user => {
     signInAnonymously(auth).catch(()=>{});
     return;
   }
-  if(user.isAnonymous) {
-    // Anonymous visitor — presence already set up in signInAnonymously.then()
+  if(user.isAnonymous){
+    // Anonymous visitor — register presence once here
     setupPresenceRef(user.uid, 'visitor');
     loadGridState();
     loadSpotlight();
+    loadUserCount();
     return;
   }
-  // Real user logged in
-  _namedUid = user.uid;
+  // Real named user — swap anon presence → named presence
   let name = user.displayName || user.email.split('@')[0];
   try {
     const snap = await getDoc(doc(db,'users',user.uid));
@@ -1947,9 +1939,10 @@ onAuthStateChanged(auth, async user => {
   } catch(e){}
   window._fbUid = user.uid;
   setUser(name, user.email);
-  setupPresenceRef(user.uid, name);
+  setupPresenceRef(user.uid, name); // removes anon slot, registers named slot
   loadGridState();
   loadSpotlight();
+  loadUserCount();
 });
 
 // ── GRID STATE (Firestore) ───────────────────────────────
@@ -2323,9 +2316,7 @@ window.submitSpotlight = async function() {
 };
 
 // ── INITIAL LOAD (for all visitors, logged in or not) ─────
-loadGridState();
-loadSpotlight();
-loadUserCount();
+// loadGridState, loadSpotlight, loadUserCount called in onAuthStateChanged
 </script>
 </body>
 </html>
