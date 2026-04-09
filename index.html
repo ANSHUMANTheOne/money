@@ -15,6 +15,14 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
 @keyframes harlemShake{0%{transform:translate(0);}10%{transform:translate(-5px,5px) rotate(-2deg);}20%{transform:translate(5px,-5px) rotate(2deg);}30%{transform:translate(-3px,3px);}40%{transform:translate(3px,-3px);}50%{transform:translate(0);}100%{transform:translate(0);}}
 @keyframes marquee{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+@keyframes auc-fadein{from{opacity:0;transform:translate(-50%,-48%) scale(0.92);}to{opacity:1;transform:translate(-50%,-50%) scale(1);}}
+@keyframes auc-fadeout{from{opacity:1;transform:translate(-50%,-50%) scale(1);}to{opacity:0;transform:translate(-50%,-54%) scale(0.95);}}
+@keyframes auc-stamp{0%{opacity:0;transform:rotate(-8deg) scale(2.2);}40%{opacity:1;transform:rotate(-8deg) scale(0.95);}55%{transform:rotate(-8deg) scale(1.05);}70%{transform:rotate(-8deg) scale(1);}100%{transform:rotate(-8deg) scale(1);}}
+@keyframes auc-gavel{0%{transform:rotate(-40deg) translateY(-20px);}30%{transform:rotate(10deg) translateY(4px);}45%{transform:rotate(-5deg) translateY(-2px);}60%{transform:rotate(2deg) translateY(0);}100%{transform:rotate(0deg) translateY(0);}}
+@keyframes auc-pixel-fly{0%{opacity:1;transform:scale(1) translate(0,0);}60%{opacity:1;transform:scale(0.5) translate(var(--fly-x),var(--fly-y));}85%{opacity:0.6;transform:scale(0.15) translate(calc(var(--fly-x)*1.4),calc(var(--fly-y)*1.4));}100%{opacity:0;transform:scale(0.05) translate(calc(var(--fly-x)*1.6),calc(var(--fly-y)*1.6));}}
+@keyframes auc-winner-pop{0%{opacity:0;transform:translate(-50%,-50%) scale(0.5) rotate(-4deg);}50%{transform:translate(-50%,-50%) scale(1.08) rotate(1deg);}70%{transform:translate(-50%,-50%) scale(0.97) rotate(0deg);}100%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0deg);}}
+@keyframes auc-confetti-fall{0%{transform:translateY(-20px) rotate(0deg);opacity:1;}100%{transform:translateY(110vh) rotate(720deg);opacity:0;}}
+@keyframes auc-shake{0%,100%{transform:translate(-50%,-50%);}15%{transform:translate(-53%,-50%);}30%{transform:translate(-47%,-50%);}45%{transform:translate(-52%,-49%);}60%{transform:translate(-48%,-51%);}75%{transform:translate(-51%,-50%);}}}
 
 #hdr{background:var(--navy);flex-shrink:0;}
 #htb{background:linear-gradient(90deg,#000080,#0000CC,#000080);padding:6px 12px;display:flex;align-items:center;gap:10px;border-bottom:2px solid #0055FF;}
@@ -738,7 +746,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 const G=1000,TOTAL=1000000;
 const canvas=document.getElementById('gc'),ctx=canvas.getContext('2d');
 const mmc=document.getElementById('mmc'),mmx=mmc.getContext('2d');
-let CELL=8,zi=3;const ZL=[2,3,5,8,12,18,40,80],ZN=['0.25×','0.4×','0.6×','1×','1.5×','2×','5×','10×'];
+let CELL=12,zi=3;const ZL=[3,5,8,12,18,28,60,120],ZN=['0.25×','0.4×','0.6×','1×','1.5×','2×','5×','10×'];
 const sc={x:0,y:0};let drag=false,dS={x:0,y:0},sS={x:0,y:0},ndraw=true;
 function markDirty(withMinimap=false){ndraw=true;if(withMinimap)mmDirty=true;}
 let loggedIn=null;
@@ -815,14 +823,23 @@ setInterval(()=>{
       if(remMs>0&&remMs<120*60*1000&&blk.status==='active'){blk.status='ending';needDraw=true;mmDirty=true;}
       // Expire when time is up
       if(remMs<=0&&!notifiedExpired.has(blk.id)){
-        blk.status='sold';blk.owner=blk.bidder||blk.owner;blk.mins=0;
+        const winner=blk.bidder||blk.owner||null;
+        blk.status='sold';blk.owner=winner;blk.mins=0;
         needDraw=true;mmDirty=true;soldCount++;updStats();
-        if(blk.bidder&&blk.bidder===loggedIn){
-          showWinnerNotif(blk); // ackWin called inside after user dismisses
+        // Write the finalized state to Firestore so all clients see it
+        if(window._fbFinalizeAuction){window._fbFinalizeAuction(blk.id,winner);}
+        const isWinner=winner&&winner===loggedIn;
+        if(isWinner){
+          ackWin(blk.id); // mark early so it doesn't re-trigger
         } else {
-          ackWin(blk.id); // no popup needed, just mark done
-          showToast(`⏰ Auction ended — Block #${String(blk.id).padStart(6,'0')}${blk.bidder?' won by '+blk.bidder:' — no bids'}`, '#CC6600', 5000);
+          ackWin(blk.id);
+          if(!winner){
+            // No bids: reset back to available in Firestore
+            if(window._fbFinalizeAuction){window._fbFinalizeAuction(blk.id,null,true);}
+          }
         }
+        // Show the sold animation for everyone; winner=true shows celebration after
+        if(winner){showAuctionClose(blk, isWinner);}
       }
     }
   }
@@ -835,29 +852,136 @@ setInterval(()=>{
       const tmr=document.getElementById('motmr');
       if(tmr&&(blk.status==='active'||blk.status==='ending')){
         tmr.textContent=`${String(hh).padStart(2,'0')} : ${String(mm).padStart(2,'0')} : ${String(ss).padStart(2,'0')}`;
-        tmr.style.color=blk.status==='ending'?'#FF4444':'#00FF00';
+        tmr.style.color=remMs<60000?'#FF4444':blk.status==='ending'?'#FF4444':'#00FF00';
+        if(remMs<10000&&remMs>0){tmr.style.animation='blink 0.3s step-end infinite';}
+      } else if(tmr&&blk.status==='sold'){
+        tmr.textContent='-- SOLD --';tmr.style.color='#FF4444';tmr.style.animation='none';
+        // Hide bid section, show sold view
+        const bsec=document.getElementById('mo-bid-sec');
+        const soldView=document.getElementById('mo-sold-view');
+        if(bsec)bsec.style.display='none';
+        if(soldView){soldView.style.display='block';
+          const ownerEl=soldView.querySelector('#mo-sold-owner');
+          if(ownerEl)ownerEl.textContent=blk.owner||blk.bidder||'Unknown';}
       }
     }
   }
   if(needDraw){ndraw=true;}
+
+  // Live MM:SS refresh for any last-minute countdown elements
+  const now2=Date.now();
+  // Tooltip time cell
+  const ttTm=document.getElementById('tt-tm');
+  if(ttTm&&ttTm.getAttribute('data-blkid')){
+    const bid2=parseInt(ttTm.getAttribute('data-blkid'));
+    const blk2=blkMap.get(bid2);
+    if(blk2&&blk2.endsAt){const remMs=Math.max(0,blk2.endsAt-now2);if(remMs<60000&&remMs>0){const mm2=Math.floor(remMs/60000),ss=Math.floor((remMs%60000)/1000);ttTm.textContent=`${mm2}:${String(ss).padStart(2,'0')}`;ttTm.style.color='#CC0000';}else if(remMs<=0){ttTm.textContent='0:00';ttTm.removeAttribute('data-blkid');}}
+  }
+  // Table time cells in "ENDING SOON" and "ACTIVE AUCTIONS" views
+  document.querySelectorAll('td[data-blkid-timer]').forEach(td=>{
+    const bid3=parseInt(td.getAttribute('data-blkid-timer'));
+    const blk3=blkMap.get(bid3);
+    if(blk3&&blk3.endsAt){const remMs=Math.max(0,blk3.endsAt-now2);if(remMs<60000&&remMs>0){const mm3=Math.floor(remMs/60000),ss=Math.floor((remMs%60000)/1000);td.textContent=`${mm3}:${String(ss).padStart(2,'0')} ⚡`;td.style.color='#CC0000';td.style.fontWeight='bold';td.style.animation='blink 0.5s step-end infinite';}else if(remMs<=0){td.textContent='0:00 ⚡';}}
+  });
 },1000);
 
-function showWinnerNotif(blk){
+function showAuctionClose(blk, isWinner) {
+  const sz=blk.size>=5?'5×5 PREMIUM':blk.size>=2?'2×2 STANDARD':'1×1 BASIC';
+  const winner=blk.owner||blk.bidder||'Unknown';
+
+  // ── PHASE 1: SOLD stamp overlay (shown to everyone, ~2.8s) ──────────────────
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9990;pointer-events:none;text-align:center;animation:auc-fadein 0.25s ease forwards;';
+
+  // Confetti burst
+  const confettiColors=['#FF0000','#FFD700','#00FF00','#0088FF','#FF00FF','#FFFF00','#FF6600'];
+  let confettiHTML='';
+  for(let i=0;i<28;i++){
+    const x=(Math.random()-0.5)*600,delay=Math.random()*0.4,dur=0.9+Math.random()*0.7,size=6+Math.random()*10,col=confettiColors[i%confettiColors.length];
+    confettiHTML+=`<div style="position:absolute;top:50%;left:50%;width:${size}px;height:${size}px;background:${col};border-radius:${Math.random()>0.5?'50%':'2px'};transform:translateX(${x}px);animation:auc-confetti-fall ${dur}s ${delay}s ease-in forwards;"></div>`;
+  }
+
+  overlay.innerHTML=`
+    ${confettiHTML}
+    <div style="position:relative;background:#000;border:4px solid #FFD700;padding:28px 40px;box-shadow:0 0 0 2px #000,0 0 40px rgba(255,215,0,0.6);min-width:320px;">
+      <div style="font-size:44px;animation:auc-gavel 0.5s 0.1s ease forwards;display:inline-block;transform-origin:bottom right;">🔨</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:#888;letter-spacing:3px;margin:6px 0 10px;">AUCTION CLOSED</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:9px;color:#888;margin-bottom:4px;">BLOCK #${String(blk.id).padStart(6,'0')}</div>
+      <div style="font-family:'VT323',monospace;font-size:15px;color:#666;margin-bottom:14px;">${sz}</div>
+      <div style="position:relative;display:inline-block;">
+        <div style="font-family:'Press Start 2P',monospace;font-size:28px;color:#FFD700;text-shadow:0 0 20px #FF6600,0 0 40px #FF3300;letter-spacing:4px;animation:auc-stamp 0.5s 0.3s ease forwards;opacity:0;">SOLD!</div>
+      </div>
+      <div style="margin-top:14px;font-family:'Share Tech Mono',monospace;font-size:13px;color:#AAFFAA;">
+        <span style="color:#666;">→ </span><span style="color:#FFD700;font-weight:bold;">${winner}</span>
+        <span style="color:#666;"> for </span><span style="color:#00FF88;font-weight:bold;">$${blk.bid||0}</span>
+      </div>
+      <div id="auc-pixel-box" style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:10px;">
+        <div id="auc-flying-pixel" style="width:28px;height:28px;background:${(()=>{const p=[['#FF6B6B','#FFE66D'],['#4ECDC4','#45B7D1'],['#96CEB4','#FFEAA7'],['#DDA0DD','#98D8C8'],['#F7DC6F','#82E0AA'],['#5DADE2','#EC407A'],['#FF8C00','#FFD700'],['#00CED1','#98FB98']];const pp=p[blk.id%p.length];return`linear-gradient(135deg,${pp[0]},${pp[1]})`})()};border:2px solid #FFD700;border-radius:2px;flex-shrink:0;"></div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#888;">→→→</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#FFD700;background:#001a00;border:1px solid #003300;padding:4px 7px;">📨 ${winner}</div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  // Animate the pixel flying to the envelope
+  setTimeout(()=>{
+    const pixEl=document.getElementById('auc-flying-pixel');
+    if(pixEl){
+      pixEl.style.cssText+=';transition:all 0.7s cubic-bezier(0.4,0,0.2,1);transform:translateX(60px) scale(0.3);opacity:0;';
+    }
+  }, 900);
+
+  // Screen shake when gavel hits
+  setTimeout(()=>{ overlay.style.animation='auc-shake 0.3s ease'; }, 150);
+
+  // ── PHASE 2: fade out sold overlay, then show winner screen if applicable ──
+  setTimeout(()=>{
+    overlay.style.animation='auc-fadeout 0.4s ease forwards';
+    setTimeout(()=>{ if(overlay.isConnected)overlay.remove(); }, 400);
+
+    if(isWinner){
+      setTimeout(()=>showWinnerCelebration(blk), 200);
+    }
+  }, isWinner ? 2600 : 3200);
+}
+
+function showWinnerCelebration(blk){
   const sz=blk.size>=5?'5×5 PREMIUM':blk.size>=2?'2×2 STANDARD':'1×1 BASIC';
   const w=document.createElement('div');
   w.id='winner-notif-'+blk.id;
-  w.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#000080;color:#FFD700;font-family:"Press Start 2P",monospace;padding:24px 32px;z-index:9999;border-top:3px solid #4444FF;border-left:3px solid #4444FF;border-right:3px solid #000044;border-bottom:3px solid #000044;text-align:center;box-shadow:0 0 40px rgba(0,0,255,0.5);max-width:90vw;';
-  w.innerHTML=`<div style="font-size:28px;margin-bottom:12px;">🏆</div>
-    <div style="font-size:10px;margin-bottom:8px;color:#FFFF00;animation:blink 0.5s step-end infinite;">★ YOU WON! ★</div>
-    <div style="font-size:8px;margin-bottom:6px;">BLOCK #${String(blk.id).padStart(6,'0')}</div>
-    <div style="font-size:8px;margin-bottom:14px;color:#AAFFAA;">${sz} — $${blk.bid||0}</div>
-    <div style="display:flex;gap:8px;justify-content:center;">
-      <button onclick="ackWin(${blk.id});this.closest('div').remove();openPxEdit(${blk.id});" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#008000;color:white;border:none;cursor:pointer;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;">✏ CUSTOMIZE PIXEL</button>
-      <button onclick="ackWin(${blk.id});this.closest('div').remove();" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#444;color:white;border:none;cursor:pointer;">CLOSE</button>
+  w.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;text-align:center;animation:auc-winner-pop 0.5s ease forwards;';
+
+  // Persistent confetti for winner
+  let confettiHTML='';
+  const cc=['#FF0000','#FFD700','#00FF00','#0088FF','#FF00FF','#FF6600'];
+  for(let i=0;i<40;i++){
+    const x=(Math.random()-0.5)*800,delay=i*0.05,dur=1.2+Math.random()*1,size=7+Math.random()*12,col=cc[i%cc.length];
+    confettiHTML+=`<div style="position:fixed;top:0;left:50%;width:${size}px;height:${size}px;background:${col};border-radius:${Math.random()>0.5?'50%':'2px'};transform:translateX(${x}px);animation:auc-confetti-fall ${dur}s ${delay}s ease-in forwards;pointer-events:none;"></div>`;
+  }
+
+  w.innerHTML=`
+    ${confettiHTML}
+    <div style="background:var(--navy);border-top:3px solid #4444FF;border-left:3px solid #4444FF;border-right:3px solid #000044;border-bottom:3px solid #000044;padding:28px 36px;box-shadow:0 0 60px rgba(0,0,255,0.6),inset 0 0 20px rgba(0,0,100,0.3);min-width:300px;max-width:90vw;">
+      <div style="font-size:42px;margin-bottom:10px;animation:auc-gavel 0.4s ease;">🏆</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:11px;color:#FFFF00;animation:blink 0.5s step-end infinite;margin-bottom:10px;">★ YOU WON! ★</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#AAAAFF;margin-bottom:4px;">BLOCK #${String(blk.id).padStart(6,'0')}</div>
+      <div style="font-family:'VT323',monospace;font-size:17px;color:#88AAFF;margin-bottom:12px;">${sz}</div>
+      <div style="background:#001100;border:2px solid #00AA00;padding:10px 16px;margin-bottom:16px;font-family:'Share Tech Mono',monospace;">
+        <div style="font-size:11px;color:#888;margin-bottom:3px;">WINNING BID</div>
+        <div style="font-size:26px;color:#00FF88;font-weight:bold;letter-spacing:2px;">$${blk.bid||0}</div>
+      </div>
+      <div style="font-family:'VT323',monospace;font-size:15px;color:#AAFFAA;margin-bottom:16px;">This pixel is now yours forever!<br>Customize it with your image & link.</div>
+      <div style="display:flex;gap:8px;justify-content:center;">
+        <button onclick="ackWin(${blk.id});this.closest('[id^=winner-notif]').remove();openPxEdit(${blk.id});" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:9px 16px;background:#008000;color:white;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;cursor:pointer;">✏ CUSTOMIZE PIXEL</button>
+        <button onclick="ackWin(${blk.id});this.closest('[id^=winner-notif]').remove();" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:9px 16px;background:#444;color:white;border:none;cursor:pointer;">CLOSE</button>
+      </div>
     </div>`;
   document.body.appendChild(w);
   setTimeout(()=>{if(w.isConnected){ackWin(blk.id);w.remove();}},30000);
 }
+
+function showWinnerNotif(blk){showWinnerCelebration(blk);}
+
 
 function showToast(msg, color='#000080', duration=3000){
   const n=document.createElement('div');
@@ -1079,7 +1203,10 @@ function showTT(h,cx,cy){
     if(blk.status==='sold'&&blk.bid){if(pe)pe.textContent='$'+blk.bid;if(pRow)pRow.style.display='flex';}else{if(pRow)pRow.style.display='none';}
     const oe=document.getElementById('tt-owner');const oRow=document.getElementById('tt-owner-row');
     if(blk.owner&&oe){oe.textContent=blk.owner;if(oRow)oRow.style.display='flex';}else{if(oRow)oRow.style.display='none';}
-    if(blk.status==='sold'){document.getElementById('tt-tm').textContent='ENDED';document.getElementById('tt-st').textContent='● SOLD';document.getElementById('tt-st').style.color='#008800';}else if(blk.status==='available'){document.getElementById('tt-tm').textContent='24h on first bid';document.getElementById('tt-st').textContent='AVAILABLE';document.getElementById('tt-st').style.color='#008000';}else{const hh=Math.floor(blk.mins/60),mm=blk.mins%60;document.getElementById('tt-tm').textContent=`${hh}h ${mm}m`;document.getElementById('tt-st').textContent=blk.status==='ending'?'⚠ ENDING':'▶ ACTIVE';document.getElementById('tt-st').style.color=blk.status==='ending'?'#CC0000':'#CC6600';}}
+    if(blk.status==='sold'){document.getElementById('tt-tm').textContent='ENDED';document.getElementById('tt-st').textContent='● SOLD';document.getElementById('tt-st').style.color='#008800';}else if(blk.status==='available'){document.getElementById('tt-tm').textContent='24h on first bid';document.getElementById('tt-st').textContent='AVAILABLE';document.getElementById('tt-st').style.color='#008000';}else{
+      const ttTm=document.getElementById('tt-tm');
+      if(blk.endsAt){const remMs=Math.max(0,blk.endsAt-Date.now());if(remMs<60000){const mm2=Math.floor(remMs/60000),ss=Math.floor((remMs%60000)/1000);ttTm.textContent=`${mm2}:${String(ss).padStart(2,'0')}`;ttTm.setAttribute('data-blkid',blk.id);}else{const hh=Math.floor(remMs/3600000),mm3=Math.floor((remMs%3600000)/60000);ttTm.textContent=`${hh}h ${mm3}m`;ttTm.removeAttribute('data-blkid');}}else{const hh=Math.floor(blk.mins/60),mm=blk.mins%60;ttTm.textContent=`${hh}h ${mm}m`;ttTm.removeAttribute('data-blkid');}
+      document.getElementById('tt-st').textContent=blk.status==='ending'?'⚠ ENDING':'▶ ACTIVE';document.getElementById('tt-st').style.color=blk.status==='ending'?'#CC0000':'#CC6600';}}
   const vw=window.innerWidth,vh=window.innerHeight;let tx=cx+13,ty=cy-8;if(tx+210>vw)tx=cx-220;if(ty+180>vh)ty=cy-190;tt.style.left=tx+'px';tt.style.top=ty+'px';tt.style.display='block';
 }
 function hideTT(){clearTimeout(ttt);document.getElementById('tt').style.display='none';}
@@ -1121,8 +1248,14 @@ function openMO(id){
   if(isSold){
     tmr.textContent='-- AUCTION ENDED --';tmr.style.color='#FF4444';
   } else {
-    const h=Math.floor((blk?blk.mins:1440)/60),m=(blk?blk.mins:1440)%60;
-    tmr.textContent=`00 : ${String(h).padStart(2,'0')} : ${String(m).padStart(2,'0')} : 00`;
+    if(blk&&blk.endsAt){
+      const remMs=Math.max(0,blk.endsAt-Date.now());
+      const hh=Math.floor(remMs/3600000),mm2=Math.floor((remMs%3600000)/60000),ss=Math.floor((remMs%60000)/1000);
+      tmr.textContent=`${String(hh).padStart(2,'0')} : ${String(mm2).padStart(2,'0')} : ${String(ss).padStart(2,'0')}`;
+    } else {
+      const h=Math.floor((blk?blk.mins:1440)/60),m=(blk?blk.mins:1440)%60;
+      tmr.textContent=`${String(h).padStart(2,'0')} : ${String(m).padStart(2,'0')} : 00`;
+    }
     tmr.style.color=(blk&&blk.status==='ending')?'#FF4444':'#00FF00';
   }
 
@@ -1376,13 +1509,13 @@ function showSec(name){
   if(name==='auctions'){
     const active=[...blkMap.values()].filter(b=>b.status==='active'||b.status==='ending').sort((a,b2)=>b2.bid-a.bid);
     if(!active.length){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🔨 ACTIVE AUCTIONS</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No active auctions yet. Click any square on the grid to start bidding!</div>`;return;}
-    let rows=active.map(b=>{const sn=b.size===5?'5×5 PREMIUM':b.size===2?'2×2 STANDARD':'1×1 BASIC';const h=Math.floor(b.mins/60),m=b.mins%60;return`<tr onclick="jumpToPixel(${b.id})" style="cursor:pointer;"><td style="padding:4px 8px;">#${String(b.id).padStart(6,'0')}</td><td style="padding:4px 8px;">${sn}</td><td style="padding:4px 8px;color:#008000;font-weight:bold;">$${b.bid}</td><td style="padding:4px 8px;color:#555;">${b.bidder||'—'}</td><td style="padding:4px 8px;color:${b.status==='ending'?'#CC0000':'#000080'}">${h}h ${m}m</td></tr>`;}).join('');
+    let rows=active.map(b=>{const sn=b.size===5?'5×5 PREMIUM':b.size===2?'2×2 STANDARD':'1×1 BASIC';const remMs=b.endsAt?Math.max(0,b.endsAt-Date.now()):b.mins*60000;const inLastMin=remMs<60000&&remMs>0;const mm=Math.floor(remMs/60000),ss=Math.floor((remMs%60000)/1000);const timeStr=inLastMin?`${mm}:${String(ss).padStart(2,'0')} ⚡`:(()=>{const h=Math.floor(b.mins/60),m=b.mins%60;return`${h}h ${m}m`;})();return`<tr onclick="jumpToPixel(${b.id})" style="cursor:pointer;"><td style="padding:4px 8px;">#${String(b.id).padStart(6,'0')}</td><td style="padding:4px 8px;">${sn}</td><td style="padding:4px 8px;color:#008000;font-weight:bold;">$${b.bid}</td><td style="padding:4px 8px;color:#555;">${b.bidder||'—'}</td><td data-blkid-timer="${b.id}" style="padding:4px 8px;color:${inLastMin?'#CC0000':b.status==='ending'?'#CC0000':'#000080'};font-weight:${inLastMin?'bold':'normal'};animation:${inLastMin?'blink 0.5s step-end infinite':'none'}">${timeStr}</td></tr>`;}).join('');
     sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🔨 ACTIVE AUCTIONS (${active.length})</div><table class="at"><thead><tr><th>GRID ID</th><th>SIZE</th><th>TOP BID</th><th>BIDDER</th><th>TIME LEFT</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
   else if(name==='ending'){
     const ending=[...blkMap.values()].filter(b=>b.status==='ending'||(b.status==='active'&&b.mins<120)).sort((a,b2)=>a.mins-b2.mins);
     if(!ending.length){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#CC0000;margin-bottom:12px;">⏰ ENDING SOON</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No auctions ending soon. Check back once bidding starts!</div>`;return;}
-    let rows=ending.map(b=>{const sn=b.size===5?'5×5':b.size===2?'2×2':'1×1';const h=Math.floor(b.mins/60),m=b.mins%60;return`<tr onclick="jumpToPixel(${b.id})" style="cursor:pointer;"><td style="padding:4px 8px;">#${String(b.id).padStart(6,'0')}</td><td style="padding:4px 8px;">${sn}</td><td style="padding:4px 8px;color:#008000;font-weight:bold;">$${b.bid}</td><td style="padding:4px 8px;color:#555;">${b.bidder||'—'}</td><td style="padding:4px 8px;color:#CC0000;font-weight:bold;">${h}h ${m}m ⚠</td></tr>`;}).join('');
+    let rows=ending.map(b=>{const sn=b.size===5?'5×5':b.size===2?'2×2':'1×1';const remMs=b.endsAt?Math.max(0,b.endsAt-Date.now()):b.mins*60000;const inLastMin=remMs<60000&&remMs>0;const mm=Math.floor(remMs/60000),ss=Math.floor((remMs%60000)/1000);const timeStr=inLastMin?`${mm}:${String(ss).padStart(2,'0')} ⚡`:(()=>{const h=Math.floor(b.mins/60),m=b.mins%60;return`${h}h ${m}m ⚠`;})();return`<tr onclick="jumpToPixel(${b.id})" style="cursor:pointer;"><td style="padding:4px 8px;">#${String(b.id).padStart(6,'0')}</td><td style="padding:4px 8px;">${sn}</td><td style="padding:4px 8px;color:#008000;font-weight:bold;">$${b.bid}</td><td style="padding:4px 8px;color:#555;">${b.bidder||'—'}</td><td data-blkid-timer="${b.id}" style="padding:4px 8px;color:#CC0000;font-weight:bold;animation:${inLastMin?'blink 0.5s step-end infinite':'none'}">${timeStr}</td></tr>`;}).join('');
     sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#CC0000;margin-bottom:12px;">⏰ ENDING SOON (${ending.length})</div><table class="at"><thead><tr><th>GRID ID</th><th>SIZE</th><th>TOP BID</th><th>BIDDER</th><th>TIME LEFT</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
   else if(name==='leaderboard'){
@@ -1992,6 +2125,13 @@ async function loadGridState() {
       // Reset _imgObj when image URL changes so drawBlockWithRetro re-loads it
       if(blk.image !== oldImage) blk._imgObj = null;
       if(!blk.image) blk._imgObj = null;
+      if(!blk.image) blk._imgObj = null;
+      // If just finalized (sold) and current user is the winner, show winner popup
+      const justSold = d.status==='sold' && wasAvail===false && blk.status==='sold';
+      if(justSold && d.owner && d.owner===loggedIn && !notifiedExpired.has(blk.id)){
+        showAuctionClose(blk, true);
+        ackWin(blk.id);
+      }
       if(blk.status!=='available' && wasAvail) addFeed(blk.bidder||blk.owner||'?',blk.bid,blk.id,blk.size,true);
       ndraw=true;mmDirty=true;
     });
@@ -2102,6 +2242,40 @@ window._fbForgot = async function() {
     const el=document.getElementById('le-err');
     if(el){el.textContent='✓ Reset email sent! Check your inbox.';el.style.display='block';el.style.color='#008000';el.style.background='#DFFFDF';el.style.borderColor='#008000';}
   } catch(e){ showErr('le-err',authErr(e.code)); }
+};
+
+// ── FINALIZE AUCTION (Firestore) — called when timer expires ─
+// Uses a simple "first writer wins" guard: if already sold, skip.
+window._fbFinalizeAuction = async function(blockId, winner, noBids=false) {
+  try {
+    const docId = String(blockId).padStart(6,'0');
+    const snap = await getDoc(doc(db,'blocks',docId));
+    const ex = snap.exists() ? snap.data() : null;
+    // Guard: if already marked sold in Firestore, do nothing
+    if(ex && ex.status==='sold') return;
+    if(noBids || !winner) {
+      // No bids — delete the block doc so it resets to available for everyone
+      await deleteDoc(doc(db,'blocks',docId));
+    } else {
+      // Has a winner — write sold + owner
+      await setDoc(doc(db,'blocks',docId), {
+        status: 'sold',
+        owner: winner,
+        uid: ex?.uid || null,
+        bid: ex?.bid || 0,
+        bids: ex?.bids || 0,
+        finalizedAt: serverTimestamp()
+      }, {merge: true});
+      // Update leaderboard/stats
+      try {
+        await setDoc(doc(db,'meta','stats'), {
+          sold: increment(1)
+        }, {merge: true});
+      } catch(e) {}
+    }
+  } catch(e) {
+    console.warn('Finalize auction error:', e);
+  }
 };
 
 // ── PLACE BID (Firestore) ─────────────────────────────────
