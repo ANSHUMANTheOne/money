@@ -430,7 +430,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
   <div id="htb">
     <span id="site-title" onclick="logoClick()">🌐 THE MILLION PIXEL AUCTION</span>
     <span id="live-badge">★ LIVE ★</span>
-    <div id="vis-wrap"><span id="vis-lbl">VISITORS:</span><span id="vis-cnt">00000001</span></div>
+    <div id="vis-wrap"><span id="vis-lbl">VISITORS:</span><span id="vis-cnt">00000000</span></div>
     <div id="user-area">
       <div id="logged-area">
         <span id="usr-disp">👤 USER</span>
@@ -459,8 +459,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
   <div id="stats-bar">
     <div class="sb"><span class="sk">SPACES SOLD:</span><span class="sv" id="h-sold">0</span><span class="sk">/ 1,000,000</span></div>
     <div class="sb"><span class="sk">BIDS TODAY:</span><span class="sv" id="h-bids">0</span></div>
-    <div class="sb"><span class="sk">ACTIVE:</span><span class="sv" id="h-act">0</span></div>
-    <div class="sb"><span class="sk">ONLINE:</span><span class="sv" id="h-on" style="color:#00FF88;">0</span></div>
+    <div class="sb"><span class="sk">VISITORS ONLINE:</span><span class="sv" id="h-on" style="color:#00FF88;">0</span></div>
     <div class="sb"><span class="sk">REVENUE:</span><span class="sv" style="color:#FFD700;" id="h-rev">$0</span></div>
     <div id="prog-wrap"><span class="sk" style="white-space:nowrap;">PROGRESS:</span><div id="prog-bar"><div id="prog-fill"></div></div><span class="sv" id="prog-pct">0%</span></div>
   </div>
@@ -746,7 +745,7 @@ let loggedIn=null;
 let isAdmin=false;
 const ADMIN_EMAIL='luckyansh.t@gmail.com';
 const cellMap=new Map(),blkMap=new Map();
-let visCount=1,totalBids=0,soldCount=0;
+let visCount=0,totalBids=0,soldCount=0;
 
 // Layout generated via genLayoutChunked on window load
 
@@ -783,7 +782,7 @@ function handleWS(d){
   if(d.type==='bid'){const blk=blkMap.get(d.blockId);if(blk){blk.bid=d.amount;blk.bids++;blk.status=d.minsLeft<120?'ending':'active';blk.bidder=d.user;blk.mins=d.minsLeft;}ndraw=true;mmDirty=true;addFeed(d.user,d.amount,d.blockId,d.size,true);totalBids++;document.getElementById('h-bids').textContent=totalBids;}
   if(d.type==='won'){const blk=blkMap.get(d.blockId);if(blk){blk.status='sold';blk.owner=d.user;}ndraw=true;mmDirty=true;soldCount++;updStats();
     if(d.user===loggedIn){tryMergeWithChoice(d.blockId);openPxEdit(d.blockId);}}
-  if(d.type==='online'){document.getElementById('h-on').textContent=d.count;visCount=Math.max(visCount,d.count);}
+  if(d.type==='online'){document.getElementById('h-on').textContent=d.count;visCount=d.count;}
   if(d.type==='blimp')spawnBlimp();
 }
 
@@ -1579,7 +1578,7 @@ function adminSetStats(){
   const b=parseInt(document.getElementById('adm-bids').value);
   const r=parseInt(document.getElementById('adm-rev').value);
   const msg=document.getElementById('adm-stats-msg');
-  if(!isNaN(s)){soldCount=s;document.getElementById('h-sold').textContent=s.toLocaleString();document.getElementById('h-act').textContent=s;updStats();}
+  if(!isNaN(s)){soldCount=s;document.getElementById('h-sold').textContent=s.toLocaleString();updStats();}
   if(!isNaN(b)){totalBids=b;document.getElementById('h-bids').textContent=b;}
   if(!isNaN(r)){document.getElementById('h-rev').textContent='$'+r.toLocaleString();}
   if(msg){msg.textContent='✓ Stats updated';msg.style.color='#008000';setTimeout(()=>{if(msg)msg.textContent='';},2000);}
@@ -1812,7 +1811,7 @@ import { getAuth, signInWithEmailAndPassword,
          browserLocalPersistence, browserSessionPersistence,
          signInAnonymously } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection,
-         onSnapshot, serverTimestamp }                      from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+         onSnapshot, serverTimestamp, increment }           from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 import { getDatabase, ref, set, onValue,
          onDisconnect, serverTimestamp as rtTs }            from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
 // Firebase Storage no longer used — images stored as base64 in Firestore
@@ -1868,15 +1867,43 @@ function setupPresenceRef(uid, displayName){
   });
 }
 
-// Listen to presence count for everyone
+// Listen to LIVE presence count → stats bar "VISITORS ONLINE" only
 onValue(ref(rtdb,'presence'), snap => {
   const count = snap.exists() ? Object.keys(snap.val()).length : 0;
-  document.getElementById('vis-cnt').textContent = String(count).padStart(8,'0');
-  document.getElementById('h-on').textContent    = count;
-  visCount = Math.max(visCount, count);
+  document.getElementById('h-on').textContent = count;
+  visCount = count;
   const nb = document.getElementById('nxt-bl');
   if(nb) nb.textContent = 'Next: '+Math.ceil((count+1)/100)*100+' users';
   if(count>0 && count%100===0) spawnBlimp();
+});
+
+// Total registered users counter → header "VISITORS: 00000001"
+// Reads from Firestore users collection — only ever goes up, never down
+async function loadUserCount(){
+  try {
+    const snap = await getDoc(doc(db,'meta','userCount'));
+    if(snap.exists()){
+      const n = snap.data().count||0;
+      document.getElementById('vis-cnt').textContent = String(n).padStart(8,'0');
+    } else {
+      // Counter doc doesn't exist yet — count actual users and seed it
+      // (runs once on first ever page load after deploy)
+      try {
+        const {getDocs} = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js');
+        const usersSnap = await getDocs(collection(db,'users'));
+        const n = usersSnap.size;
+        if(n>0) await setDoc(doc(db,'meta','userCount'),{count:n},{merge:false});
+        document.getElementById('vis-cnt').textContent = String(n).padStart(8,'0');
+      } catch(e){}
+    }
+  } catch(e){}
+}
+// Also listen for real-time updates to the counter
+onSnapshot(doc(db,'meta','userCount'), snap => {
+  if(snap.exists()){
+    const n = snap.data().count||0;
+    document.getElementById('vis-cnt').textContent = String(n).padStart(8,'0');
+  }
 });
 
 // Sign in anonymously immediately so we have a real UID for RTDB writes
@@ -2027,6 +2054,8 @@ window._fbDoRegister = async function() {
       uid: cred.user.uid,
       createdAt: serverTimestamp()
     });
+    // Bump the registered user counter
+    await setDoc(doc(db,'meta','userCount'),{count:increment(1)},{merge:true});
     closeLM();
   } catch(err) {
     showErr('re-err', authErr(err.code));
@@ -2049,6 +2078,8 @@ window._fbOauth = async function(provider) {
         uid: result.user.uid,
         createdAt: serverTimestamp()
       });
+      // Bump the registered user counter (only for genuinely new accounts)
+      await setDoc(doc(db,'meta','userCount'),{count:increment(1)},{merge:true});
     }
     closeLM();
   } catch(e) {
@@ -2287,6 +2318,7 @@ window.submitSpotlight = async function() {
 // ── INITIAL LOAD (for all visitors, logged in or not) ─────
 loadGridState();
 loadSpotlight();
+loadUserCount();
 </script>
 </body>
 </html>
