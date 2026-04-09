@@ -795,7 +795,13 @@ function updStats(){
 
 // ── AUCTION COUNTDOWN + EXPIRY ENGINE ──────────────────────
 // Runs every second: ticks down endsAt, fires expiry, notifies winner
-const notifiedExpired=new Set();
+// Load already-acknowledged wins from localStorage so they never re-appear after reload
+const _storedWins = JSON.parse(localStorage.getItem('mpa_acked_wins')||'[]');
+const notifiedExpired = new Set(_storedWins);
+function ackWin(blockId){
+  notifiedExpired.add(blockId);
+  try{localStorage.setItem('mpa_acked_wins', JSON.stringify([...notifiedExpired]));}catch(e){}
+}
 setInterval(()=>{
   const now=Date.now();
   let needDraw=false;
@@ -809,10 +815,9 @@ setInterval(()=>{
       if(remMs>0&&remMs<120*60*1000&&blk.status==='active'){blk.status='ending';needDraw=true;mmDirty=true;}
       // Expire when time is up
       if(remMs<=0&&!notifiedExpired.has(blk.id)){
-        notifiedExpired.add(blk.id);
+        ackWin(blk.id);
         blk.status='sold';blk.owner=blk.bidder||blk.owner;blk.mins=0;
         needDraw=true;mmDirty=true;soldCount++;updStats();
-        // Notify winner if it's the current user
         if(blk.bidder&&blk.bidder===loggedIn){
           showWinnerNotif(blk);
         } else {
@@ -838,20 +843,22 @@ setInterval(()=>{
 },1000);
 
 function showWinnerNotif(blk){
+  if(notifiedExpired.has(blk.id)) return; // already acknowledged
   const sz=blk.size>=5?'5×5 PREMIUM':blk.size>=2?'2×2 STANDARD':'1×1 BASIC';
   const w=document.createElement('div');
   w.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#000080;color:#FFD700;font-family:"Press Start 2P",monospace;padding:24px 32px;z-index:9999;border-top:3px solid #4444FF;border-left:3px solid #4444FF;border-right:3px solid #000044;border-bottom:3px solid #000044;text-align:center;box-shadow:0 0 40px rgba(0,0,255,0.5);max-width:90vw;';
+  const dismiss=`ackWin(${blk.id});this.closest('div').remove();`;
   w.innerHTML=`<div style="font-size:28px;margin-bottom:12px;">🏆</div>
     <div style="font-size:10px;margin-bottom:8px;color:#FFFF00;animation:blink 0.5s step-end infinite;">★ YOU WON! ★</div>
     <div style="font-size:8px;margin-bottom:6px;">BLOCK #${String(blk.id).padStart(6,'0')}</div>
     <div style="font-size:8px;margin-bottom:14px;color:#AAFFAA;">${sz} — $${blk.bid||0}</div>
     <div style="display:flex;gap:8px;justify-content:center;">
-      <button onclick="this.closest('div[style]').remove();openPxEdit(${blk.id});" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#008000;color:white;border:none;cursor:pointer;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;">✏ CUSTOMIZE PIXEL</button>
-      <button onclick="this.closest('div[style]').remove();" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#444;color:white;border:none;cursor:pointer;">CLOSE</button>
+      <button onclick="${dismiss}openPxEdit(${blk.id});" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#008000;color:white;border:none;cursor:pointer;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;">✏ CUSTOMIZE PIXEL</button>
+      <button onclick="${dismiss}" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#444;color:white;border:none;cursor:pointer;">CLOSE</button>
     </div>`;
   document.body.appendChild(w);
-  // Auto-remove after 30s
-  setTimeout(()=>w.isConnected&&w.remove(),30000);
+  // Auto-remove after 30s and mark as acked
+  setTimeout(()=>{if(w.isConnected){ackWin(blk.id);w.remove();}},30000);
 }
 
 function showToast(msg, color='#000080', duration=3000){
