@@ -1885,7 +1885,50 @@ function showAdminPanel(){
       </div>
     </div>
 
+  </div>
+
+  <!-- $1 DIRECT-BUY PIXEL TRACKER — full width -->
+  <div style="margin-top:14px;max-width:860px;background:white;border-top:2px solid #DDD;border-left:2px solid #DDD;border-right:2px solid #888;border-bottom:2px solid #888;padding:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;border-bottom:2px solid #00AA44;padding-bottom:6px;flex-wrap:wrap;gap:8px;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#00AA44;">⚡ $1 DIRECT-BUY PIXEL TRACKER</div>
+      <div id="adm-db-summary" style="font-family:'Share Tech Mono',monospace;font-size:13px;color:#008000;font-weight:bold;"></div>
+    </div>
+    <div id="adm-db-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:5px;max-height:420px;overflow-y:auto;"></div>
   </div>`;
+  renderAdminDirectBuyTable();
+}
+
+function renderAdminDirectBuyTable(){
+  const DB_IDS=[959416,221038,843388,983219,305829,276401,269021,26509,340307,530182,249568,314748,284249,190406,217549,671310,478592,120535,620657,258094,311794,968481,380413,481444,701649,368923,896627,971381,153897,173949,645675,611136,360665,783994,304587,629010,385703,520109,469944,765535,392448,62522,918597,483959,947886,947538,443186,259034,883241,147723,237479,924112,715460,676421,853530,80572,635532,299572,726631,554546,55594,271848,247095,949956,719872,155107,402836,234871,384422,701138,988785,393172,47683,787747,375084,158526,745854,413140,831120,787688,771607,425367,910094,358398,377553,472031,439780,629638,247802,557511,533615,187955,162243,116683,637836,952299,975767,569977,578904,499652,994541,40288,719671,780088,414567,609677,184856,820572,156909,134840,643971,762208,740784,124763,558900,570285,500948,286670,41949,506546,878623,434091,208119,151628,674965,227459,140623,486102,696456,178314,820621,84450,810541,323984,893936,864286,653614,24961,657452,439368,423309,327082,135792,990448,717097,887514,198350,736915,458577,757595,941265,810857,929353,19717,502363,311789,955115,786569,84547,869126,114576,853927,831519,977534,649950,432068,635059,914708,771813,656642,957551,33160,517785,155884,232324,104314,169032,663119,808796,725935,247560,729574,483444,798852,59350,454528,569573,49996,803277,309750,542906,631760,256858,16265,248990,786655,988811,482415,663401,560302];
+  const container=document.getElementById('adm-db-grid');
+  const summaryEl=document.getElementById('adm-db-summary');
+  if(!container)return;
+  let available=0,sold=0;
+  const cells=DB_IDS.map((id,i)=>{
+    const blk=blkMap.get(id);
+    const isSold=blk&&blk.status==='sold';
+    if(isSold)sold++;else available++;
+    const owner=isSold?(blk.owner||blk.bidder||'unknown'):'';
+    const label='#'+String(id).padStart(6,'0');
+    const row=Math.floor(id/1000),col=id%1000;
+    const bgColor=isSold?'#F5F5F5':'#EEFFEE';
+    const borderColor=isSold?'#AAA':'#DDD';
+    const borderDark=isSold?'#777':'#888';
+    const textColor=isSold?'#999':'#006600';
+    const badgeColor=isSold?'#AA0000':'#00AA44';
+    const badge=isSold?'✗ SOLD':'✓ $1';
+    const strike=isSold?'text-decoration:line-through;':'';
+    return '<div onclick="jumpToPixel('+id+')" title="Row '+row+', Col '+col+(isSold?' — Owner: '+owner:'')+'" style="cursor:pointer;padding:5px 7px;font-family:\'Share Tech Mono\',monospace;font-size:11px;border-top:2px solid '+borderColor+';border-left:2px solid '+borderColor+';border-right:2px solid '+borderDark+';border-bottom:2px solid '+borderDark+';background:'+bgColor+';color:'+textColor+';'+strike+'">'
+      +'<div style="font-size:9px;color:'+badgeColor+';margin-bottom:2px;">'+(i+1)+'. '+badge+'</div>'
+      +'<div>'+label+'</div>'
+      +(isSold?'<div style="font-size:9px;color:#AA0000;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+owner+'</div>':'')
+      +'</div>';
+  });
+  container.innerHTML=cells.join('');
+  if(summaryEl){
+    const total=DB_IDS.length;
+    summaryEl.innerHTML='<span style="color:#00AA44;">'+available+' available</span> / <span style="color:#CC0000;">'+sold+' sold</span> / '+total+' total';
+  }
 }
 
 function adminSetTimer(){
@@ -2042,7 +2085,7 @@ window.addEventListener('load',()=>{
     for(let a=0,p=0;a<5000&&p<180;a++){const c=Math.floor(rng2()*(G-4)),r=Math.floor(rng2()*(G-4));if(place(r,c,5))p++;}
     for(let a=0,p=0;a<20000&&p<2000;a++){const c=Math.floor(rng2()*(G-1)),r=Math.floor(rng2()*(G-1));if(place(r,c,2))p++;}
     // Pick 200 random 1×1 positions for direct-buy $1 pixels (seeded so always same spots)
-    const rng3=((s)=>{let n=s;return()=>{n=(n*6364136223846793005n===undefined?(n*1664525+1013904223)&0xFFFFFFFF:(n*1664525+1013904223)&0xFFFFFFFF);return(n>>>0)/0xFFFFFFFF;}})(0xDEADBEEF);
+    const rng3=((s)=>{let n=s;return()=>{n=(n*1664525+1013904223)&0xFFFFFFFF;return(n>>>0)/0xFFFFFFFF;}})(0xDEADBEEF);
     const directBuyIds=new Set();
     for(let a=0,p=0;a<5000&&p<200;a++){
       const c=Math.floor(rng3()*(G-2))+1,r=Math.floor(rng3()*(G-2))+1;
