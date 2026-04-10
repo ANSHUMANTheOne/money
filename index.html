@@ -2022,12 +2022,8 @@ function keepSeparate(){closeExpandMo();}
 })();
 
 window.addEventListener('load',()=>{
-  // Show loading indicator while generating layout
-  const loadMsg=document.createElement('div');
-  loadMsg.id='layout-loading';
-  loadMsg.style.cssText='position:fixed;inset:0;background:#C0C0C0;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:12px;';
-  loadMsg.innerHTML='<div style="font-family:\'Press Start 2P\',monospace;font-size:10px;color:#000080;">LOADING GRID...</div><div style="width:200px;height:12px;background:#fff;border:2px inset #888;"><div id="ll-prog" style="height:100%;background:#000080;width:0%;transition:width 0.1s;"></div></div><div id="ll-pct2" style="font-family:\'Share Tech Mono\',monospace;font-size:12px;">0%</div>';
-  document.body.appendChild(loadMsg);
+  // Loading overlay not needed — grid generates synchronously
+  const loadMsg={remove:()=>{}}; // no-op placeholder
 
   // Generate layout in chunks using setTimeout to yield to browser
   function genLayoutChunked(done){
@@ -2053,33 +2049,19 @@ window.addEventListener('load',()=>{
       const id=r*G+c;
       if(!occ[id]){directBuyIds.add(id);p++;}
     }
-    // Phase 2: fill 1x1 in row chunks - yield to browser between chunks
-    const CHUNK=100; // rows per chunk — ~100k Map.set calls, fast on all devices
-    let row=0;
-    const prog=document.getElementById('ll-prog'),pct2=document.getElementById('ll-pct2');
-    const yieldFn=typeof requestIdleCallback!=='undefined'
-      ?(cb)=>requestIdleCallback(cb,{timeout:50})
-      :(cb)=>setTimeout(cb,0);
-    function fillChunk(){
-      const end=Math.min(G,row+CHUNK);
-      for(let r=row;r<end;r++){
-        for(let c=0;c<G;c++){
-          const id=r*G+c;
-          if(occ[id])continue;
-          occ[id]=1;
-          const isDB=directBuyIds.has(id);
-          blkMap.set(id,{id,row:r,col:c,size:1,status:'available',bid:0,bids:0,mins:1440,bidder:null,owner:null,image:null,url:null,directBuy:isDB||undefined});
-          cellMap.set(id,{bId:id,sz:1});
-        }
+    // Phase 2: fill 1x1 in one synchronous pass — fast on all devices
+    for(let r=0;r<G;r++){
+      for(let c=0;c<G;c++){
+        const id=r*G+c;
+        if(occ[id])continue;
+        occ[id]=1;
+        const isDB=directBuyIds.has(id);
+        blkMap.set(id,{id,row:r,col:c,size:1,status:'available',bid:0,bids:0,mins:1440,bidder:null,owner:null,image:null,url:null,directBuy:isDB||undefined});
+        cellMap.set(id,{bId:id,sz:1});
       }
-      row=end;
-      const pct=Math.round(row/G*100);
-      if(prog)prog.style.width=pct+'%';
-      if(pct2)pct2.textContent=pct+'%';
-      if(row<G){yieldFn(fillChunk);}
-      else{loadMsg.remove();done();}
     }
-    yieldFn(fillChunk);
+    loadMsg.remove();
+    done();
   }
 
   genLayoutChunked(()=>{
