@@ -496,6 +496,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
       <span class="li2"><div class="ld2" style="background:#0088CC;border-color:#0066AA;"></div><span style="color:#0066AA;">1×1 $1</span></span>
       <span class="li2"><div class="ld2" style="width:14px;height:14px;background:#FF88CC;border-color:#880066;"></div><span style="color:#880066;">2×2 $5</span></span>
       <span class="li2"><div class="ld2" style="width:20px;height:20px;background:#FFDD44;border-color:#886600;"></div><span style="color:#886600;">5×5 $20</span></span>
+      <span class="li2"><div class="ld2" style="background:#EEFFEE;border-color:#00AA44;border-width:2px;"></div><span style="color:#00AA44;">$1 BUY NOW</span></span>
       <span class="li2"><div class="ld2" style="background:#FF4444;"></div>Ending</span>
       <div style="margin-left:auto;display:flex;gap:5px;align-items:center;">
         <span style="font-size:11px;">Go to #</span>
@@ -631,28 +632,51 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
       </div>
       <div id="motmr">23 : 59 : 59 : 00</div>
       <div id="mo-bid-sec">
-        <div class="sechd">SET YOUR MAX BID</div>
-        <div style="background:#FFFFF0;border:1px solid #CCAA00;padding:8px 10px;margin-bottom:10px;font-family:'VT323',monospace;font-size:15px;color:#555;line-height:1.5;">
-          Enter the <b style="color:#000080;">most you're willing to pay</b>. The system only spends what it needs — bidding starts low and auto-raises in <b style="color:#008000;">$2 increments</b> if someone outbids you, up to your max.
+        <div class="sechd">PLACE YOUR BID</div>
+        <div id="mo-bid-rules" style="background:#FFFFF0;border:1px solid #CCAA00;padding:7px 10px;margin-bottom:10px;font-family:'VT323',monospace;font-size:15px;color:#555;line-height:1.5;">
+          Min raise: <b id="mo-min-raise" style="color:#000080;">$1</b> &nbsp;·&nbsp; Max single bid: <b id="mo-max-bid" style="color:#CC6600;">$3</b>
         </div>
         <div class="bidr">
-          <span style="font-family:'Press Start 2P',monospace;font-size:9px;color:#CC6600;">MAX $</span>
+          <span style="font-family:'Press Start 2P',monospace;font-size:9px;color:#000080;">$</span>
           <input type="number" id="bidinp" min="1" value="1">
           <button id="bidbt" onclick="placeBid()">▶ BID</button>
         </div>
+        <div id="mo-quickbid-row" style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap;"></div>
         <div id="m-current-leader" style="display:none;margin-top:6px;padding:5px 8px;background:#F0F8FF;border:1px solid #AACCFF;font-family:'VT323',monospace;font-size:15px;"></div>
         <div id="bidok"></div>
-        <div class="sechd" style="margin-top:12px;">PAYMENT METHOD</div>
-        <div class="payr">
+        <div class="sechd" style="margin-top:12px;" id="mo-pay-sechd">PAYMENT</div>
+        <div class="payr" id="mo-pay-btns">
           <button id="strbtn" onclick="choosePay('stripe')"><span>▋</span> Stripe / Card</button>
           <button id="ppbtn" onclick="choosePay('paypal')"><span>Ⓟ</span> PayPal</button>
         </div>
-        <div class="payn" id="payn">🔒 Card authorized only — charged only if you win. Auto-released if outbid.</div>
+        <div class="payn" id="payn">🔒 No charge now — only charged if you win the auction.</div>
         <div class="payn" style="color:#CC0000;margin-top:3px;">⚠ Real payments require backend integration (Stripe/PayPal).</div>
+        <!-- Claim window — shown when user has won and needs to pay -->
+        <div id="mo-claim-sec" style="display:none;background:#FFF8E8;border:2px solid #CC8800;padding:12px;margin-top:10px;">
+          <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#CC6600;margin-bottom:8px;">🏆 YOU WON — CLAIM YOUR PIXEL</div>
+          <div style="font-family:'VT323',monospace;font-size:16px;color:#333;margin-bottom:8px;">You have <b id="mo-claim-timer" style="color:#CC0000;">6:00:00</b> to complete payment. If you don't claim, it passes to the next bidder.</div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;">
+            <button onclick="choosePay('stripe')" style="font-family:'Share Tech Mono',monospace;font-size:12px;padding:8px 14px;background:#635BFF;color:white;border:none;cursor:pointer;border-top:2px solid #8880FF;border-left:2px solid #8880FF;border-right:2px solid #3030CC;border-bottom:2px solid #3030CC;">▋ Pay with Stripe</button>
+            <button onclick="choosePay('paypal')" style="font-family:'Share Tech Mono',monospace;font-size:12px;padding:8px 14px;background:#003087;color:#FFD700;border:none;cursor:pointer;border-top:2px solid #0044AA;border-left:2px solid #0044AA;border-right:2px solid #001844;border-bottom:2px solid #001844;">Ⓟ Pay with PayPal</button>
+            <button onclick="forfeitPixel()" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 12px;background:#888;color:white;border:none;cursor:pointer;">FORFEIT →</button>
+          </div>
+          <div style="font-family:'VT323',monospace;font-size:13px;color:#888;margin-top:6px;">Forfeit passes this pixel to the next highest bidder.</div>
+        </div>
         <div id="mo-admin-row" style="display:none;margin-top:10px;padding-top:10px;border-top:2px solid #FFD700;">
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button onclick="adminClaimCurrent()" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#CC6600;color:white;border-top:2px solid #FFD700;border-left:2px solid #FFD700;border-right:2px solid #884400;border-bottom:2px solid #884400;cursor:pointer;flex:1;">⚡ ADMIN CLAIM FREE</button>
           <button onclick="adminUnclaimCurrent()" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#CC0000;color:white;border-top:2px solid #FF4444;border-left:2px solid #FF4444;border-right:2px solid #880000;border-bottom:2px solid #880000;cursor:pointer;flex:1;">🗑 ADMIN UNCLAIM</button>
+          </div>
+        </div>
+      </div>
+      <!-- DIRECT BUY section -->
+      <div id="mo-direct-buy" style="display:none;">
+        <div style="background:#EEFFEE;border:2px solid #00AA44;padding:14px;margin-bottom:10px;">
+          <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#007700;margin-bottom:8px;">⚡ $1 INSTANT BUY — NO AUCTION</div>
+          <div style="font-family:'VT323',monospace;font-size:17px;color:#333;margin-bottom:12px;">This is one of 200 special pixels available for instant purchase at <b style="color:#008000;">$1</b> — no bidding, no waiting.</div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;">
+            <button onclick="directBuyStripe()" style="font-family:'Share Tech Mono',monospace;font-size:12px;padding:9px 16px;background:#635BFF;color:white;border:none;cursor:pointer;border-top:2px solid #8880FF;border-left:2px solid #8880FF;border-right:2px solid #3030CC;border-bottom:2px solid #3030CC;">▋ Buy $1 via Stripe</button>
+            <button onclick="directBuyPaypal()" style="font-family:'Share Tech Mono',monospace;font-size:12px;padding:9px 16px;background:#003087;color:#FFD700;border:none;cursor:pointer;border-top:2px solid #0044AA;border-left:2px solid #0044AA;border-right:2px solid #001844;border-bottom:2px solid #001844;">Ⓟ Buy $1 via PayPal</button>
           </div>
         </div>
       </div>
@@ -750,7 +774,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
 const G=1000,TOTAL=1000000;
 const canvas=document.getElementById('gc'),ctx=canvas.getContext('2d');
 const mmc=document.getElementById('mmc'),mmx=mmc.getContext('2d');
-let CELL=12,zi=3;const ZL=[3,5,8,12,18,28,60,120],ZN=['0.25×','0.4×','0.6×','1×','1.5×','2×','5×','10×'];
+let CELL=16,zi=3;const ZL=[4,7,11,16,24,36,80,160],ZN=['0.25×','0.4×','0.6×','1×','1.5×','2×','5×','10×'];
 const sc={x:0,y:0};let drag=false,dS={x:0,y:0},sS={x:0,y:0},ndraw=true;
 function markDirty(withMinimap=false){ndraw=true;if(withMinimap)mmDirty=true;}
 let loggedIn=null;
@@ -803,6 +827,29 @@ function updStats(){
   const pct=(soldCount/TOTAL*100).toFixed(3);
   document.getElementById('prog-fill').style.width=pct+'%';
   document.getElementById('prog-pct').textContent=pct+'%';
+  updSidebar();
+}
+
+function updSidebar(){
+  // TOP SQUARES — highest current bids in active auctions
+  const topSqEl=document.getElementById('top-sq');
+  if(topSqEl){
+    const active=[...blkMap.values()].filter(b=>(b.status==='active'||b.status==='ending')&&b.bid>0).sort((a,b2)=>b2.bid-a.bid).slice(0,8);
+    if(!active.length){topSqEl.innerHTML='<div class="empty-msg" style="padding:10px;"><div>No active auctions yet.</div><div>Click any square to start!</div></div>';}
+    else{topSqEl.innerHTML=active.map(b=>{const sz=b.size===5?'5×5':b.size===2?'2×2':'1×1';return`<div class="sq-i" onclick="jumpToPixel(${b.id})"><span class="sq-id">#${String(b.id).padStart(5,'0')}</span><span style="color:#555;font-size:13px;">${sz}</span><span class="sq-b">$${b.bid}</span></div>`;}).join('');}
+  }
+  // TOP BIDDERS — users who have spent the most (sold pixels)
+  const lbEl=document.getElementById('lb-area');
+  if(lbEl){
+    const sold=[...blkMap.values()].filter(b=>b.status==='sold'&&b.owner&&b.bid>0);
+    if(!sold.length){lbEl.innerHTML='<div class="empty-msg" style="padding:10px;"><div>No winners yet.</div><div>Be first on the board!</div></div>';}
+    else{
+      const byOwner=new Map();
+      sold.forEach(b=>{const e=byOwner.get(b.owner)||{user:b.owner,pixels:0,spent:0};e.pixels++;e.spent+=b.bid||0;byOwner.set(b.owner,e);});
+      const lb=[...byOwner.values()].sort((a,b2)=>b2.spent-a.spent).slice(0,8);
+      lbEl.innerHTML=`<table class="lb-t"><thead><tr><th>#</th><th>USER</th><th>PX</th><th>$</th></tr></thead><tbody>${lb.map((e,i)=>`<tr class="${i===0?'lb-r1':''}"><td>${i+1}</td><td class="blt2">${e.user}</td><td>${e.pixels}</td><td class="bltm2">$${e.spent}</td></tr>`).join('')}</tbody></table>`;
+    }
+  }
 }
 
 // ── AUCTION COUNTDOWN + EXPIRY ENGINE ──────────────────────
@@ -1017,9 +1064,12 @@ function blkCol(blk){
           :blk.size>=2?{f:'#2299FF28',b:'#0077CC',lw:1}
           :{f:'#AA88FF28',b:'#8866DD',lw:1};
   }
-  if(blk.size>=5)return{f:'#FFF4CC',b:'#DDAA00',lw:1};
-  if(blk.size>=2)return{f:'#D8EEFF',b:'#6699CC',lw:1};
-  return{f:'#F0F0F0',b:'#BBBBBB',lw:1};
+  if(blk.status==='available'){
+    if(blk.directBuy)return{f:'#EEFFEE',b:'#00AA44',lw:2};
+    if(blk.size>=5)return{f:'#FFF4CC',b:'#DDAA00',lw:1};
+    if(blk.size>=2)return{f:'#D8EEFF',b:'#6699CC',lw:1};
+    return{f:'#F0F0F0',b:'#BBBBBB',lw:1};
+  }
 }
 
 // ── Draw helper that handles retro gradients & images ──────
@@ -1140,8 +1190,18 @@ function drawGrid(){
     }
   }
 
-  // Highlight
-  if(hlCell){const hx=hlCell.col*CELL-sc.x,hy=hlCell.row*CELL-sc.y,hsz=(hlCell.size||1)*CELL;ctx.save();ctx.strokeStyle=`rgba(255,220,0,${hlAlpha})`;ctx.lineWidth=3;ctx.shadowColor='rgba(255,220,0,0.9)';ctx.shadowBlur=16;ctx.strokeRect(hx+2,hy+2,hsz-4,hsz-4);ctx.fillStyle=`rgba(255,220,0,${hlAlpha*0.15})`;ctx.fillRect(hx+2,hy+2,hsz-4,hsz-4);ctx.restore();hlAlpha+=hlDir*0.035;if(hlAlpha<=0){if(hlDir<0){hlDir=1;hlAlpha=0;}else{hlCell=null;}}else if(hlAlpha>=1){hlDir=-1;}ndraw=true;}
+  // Highlight — pulse 3 times then fade out, max 4 seconds total
+  if(hlCell){
+    const age=Date.now()-hlStartTime;
+    if(age>4000){hlCell=null;}else{
+      const hx=hlCell.col*CELL-sc.x,hy=hlCell.row*CELL-sc.y,hsz=(hlCell.size||1)*CELL;
+      ctx.save();ctx.strokeStyle=`rgba(255,220,0,${hlAlpha})`;ctx.lineWidth=3;ctx.shadowColor='rgba(255,220,0,0.9)';ctx.shadowBlur=16;ctx.strokeRect(hx+2,hy+2,hsz-4,hsz-4);ctx.fillStyle=`rgba(255,220,0,${hlAlpha*0.15})`;ctx.fillRect(hx+2,hy+2,hsz-4,hsz-4);ctx.restore();
+      hlAlpha+=hlDir*0.035;
+      if(hlAlpha<=0){if(hlDir<0){hlDir=1;hlAlpha=0;}else{hlCell=null;}}
+      else if(hlAlpha>=1){hlDir=-1;}
+      ndraw=true;
+    }
+  }
 
   // Minimap — blit from cache, only rebuild when dirty
   if(mmDirty)rebuildMinimap();
@@ -1223,7 +1283,7 @@ function showTT(h,cx,cy){
 function hideTT(){clearTimeout(ttt);document.getElementById('tt').style.display='none';}
 
 function czoom(d){const p=CELL;zi=Math.max(0,Math.min(ZL.length-1,zi+d));CELL=ZL[zi];const cx=(sc.x+canvas.width/2)/p,cy=(sc.y+canvas.height/2)/p;sc.x=cx*CELL-canvas.width/2;sc.y=cy*CELL-canvas.height/2;clampSc();ndraw=true;document.getElementById('zlbl').textContent=ZN[zi];document.getElementById('sb-zoom').textContent='Zoom: '+ZN[zi];}
-let hlCell=null,hlAlpha=0,hlDir=-1;
+let hlCell=null,hlAlpha=0,hlDir=-1,hlStartTime=0;
 function gotoCell(){
   const v=parseInt(document.getElementById('gi').value);
   if(isNaN(v)||v<0||v>=TOTAL)return;
@@ -1232,46 +1292,80 @@ function gotoCell(){
   const cell=cellMap.get(v);
   const blk=cell?blkMap.get(cell.bId):null;
   const sz=blk?blk.size:1;
-  const targetZi=sz>=5?2:sz>=2?3:4;
-  if(zi!==targetZi){const p=CELL;zi=targetZi;CELL=ZL[zi];document.getElementById('zlbl').textContent=ZN[zi];document.getElementById('sb-zoom').textContent='Zoom: '+ZN[zi];}
+  // Always zoom to a good level where the pixel is clearly visible
+  // For 1x1: zoom index 5 (2×), for 2x2: index 4 (1.5×), for 5x5: index 3 (1×)
+  const targetZi=sz>=5?3:sz>=2?4:5;
+  const p=CELL;zi=targetZi;CELL=ZL[zi];
+  document.getElementById('zlbl').textContent=ZN[zi];
+  document.getElementById('sb-zoom').textContent='Zoom: '+ZN[zi];
   const bCol=blk?blk.col:col,bRow=blk?blk.row:row;
   sc.x=bCol*CELL+(sz*CELL/2)-canvas.width/2;sc.y=bRow*CELL+(sz*CELL/2)-canvas.height/2;
-  clampSc();hlCell={col:bCol,row:bRow,size:sz};hlAlpha=1;hlDir=-1;ndraw=true;
+  clampSc();
+  hlCell={col:bCol,row:bRow,size:sz};hlAlpha=1;hlDir=-1;hlStartTime=Date.now();
+  ndraw=true;
 }
 
 let curMO=null;
 function openMO(id){
-  // Always resolve to the block's top-left id
   const cell=cellMap.get(id),blk=cell?blkMap.get(cell.bId):null;
   const resolvedId=blk?blk.id:id;
   curMO=resolvedId;
   const sz=blk?blk.size:1,sp=sz===5?20:sz===2?5:1;
-  const currentPrice=blk&&blk.bid?blk.bid:0;
-  const minMax=currentPrice>0?currentPrice+2:sp; // min max-bid = current price + $2
+  const currentBid=blk&&blk.bid?blk.bid:0;
   const isSold=blk&&blk.status==='sold';
+  const isPendingClaim=isSold&&blk.claimDeadline&&Date.now()<(blk.claimDeadline?.toMillis?blk.claimDeadline.toMillis():blk.claimDeadline)&&!blk.paid;
+  const isDirectBuy=blk&&blk.directBuy&&blk.status==='available';
 
-  document.getElementById('motit').textContent=(isSold?'PIXEL — ':'AUCTION — ')+`GRID #${String(resolvedId).padStart(6,'0')}`;
+  // Bid constraints: min = current * 1.1 (rounded up, min +$1), max = current * 3
+  const minBid=currentBid>0?Math.max(currentBid+1,Math.ceil(currentBid*1.1)):sp;
+  const maxBid=currentBid>0?Math.floor(currentBid*3):sp*10;
+
+  document.getElementById('motit').textContent=(isSold?'PIXEL — ':isDirectBuy?'BUY NOW — ':'AUCTION — ')+`GRID #${String(resolvedId).padStart(6,'0')}`;
   document.getElementById('m-id').textContent='#'+String(resolvedId).padStart(6,'0');
   document.getElementById('m-sz').textContent=sz===5?'5×5 PREMIUM':sz===2?'2×2 STANDARD':'1×1 BASIC';
-  document.getElementById('m-bid').textContent=blk&&blk.bid?'$'+blk.bid:'No bids';
-  document.getElementById('m-bids').textContent=(blk&&blk.bids||0)+' bid'+(blk&&blk.bids===1?'':'s');
-  document.getElementById('bidinp').value=minMax;document.getElementById('bidinp').min=minMax;
+  document.getElementById('m-bid').textContent=isDirectBuy?'$1 FIXED':currentBid?'$'+currentBid:'No bids';
+  document.getElementById('m-bids').textContent=isDirectBuy?'instant':((blk&&blk.bids||0)+' bid'+((blk&&blk.bids||0)===1?'':'s'));
 
-  // Show current leader
+  // Update bid rules display
+  const minRaiseEl=document.getElementById('mo-min-raise');
+  const maxBidEl=document.getElementById('mo-max-bid');
+  if(minRaiseEl)minRaiseEl.textContent='$'+minBid;
+  if(maxBidEl)maxBidEl.textContent='$'+maxBid;
+
+  // Quick bid buttons: min, mid, max
+  const qbRow=document.getElementById('mo-quickbid-row');
+  if(qbRow&&!isSold&&!isDirectBuy){
+    const mid=Math.floor((minBid+maxBid)/2);
+    const opts=[
+      {label:'+min $'+minBid,val:minBid,col:'#000080'},
+      {label:'mid $'+mid,val:mid,col:'#884400'},
+      {label:'max $'+maxBid,val:maxBid,col:'#880000'}
+    ];
+    qbRow.innerHTML=opts.map(o=>`<button onclick="setQuickBid(${o.val})" style="font-family:'Press Start 2P',monospace;font-size:6px;padding:5px 8px;background:${o.col};color:white;border:none;cursor:pointer;border-top:1px solid rgba(255,255,255,0.3);border-left:1px solid rgba(255,255,255,0.3);">${o.label}</button>`).join('');
+    qbRow.style.display='flex';
+  } else if(qbRow){ qbRow.style.display='none'; }
+
+  // Set input
+  const inp=document.getElementById('bidinp');
+  if(inp){inp.value=minBid;inp.min=minBid;inp.max=maxBid;}
+
+  // Leader display
   const leaderEl=document.getElementById('m-current-leader');
   if(leaderEl){
-    if(blk&&blk.bidder&&!isSold){
+    if(blk&&blk.bidder&&!isSold&&!isDirectBuy){
       leaderEl.style.display='block';
       const isYou=blk.bidder===loggedIn;
       leaderEl.innerHTML=isYou
-        ?'<span style="color:#008000;">✓ You are currently winning!</span> Current price: <b style="color:#000080;">$'+blk.bid+'</b>'
-        :'<span style="color:#CC6600;">⚠ Leading: <b>'+blk.bidder+'</b></span> — Current price: <b style="color:#000080;">$'+blk.bid+'</b>. Bid more than $'+blk.bid+' to win.';
+        ?'<span style="color:#008000;">✓ You are currently winning at $'+currentBid+'!</span>'
+        :'<span style="color:#CC6600;">⚠ Current leader: <b>'+blk.bidder+'</b> at $'+currentBid+'</span>';
     } else { leaderEl.style.display='none'; }
   }
 
   const tmr=document.getElementById('motmr');
   if(isSold){
     tmr.textContent='-- AUCTION ENDED --';tmr.style.color='#FF4444';tmr.style.animation='none';
+  } else if(isDirectBuy){
+    tmr.textContent='⚡ INSTANT PURCHASE';tmr.style.color='#00AA44';tmr.style.animation='none';
   } else {
     if(blk&&blk.endsAt){
       const remMs=Math.max(0,blk.endsAt-Date.now());
@@ -1290,11 +1384,21 @@ function openMO(id){
   const gate=document.getElementById('mo-gate');
   const bsec=document.getElementById('mo-bid-sec');
   const soldView=document.getElementById('mo-sold-view');
+  const directBuyEl=document.getElementById('mo-direct-buy');
+  const claimSec=document.getElementById('mo-claim-sec');
+  const payBtns=document.getElementById('mo-pay-btns');
+  const payHd=document.getElementById('mo-pay-sechd');
+
+  gate.style.display='none';
+  bsec.style.display='none';
+  if(soldView)soldView.style.display='none';
+  if(directBuyEl)directBuyEl.style.display='none';
+  if(claimSec)claimSec.style.display='none';
+  if(payBtns)payBtns.style.display='flex';
+  if(payHd)payHd.style.display='block';
+  const gb=document.getElementById('mo-guest-bar');if(gb)gb.style.display='none';
 
   if(isSold){
-    gate.style.display='none';
-    bsec.style.display='none';
-    const gb=document.getElementById('mo-guest-bar');if(gb)gb.style.display='none';
     if(soldView){
       soldView.style.display='block';
       const ownerEl=soldView.querySelector('#mo-sold-owner');
@@ -1306,40 +1410,87 @@ function openMO(id){
       if(urlEl){if(blk.url){urlEl.href=blk.url;urlEl.textContent=blk.url;urlEl.style.display='';}else{urlEl.textContent='No link set';urlEl.style.display='';}}
       if(imgEl){if(blk.image){imgEl.src=blk.image;imgEl.style.display='block';}else{imgEl.style.display='none';}}
     }
-  } else {
-    if(soldView)soldView.style.display='none';
-    if(loggedIn){
-      gate.style.display='none';bsec.style.display='block';
-      const gb=document.getElementById('mo-guest-bar');if(gb)gb.style.display='none';
-    } else {
-      // Guest: hide the old gate (login-required block), show a slim inline sign-in nudge instead
-      gate.style.display='none';
-      bsec.style.display='none';
-      // Insert a non-intrusive sign-in bar if not already there
-      let guestBar=document.getElementById('mo-guest-bar');
-      if(!guestBar){
-        guestBar=document.createElement('div');
-        guestBar.id='mo-guest-bar';
-        guestBar.style.cssText='background:#F0F4FF;border:2px solid #000080;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
-        guestBar.innerHTML=`<span style="font-family:'VT323',monospace;font-size:17px;color:#000080;flex:1;">🔒 Sign in to place bids on this pixel</span><button onclick="closeMO();openLM('login')" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 12px;background:#000080;color:white;border-top:2px solid #4444FF;border-left:2px solid #4444FF;border-right:2px solid #000044;border-bottom:2px solid #000044;cursor:pointer;white-space:nowrap;">LOG IN</button><button onclick="closeMO();openLM('register')" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 12px;background:#CC8800;color:white;border-top:2px solid #FFDD00;border-left:2px solid #FFDD00;border-right:2px solid #886600;border-bottom:2px solid #886600;cursor:pointer;white-space:nowrap;">REGISTER FREE</button>`;
-        // Insert before the bid history section
-        const bhSection=document.querySelector('#mob > div[style*="margin-top:12px"]');
-        if(bhSection) bhSection.parentNode.insertBefore(guestBar, bhSection);
-        else document.getElementById('mob').appendChild(guestBar);
-      }
-      guestBar.style.display='flex';
+    // Check if this user won and needs to claim
+    if(loggedIn&&blk.owner===loggedIn&&isPendingClaim){
+      const dl=blk.claimDeadline?.toMillis?blk.claimDeadline.toMillis():blk.claimDeadline;
+      if(claimSec){claimSec.style.display='block';startClaimTimer(dl);}
+      if(payBtns)payBtns.style.display='none';
+      if(payHd)payHd.style.display='none';
+    } else if(isPendingClaim){
+      // Someone else won, pending claim — show locked message
+      if(soldView){const extra=document.createElement('div');extra.style.cssText='background:#FFF8E8;border:1px solid #CC8800;padding:8px 10px;margin-top:8px;font-family:VT323,monospace;font-size:15px;color:#CC6600;';extra.textContent='⏳ Winner has 6 hours to claim this pixel.';soldView.appendChild(extra);}
+      if(payBtns)payBtns.style.display='none';
+      if(payHd)payHd.style.display='none';
     }
+  } else if(isDirectBuy){
+    if(loggedIn){
+      if(directBuyEl)directBuyEl.style.display='block';
+    } else { showGuestBar(); }
+    if(payBtns)payBtns.style.display='none';
+    if(payHd)payHd.style.display='none';
+  } else {
+    if(loggedIn){ bsec.style.display='block'; }
+    else { showGuestBar(); if(payBtns)payBtns.style.display='none'; if(payHd)payHd.style.display='none'; }
   }
 
   document.getElementById('bidok').style.display='none';
   const adminRow=document.getElementById('mo-admin-row');
   if(adminRow)adminRow.style.display=isAdmin?'block':'none';
   document.getElementById('moo').classList.add('open');
-
-  // Load bid history from Firestore
-  if(window._fbLoadBidHistory) window._fbLoadBidHistory(resolvedId);
+  if(window._fbLoadBidHistory)window._fbLoadBidHistory(resolvedId);
 }
-function closeMO(){document.getElementById('moo').classList.remove('open');curMO=null;}
+
+function showGuestBar(){
+  let guestBar=document.getElementById('mo-guest-bar');
+  if(!guestBar){
+    guestBar=document.createElement('div');guestBar.id='mo-guest-bar';
+    guestBar.style.cssText='background:#F0F4FF;border:2px solid #000080;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
+    guestBar.innerHTML=`<span style="font-family:'VT323',monospace;font-size:17px;color:#000080;flex:1;">🔒 Sign in to bid on this pixel</span><button onclick="closeMO();openLM('login')" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 12px;background:#000080;color:white;border-top:2px solid #4444FF;border-left:2px solid #4444FF;border-right:2px solid #000044;border-bottom:2px solid #000044;cursor:pointer;white-space:nowrap;">LOG IN</button><button onclick="closeMO();openLM('register')" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 12px;background:#CC8800;color:white;border-top:2px solid #FFDD00;border-left:2px solid #FFDD00;border-right:2px solid #886600;border-bottom:2px solid #886600;cursor:pointer;white-space:nowrap;">REGISTER FREE</button>`;
+    const bh=document.querySelector('#mob > div[style*="margin-top:12px"]');
+    if(bh)bh.parentNode.insertBefore(guestBar,bh);else document.getElementById('mob').appendChild(guestBar);
+  }
+  guestBar.style.display='flex';
+}
+
+function setQuickBid(val){
+  const inp=document.getElementById('bidinp');
+  if(inp){inp.value=val;inp.focus();}
+}
+function closeMO(){document.getElementById('moo').classList.remove('open');curMO=null;if(_claimTimerIv){clearInterval(_claimTimerIv);_claimTimerIv=null;}}
+
+let _claimTimerIv=null;
+function startClaimTimer(deadline){
+  if(_claimTimerIv)clearInterval(_claimTimerIv);
+  function tick(){
+    const rem=Math.max(0,deadline-Date.now());
+    const hh=Math.floor(rem/3600000),mm=Math.floor((rem%3600000)/60000),ss=Math.floor((rem%60000)/1000);
+    const el=document.getElementById('mo-claim-timer');
+    if(el)el.textContent=`${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    if(rem<=0){
+      clearInterval(_claimTimerIv);_claimTimerIv=null;
+      // Auto-forfeit
+      if(curMO!==null)forfeitPixel();
+    }
+  }
+  tick();
+  _claimTimerIv=setInterval(tick,1000);
+}
+
+function forfeitPixel(){
+  if(curMO===null)return;
+  if(!confirm('Forfeit this pixel? It will pass to the next highest bidder.'))return;
+  if(window._fbForfeit)window._fbForfeit(curMO);
+  closeMO();
+}
+
+function directBuyStripe(){
+  if(!loggedIn){openLM('login');return;}
+  showToast('💳 Redirecting to Stripe checkout... (backend required)','#635BFF',3000);
+}
+function directBuyPaypal(){
+  if(!loggedIn){openLM('login');return;}
+  showToast('Ⓟ Redirecting to PayPal checkout... (backend required)','#003087',3000);
+}
 
 function placeBid(){if(window._fbPlaceBid){window._fbPlaceBid();return;}
   // fallback demo bid
@@ -1436,7 +1587,8 @@ const EGGS=[
   {id:'pizza',name:'PIZZA TIME',icon:'🍕',badge:'Pizza Lord',desc:'Type "pizza" anywhere. WITH GREAT POWER comes great pizza.',special:'pizza'},
   {id:'secret',name:'THE DEEPER SECRET',icon:'🗝️',badge:'Keymaster',desc:'You found a hidden sequence. The lounge awaits…',special:'lounge'},
 ];
-const foundEggs=new Set();
+const foundEggs=new Set(JSON.parse(localStorage.getItem('mpa_eggs')||'[]'));
+function saveEggs(){try{localStorage.setItem('mpa_eggs',JSON.stringify([...foundEggs]));}catch(e){}}
 let lcc=0,lct;function logoClick(){if(!loggedIn)return;lcc++;clearTimeout(lct);lct=setTimeout(()=>lcc=0,3000);if(lcc>=10){lcc=0;triggerEgg('globe');}}
 const KC=[38,38,40,40,37,39,37,39,66,65];let ki=0,hb='';
 document.addEventListener('keydown',e=>{
@@ -1449,7 +1601,7 @@ let fc=[],fct2;
 document.getElementById('gi').addEventListener('keyup',e=>{if(document.getElementById('gi').value.toLowerCase().includes('never'))triggerEgg('rickroll');});
 let ocnt=0,oct;
 document.getElementById('vis-cnt').addEventListener('click',()=>{ocnt++;clearTimeout(oct);oct=setTimeout(()=>ocnt=0,3000);if(ocnt>=2){ocnt=0;triggerEgg('secret');}});
-function triggerEgg(id){if(!loggedIn)return;if(foundEggs.has(id))return;foundEggs.add(id);const eg=EGGS.find(e=>e.id===id)||{id,name:id,icon:'🥚',badge:'Explorer',desc:'Secret found!',special:null};showEgg(eg);}
+function triggerEgg(id){if(!loggedIn)return;if(foundEggs.has(id))return;foundEggs.add(id);saveEggs();const eg=EGGS.find(e=>e.id===id)||{id,name:id,icon:'🥚',badge:'Explorer',desc:'Secret found!',special:null};showEgg(eg);}
 function showEgg(eg){
   document.getElementById('eeicon').textContent=eg.icon;document.getElementById('eename').textContent=eg.name;
   document.getElementById('eedesc').textContent=eg.desc;document.getElementById('eebadge').innerHTML=`🏅 BADGE UNLOCKED: <strong>${eg.badge}</strong>`;
@@ -1582,29 +1734,36 @@ function showSec(name){
     sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🏆 LEADERBOARD — TOP PIXEL OWNERS</div><table class="lb-t"><thead><tr><th>#</th><th>USER</th><th>PIXELS</th><th>TOTAL SPENT</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
   else if(name==='badges'){
-    // Admin sees real hints, users see ??? 
+    // Map egg IDs to badge names for cross-reference
+    const EGG_BADGE_MAP={konami:'KONAMI MASTER',fidget:'2015 LEGEND',rickroll:'RICK ROLLER',harlem:'SHAKE IT',globe:'GLOBE TROTTER',matrix:'NEO',doom:'RIP & TEAR',retro:'PIXEL PIONEER',pizza:'PIZZA LORD',secret:'KEYMASTER',blimp:'BLIMP HUNTER'};
+    const unlockedBadges=new Set([...foundEggs].map(id=>EGG_BADGE_MAP[id]).filter(Boolean));
+    // Pixel-based badges
+    const myPx=[...blkMap.values()].filter(b=>b.owner===loggedIn);
+    if(myPx.length>=1)unlockedBadges.add('PIONEER');
+    if(myPx.length>=10)unlockedBadges.add('COLLECTOR');
+    if(myPx.some(b=>b.size>=5))unlockedBadges.add('DIAMOND HANDS');
     const BDEFS=[
-      {i:'🏅',n:'PIONEER',d:'Own your first pixel',hint:'Own your first pixel',l:false},
-      {i:'🏆',n:'COLLECTOR',d:'Own 10+ pixels',hint:'Own 10+ pixels',l:true},
-      {i:'💎',n:'DIAMOND HANDS',d:'Win a 5×5 premium block',hint:'Win a 5×5 premium block',l:true},
-      {i:'🎈',n:'BLIMP HUNTER',d:'Catch your first blimp',hint:'Click the flying 🎈 blimp when it appears',l:true},
-      {i:'🚀',n:'BLIMP ACE',d:'Catch 5 blimps total',hint:'Catch 5 blimps total',l:true},
-      {i:'🕹️',n:'KONAMI MASTER',d:'↑↑↓↓←→←→BA on keyboard',hint:'Type the Konami code: ↑↑↓↓←→←→BA on your keyboard',l:true},
-      {i:'🌀',n:'2015 LEGEND',d:'Spin the grid wildly (rapid circles)',hint:'Move your mouse in rapid wild circles on the grid (fidget spinner motion)',l:true},
-      {i:'🎵',n:'RICK ROLLER',d:'Type "never" in the go-to box',hint:'Type the word "never" using keyboard while on the grid',l:true},
-      {i:'💃',n:'SHAKE IT',d:'Type "harlem" on keyboard',hint:'Type the word "harlem" on your keyboard anywhere on the page',l:true},
-      {i:'🌐',n:'GLOBE TROTTER',d:'Click the globe logo 10× (must be logged in)',hint:'Click the 🌐 site title/logo 10 times rapidly while logged in',l:true},
-      {i:'🐇',n:'NEO',d:'Type "matrix" on keyboard',hint:'Type the word "matrix" on your keyboard anywhere on the page',l:true},
-      {i:'🔫',n:'RIP & TEAR',d:'Type "doom" on keyboard',hint:'Type the word "doom" on your keyboard anywhere on the page',l:true},
-      {i:'👾',n:'PIXEL PIONEER',d:'Type "retro" on keyboard',hint:'Type the word "retro" on your keyboard anywhere on the page',l:true},
-      {i:'🍕',n:'PIZZA LORD',d:'Type "pizza" on keyboard',hint:'Type the word "pizza" on your keyboard anywhere on the page',l:true},
-      {i:'🗝️',n:'KEYMASTER',d:'Find the hidden click sequence',hint:'Click exactly: grid → logo → grid → logo → grid (alternating 5 times fast) — or find another hidden sequence',l:true},
-      {i:'💡',n:'SPOTLIGHT STAR',d:'Purchase a Spotlight Ad',hint:'Purchase a Spotlight Ad from the sidebar panel',l:true},
-      {i:'🔥',n:'AUCTION KING',d:'Win 5 auctions in one day',hint:'Win 5 pixel auctions within a single day',l:true}
+      {i:'🏅',n:'PIONEER',d:'Own your first pixel',hint:'Win any pixel auction to unlock.'},
+      {i:'🏆',n:'COLLECTOR',d:'Own 10+ pixels',hint:'Win 10 or more pixel auctions.'},
+      {i:'💎',n:'DIAMOND HANDS',d:'Win a 5×5 premium block',hint:'Win one of the rare 5×5 premium blocks.'},
+      {i:'🎈',n:'BLIMP HUNTER',d:'Catch the flying blimp',hint:'Click the 🎈 blimp when it flies across the grid.'},
+      {i:'🕹️',n:'KONAMI MASTER',d:'Enter the Konami code',hint:'↑↑↓↓←→←→BA on your keyboard.'},
+      {i:'🌀',n:'2015 LEGEND',d:'Spin the grid wildly',hint:'Move your mouse in rapid circles on the grid.'},
+      {i:'🎵',n:'RICK ROLLER',d:'Type a certain word in search',hint:'Type "never" in the pixel search box.'},
+      {i:'💃',n:'SHAKE IT',d:'Trigger the Harlem Shake',hint:'Type "harlem" anywhere on the page.'},
+      {i:'🌐',n:'GLOBE TROTTER',d:'Click the logo 10 times',hint:'Click the 🌐 site title 10 times rapidly while logged in.'},
+      {i:'🐇',n:'NEO',d:'Follow the white rabbit',hint:'Type "matrix" anywhere on the page.'},
+      {i:'🔫',n:'RIP & TEAR',d:'Until it is done',hint:'Type "doom" anywhere on the page.'},
+      {i:'👾',n:'PIXEL PIONEER',d:'Appreciate the classics',hint:'Type "retro" anywhere on the page.'},
+      {i:'🍕',n:'PIZZA LORD',d:'With great power...',hint:'Type "pizza" anywhere on the page.'},
+      {i:'🗝️',n:'KEYMASTER',d:'Find the hidden sequence',hint:'Keep exploring — the sequence is hidden somewhere on the page.'},
+      {i:'💡',n:'SPOTLIGHT STAR',d:'Purchase a Spotlight Ad',hint:'Buy the Spotlight Ad from the sidebar.'},
+      {i:'🔥',n:'AUCTION KING',d:'Win 5 auctions in one day',hint:'Win 5 pixel auctions within a single day.'}
     ];
+    const unlockedCount=BDEFS.filter(b=>unlockedBadges.has(b.n)).length;
     sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:6px;">🏅 BADGES</div>`
-      +(isAdmin?`<div style="font-family:'Press Start 2P',monospace;font-size:7px;color:#FFD700;background:#000080;padding:5px 10px;margin-bottom:10px;display:inline-block;">⚡ ADMIN VIEW — EASTER EGG HINTS VISIBLE</div>`:'')
-      +`<div style="font-family:'VT323',monospace;font-size:17px;color:#444;margin-bottom:14px;">Unlock badges by bidding, winning pixels, catching blimps, and finding hidden secrets...</div><div class="bg-grid">${BDEFS.map(b=>`<div class="bg-card ${b.l?'locked':''}"><div class="bgi">${b.i}</div><div class="bgn">${b.n}</div><div class="bgd">${b.l?(isAdmin?`<span style="color:#CC6600;font-size:13px;">💡 ${b.hint}</span>`:'🔒 ???'):b.d}</div>${!b.l?'<div class="bgu">✓ UNLOCKED</div>':''}</div>`).join('')}</div>`;
+      +`<div style="font-family:'VT323',monospace;font-size:16px;color:#555;margin-bottom:14px;">${loggedIn?`${unlockedCount} / ${BDEFS.length} unlocked`:'Log in to track your badges.'} — find hidden secrets to unlock them all!</div>`
+      +`<div class="bg-grid">${BDEFS.map(b=>{const unlocked=unlockedBadges.has(b.n);return`<div class="bg-card${unlocked?'':' locked'}" style="${unlocked?'border-top:2px solid #00CC00;border-left:2px solid #00CC00;':''}">`+`<div class="bgi" style="${unlocked?'':'filter:grayscale(1);opacity:0.4;'}">${b.i}</div>`+`<div class="bgn" style="${unlocked?'color:#008000;':''}">${b.n}</div>`+`<div class="bgd">${unlocked?`<span style="color:#555;">${b.d}</span><br><span style="color:#888;font-size:12px;">💡 ${b.hint}</span>`:'<span style="color:#AAA;">🔒 ???</span>'}</div>`+`${unlocked?'<div class="bgu" style="color:#008000;">✓ UNLOCKED</div>':''}</div>`;}).join('')}</div>`;
   }
   else if(name==='how'){
     sv.innerHTML=`<div style="max-width:680px;margin:0 auto;">
@@ -1886,6 +2045,14 @@ window.addEventListener('load',()=>{
     place(0,1,2);place(0,67,5);place(0,75,5);place(1,0,2);
     for(let a=0,p=0;a<5000&&p<180;a++){const c=Math.floor(rng2()*(G-4)),r=Math.floor(rng2()*(G-4));if(place(r,c,5))p++;}
     for(let a=0,p=0;a<20000&&p<2000;a++){const c=Math.floor(rng2()*(G-1)),r=Math.floor(rng2()*(G-1));if(place(r,c,2))p++;}
+    // Pick 200 random 1×1 positions for direct-buy $1 pixels (seeded so always same spots)
+    const rng3=((s)=>{let n=s;return()=>{n=(n*6364136223846793005n===undefined?(n*1664525+1013904223)&0xFFFFFFFF:(n*1664525+1013904223)&0xFFFFFFFF);return(n>>>0)/0xFFFFFFFF;}})(0xDEADBEEF);
+    const directBuyIds=new Set();
+    for(let a=0,p=0;a<5000&&p<200;a++){
+      const c=Math.floor(rng3()*(G-2))+1,r=Math.floor(rng3()*(G-2))+1;
+      const id=r*G+c;
+      if(!occ[id]){directBuyIds.add(id);p++;}
+    }
     // Phase 2: fill 1x1 in row chunks - yield to browser between chunks
     const CHUNK=100; // rows per chunk — ~100k Map.set calls, fast on all devices
     let row=0;
@@ -1900,7 +2067,8 @@ window.addEventListener('load',()=>{
           const id=r*G+c;
           if(occ[id])continue;
           occ[id]=1;
-          blkMap.set(id,{id,row:r,col:c,size:1,status:'available',bid:0,bids:0,mins:1440,bidder:null,owner:null,image:null,url:null});
+          const isDB=directBuyIds.has(id);
+          blkMap.set(id,{id,row:r,col:c,size:1,status:'available',bid:0,bids:0,mins:1440,bidder:null,owner:null,image:null,url:null,directBuy:isDB||undefined});
           cellMap.set(id,{bId:id,sz:1});
         }
       }
@@ -1918,6 +2086,7 @@ window.addEventListener('load',()=>{
     resizeC();
     requestAnimationFrame(loop);
     updateSpotlightPanel();
+    updSidebar();
     mmDirty=true;ndraw=true;
   });
   window.addEventListener('resize',()=>{resizeC();ndraw=true;});
@@ -2151,7 +2320,29 @@ onAuthStateChanged(auth, async user => {
   loadGridState();
   loadSpotlight();
   loadUserCount();
+  // Check for any pending wins after grid loads
+  setTimeout(()=>checkPendingWins(name), 2500);
 });
+
+async function checkPendingWins(username){
+  try {
+    const {getDocs,collection:col2,query,where} = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js');
+    const q=query(col2(db,'blocks'),where('owner','==',username),where('status','==','sold'));
+    const snap=await getDocs(q);
+    snap.forEach(docSnap=>{
+      const d=docSnap.data();
+      if(!d.paid&&d.claimDeadline){
+        const dl=d.claimDeadline?.toMillis?d.claimDeadline.toMillis():typeof d.claimDeadline==='number'?d.claimDeadline:d.claimDeadline?.seconds?d.claimDeadline.seconds*1000:0;
+        if(dl>Date.now()&&!notifiedExpired.has(d.id)){
+          // Sync local state
+          const blk=blkMap.get(d.id);
+          if(blk){Object.assign(blk,{status:'sold',owner:d.owner,bid:d.bid||0,bids:d.bids||0,claimDeadline:dl,paid:false});ndraw=true;mmDirty=true;}
+          showAuctionClose({id:d.id,size:d.size||1,bid:d.bid||0,owner:d.owner,bidder:d.bidder||d.owner},true);
+        }
+      }
+    });
+  }catch(e){console.warn('checkPendingWins error:',e);}
+}
 
 // ── GRID STATE (Firestore) ───────────────────────────────
 async function loadGridState() {
@@ -2209,6 +2400,7 @@ async function loadGridState() {
       }
       if(blk.status!=='available' && wasAvail) addFeed(blk.bidder||blk.owner||'?',blk.bid,blk.id,blk.size,true);
       ndraw=true;mmDirty=true;
+      updSidebar();
       // If modal is open for this block, refresh live displays
       if(curMO!==null&&(curMO===blk.id||(cellMap.get(curMO)&&blkMap.get(cellMap.get(curMO).bId)?.id===blk.id))){
         document.getElementById('m-bid').textContent=blk.bid?'$'+blk.bid:'No bids';
@@ -2333,37 +2525,65 @@ window._fbForgot = async function() {
 };
 
 // ── FINALIZE AUCTION (Firestore) — called when timer expires ─
-// Uses a simple "first writer wins" guard: if already sold, skip.
 window._fbFinalizeAuction = async function(blockId, winner, noBids=false) {
   try {
     const docId = String(blockId).padStart(6,'0');
     const snap = await getDoc(doc(db,'blocks',docId));
     const ex = snap.exists() ? snap.data() : null;
-    // Guard: if already marked sold in Firestore, do nothing
     if(ex && ex.status==='sold') return;
     if(noBids || !winner) {
-      // No bids — delete the block doc so it resets to available for everyone
       await deleteDoc(doc(db,'blocks',docId));
     } else {
-      // Has a winner — write sold + owner
+      // Give winner 6 hours to claim/pay — store deadline + second bidder for forfeit chain
+      const claimDeadline = new Date(Date.now() + 6*60*60*1000);
       await setDoc(doc(db,'blocks',docId), {
         status: 'sold',
         owner: winner,
         uid: ex?.uid || null,
         bid: ex?.bid || 0,
         bids: ex?.bids || 0,
+        claimDeadline,
+        paid: false,
+        secondBidder: ex?.secondBidder || null,
+        secondBid: ex?.secondBid || null,
         finalizedAt: serverTimestamp()
       }, {merge: true});
-      // Update leaderboard/stats
-      try {
-        await setDoc(doc(db,'meta','stats'), {
-          sold: increment(1)
-        }, {merge: true});
-      } catch(e) {}
+      try { await setDoc(doc(db,'meta','stats'),{sold:increment(1)},{merge:true}); } catch(e){}
     }
-  } catch(e) {
-    console.warn('Finalize auction error:', e);
-  }
+  } catch(e){ console.warn('Finalize auction error:', e); }
+};
+
+// ── FORFEIT — pass pixel to second-highest bidder ──────────
+window._fbForfeit = async function(blockId) {
+  try {
+    const docId = String(blockId).padStart(6,'0');
+    const snap = await getDoc(doc(db,'blocks',docId));
+    if(!snap.exists()) return;
+    const ex = snap.data();
+    if(ex.owner !== loggedIn) return; // only current winner can forfeit
+    const next = ex.secondBidder || null;
+    if(next) {
+      // Transfer to second bidder with fresh 6h claim window
+      await setDoc(doc(db,'blocks',docId), {
+        owner: next,
+        uid: null,
+        bid: ex.secondBid || ex.bid,
+        claimDeadline: new Date(Date.now()+6*60*60*1000),
+        paid: false,
+        secondBidder: null,
+        secondBid: null,
+        forfeitedBy: loggedIn,
+        forfeitedAt: serverTimestamp()
+      }, {merge: true});
+      showToast(`Pixel #${String(blockId).padStart(6,'0')} passed to ${next}`,'#555555',4000);
+    } else {
+      // No second bidder — reset to available
+      await deleteDoc(doc(db,'blocks',docId));
+      const blk=blkMap.get(blockId);
+      if(blk){blk.status='available';blk.owner=null;blk.bid=0;blk.bids=0;blk.bidder=null;blk.maxBidder=null;blk.maxBid=0;ndraw=true;mmDirty=true;}
+      showToast(`Pixel #${String(blockId).padStart(6,'0')} returned to available`,'#555555',4000);
+    }
+  } catch(e){ console.warn('Forfeit error:',e); }
 };
 
 // ── BID HISTORY LOADER ────────────────────────────────────
@@ -2388,7 +2608,7 @@ window._fbLoadBidHistory = async function(blockId) {
       [...log].reverse().forEach(entry=>{
         const d=document.createElement('div');d.className='bhi';
         const ts=entry.ts?(new Date(entry.ts)).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
-        d.innerHTML=`<span class="bhu">${entry.user||'?'}</span><span class="bha"> max $${entry.maxBid||entry.bid||0}</span><span style="color:#555;font-size:12px;margin-left:4px;">→ price $${entry.price||entry.bid||0}</span><span class="bht">${ts}</span>`;
+        d.innerHTML=`<span class="bhu">${entry.user||'?'}</span><span class="bha"> bid <b>$${entry.bid||entry.maxBid||0}</b></span><span class="bht">${ts}</span>`;
         bhEl.appendChild(d);
       });
       return;
@@ -2398,7 +2618,7 @@ window._fbLoadBidHistory = async function(blockId) {
       const e=d.data();
       const el=document.createElement('div');el.className='bhi';
       const ts=e.ts?.toMillis?(new Date(e.ts.toMillis())).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):e.ts?(new Date(e.ts)).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
-      el.innerHTML=`<span class="bhu">${e.user||'?'}</span><span class="bha"> max $${e.maxBid||e.bid||0}</span><span style="color:#555;font-size:12px;margin-left:4px;">→ price $${e.price||e.bid||0}</span><span class="bht">${ts}</span>`;
+      el.innerHTML=`<span class="bhu">${e.user||'?'}</span><span class="bha"> bid <b>$${e.bid||e.maxBid||0}</b></span><span class="bht">${ts}</span>`;
       bhEl.appendChild(el);
     });
   } catch(err) {
@@ -2412,150 +2632,130 @@ window._fbLoadBidHistory = async function(blockId) {
       [...log].reverse().forEach(entry=>{
         const d=document.createElement('div');d.className='bhi';
         const ts=entry.ts?(new Date(entry.ts)).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
-        d.innerHTML=`<span class="bhu">${entry.user||'?'}</span><span class="bha"> max $${entry.maxBid||entry.bid||0}</span><span style="color:#555;font-size:12px;margin-left:4px;">→ price $${entry.price||entry.bid||0}</span><span class="bht">${ts}</span>`;
+        d.innerHTML=`<span class="bhu">${entry.user||'?'}</span><span class="bha"> bid <b>$${entry.bid||entry.maxBid||0}</b></span><span class="bht">${ts}</span>`;
         bhEl.appendChild(d);
       });
     } catch(e2){ bhEl.innerHTML='<div style="padding:8px;color:#888;font-family:VT323,monospace;font-size:15px;">No bids yet — be the first! 🚀</div>'; }
   }
 };
 
-// ── PLACE BID — PROXY / MAX-BID SYSTEM (Firestore) ────────
-// How it works:
-//   - User enters their MAX BID (most they'll pay)
-//   - System stores maxBid + maxBidder privately
-//   - Current PRICE starts at starting price and only rises $2 at a time
-//   - When a new bidder enters, system compares their max vs existing max:
-//     * If new > existing max → new bidder becomes leader at existingMax+2
-//     * If new <= existing max → existing holder auto-raises to newBid+2, new bidder loses
-//   - Winner pays the current PRICE at expiry, not their max
+// ── PLACE BID — MANUAL with constraints ────────────────────
+// Rules:
+//   1. New bid must be >= current * 1.1 (min 10% raise, at least +$1)
+//   2. New bid must be <= current * 3 (no insane jumps)
+//   3. Block bidding on sold pixels (including pending-claim)
 window._fbPlaceBid = async function() {
   if(!loggedIn||!window._fbUid){openLM('login');return;}
-  const userMaxBid = parseInt(document.getElementById('bidinp').value);
-  const minAllowed = parseInt(document.getElementById('bidinp').min);
-  const ok = document.getElementById('bidok');
+  const bid=parseInt(document.getElementById('bidinp').value);
+  const ok=document.getElementById('bidok');
+  ok.style.cssText='display:block;background:#FFF8DC;border:2px solid #CC8800;padding:7px 10px;font-family:"Share Tech Mono",monospace;font-size:12px;color:#CC6600;margin-top:7px;';
 
-  if(isNaN(userMaxBid)||userMaxBid<minAllowed){
+  if(isNaN(bid)||bid<1){
     document.getElementById('bidinp').style.borderColor='#CC0000';
     setTimeout(()=>document.getElementById('bidinp').style.borderColor='',1000);
     return;
   }
-  if(curMO===null) return;
+  if(curMO===null)return;
 
   const cell=cellMap.get(curMO),blk=cell?blkMap.get(cell.bId):null,sz=blk?blk.size:1;
-  if(blk&&blk.status==='sold'){
-    ok.style.cssText='display:block;background:#FFEEEE;border:2px solid #CC0000;padding:7px 10px;font-family:"Share Tech Mono",monospace;font-size:12px;color:#CC0000;margin-top:7px;';
-    ok.innerHTML='⚠ This pixel has already been sold. Auction is closed.';
+  const canonId=blk?blk.id:curMO;
+  const docId=String(canonId).padStart(6,'0');
+
+  // Block sold / pending-claim pixels
+  if(blk&&(blk.status==='sold'||blk.status==='pending')){
+    ok.innerHTML='⚠ This pixel has been sold and is no longer available for bidding.';
+    ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
     return;
   }
 
-  const canonId=blk?blk.id:curMO;
-  const docId=String(canonId).padStart(6,'0');
-  ok.style.cssText='display:block;background:#FFF8DC;border:2px solid #CC8800;padding:7px 10px;font-family:"Share Tech Mono",monospace;font-size:12px;color:#CC6600;margin-top:7px;';
-  ok.innerHTML='⏳ Processing bid...';
+  ok.innerHTML='⏳ Placing bid...';
 
   try {
-    const {runTransaction, collection: col2, addDoc, serverTimestamp: st2} = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js');
+    const {runTransaction} = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js');
+    const blockRef=doc(db,'blocks',docId);
 
-    const blockRef = doc(db,'blocks',docId);
+    const result=await runTransaction(db,async txn=>{
+      const snap=await txn.get(blockRef);
+      const ex=snap.exists()?snap.data():null;
 
-    // Run as a transaction so proxy logic is atomic
-    const result = await runTransaction(db, async (txn) => {
-      const snap = await txn.get(blockRef);
-      const ex = snap.exists() ? snap.data() : null;
+      if(ex&&(ex.status==='sold'||ex.status==='pending')) return{err:'sold'};
 
-      if(ex && ex.status==='sold') return {err:'sold'};
+      const sp=sz===5?20:sz===2?5:1;
+      const curBid=ex?.bid||0;
+      const minBid=curBid>0?Math.max(curBid+1,Math.ceil(curBid*1.1)):sp;
+      const maxBid=curBid>0?Math.floor(curBid*3):sp*10;
 
-      const startPrice = sz===5?20:sz===2?5:1;
-      const currentPrice = ex?.currentPrice || ex?.bid || 0;
-      const currentMax   = ex?.maxBid || 0;
-      const currentMaxBidder = ex?.maxBidder || null;
-      const totalBids2   = (ex?.bids||0)+1;
+      if(bid<minBid) return{err:'low',minBid};
+      if(bid>maxBid) return{err:'high',maxBid};
 
-      // If someone else holds max and their max beats this bid → they auto-raise
-      if(currentMaxBidder && currentMaxBidder !== loggedIn && currentMax >= userMaxBid) {
-        // Existing holder wins — raise their price to userMaxBid (but not over their own max)
-        const newPrice = Math.min(userMaxBid, currentMax);
-        txn.set(blockRef, {
-          id:canonId, row:Math.floor(canonId/G), col:canonId%G, size:sz,
-          status:'active', bid:newPrice, currentPrice:newPrice,
-          maxBid:currentMax, maxBidder:currentMaxBidder,
-          bidder:currentMaxBidder, uid:ex?.uid||null,
-          bids:totalBids2, mins:1440,
-          endsAt:new Date(Date.now()+24*60*60*1000)
-        },{merge:true});
-        return {err:'outbid', newPrice, currentMaxBidder};
-      }
-
-      // New bidder wins (or is raising their own max)
-      // New current price = currentMax + 2 (or startPrice if no prior bids), capped at userMaxBid
-      let newPrice;
-      if(!currentMaxBidder || currentMaxBidder===loggedIn) {
-        // First bid or same user raising their own max
-        newPrice = currentPrice || startPrice;
-      } else {
-        // Beat the old holder — price goes to oldMax + 2
-        newPrice = Math.min(currentMax + 2, userMaxBid);
-      }
-      newPrice = Math.max(newPrice, startPrice);
-
-      txn.set(blockRef, {
-        id:canonId, row:Math.floor(canonId/G), col:canonId%G, size:sz,
-        status:'active', bid:newPrice, currentPrice:newPrice,
-        maxBid:userMaxBid, maxBidder:loggedIn,
-        bidder:loggedIn, uid:window._fbUid,
-        bids:totalBids2, mins:1440,
-        endsAt:new Date(Date.now()+24*60*60*1000)
+      const newBids=(ex?.bids||0)+1;
+      txn.set(blockRef,{
+        id:canonId,row:Math.floor(canonId/G),col:canonId%G,size:sz,
+        status:'active',bid,bids:newBids,
+        bidder:loggedIn,uid:window._fbUid,
+        // Track second bidder for forfeit chain (previous leader)
+        secondBidder:ex?.bidder&&ex.bidder!==loggedIn?ex.bidder:ex?.secondBidder||null,
+        secondBid:ex?.bidder&&ex.bidder!==loggedIn?ex.bid:ex?.secondBid||null,
+        mins:1440,endsAt:new Date(Date.now()+24*60*60*1000)
       },{merge:true});
-
-      return {ok:true, newPrice, userMaxBid, prevHolder: currentMaxBidder, prevMax: currentMax};
+      return{ok:true,bid,newBids,minBid,maxBid};
     });
 
     if(result.err==='sold'){
       ok.innerHTML='⚠ This pixel was just sold. Auction is closed.';
       ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
-      if(blk)blk.status='sold';ndraw=true; return;
+      if(blk)blk.status='sold';ndraw=true;return;
     }
-
-    if(result.err==='outbid'){
-      ok.innerHTML=`⚠ Outbid! Current leader bid up to <b>$${result.newPrice}</b>. To win, set your max above $${result.currentMaxBidder}'s limit.`;
+    if(result.err==='low'){
+      ok.innerHTML=`⚠ Minimum bid is $${result.minBid} (must raise by at least 10%).`;
       ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
-      document.getElementById('bidinp').value=result.newPrice+2;
-      document.getElementById('bidinp').min=result.newPrice+2;
-      document.getElementById('m-bid').textContent='$'+result.newPrice;
-      if(blk){blk.bid=result.newPrice;blk.bids++;ndraw=true;}
-      return;
+      document.getElementById('bidinp').value=result.minBid;return;
+    }
+    if(result.err==='high'){
+      ok.innerHTML=`⚠ Max allowed bid is $${result.maxBid} (max 3× current bid). Place a smaller raise first.`;
+      ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
+      document.getElementById('bidinp').value=result.maxBid;return;
     }
 
-    // Success — update local state
-    const {newPrice, userMaxBid:myMax} = result;
-    if(blk){blk.bid=newPrice;blk.bids++;blk.status='active';blk.bidder=loggedIn;blk.currentPrice=newPrice;ndraw=true;mmDirty=true;}
-    else{const nb={id:canonId,row:Math.floor(canonId/G),col:canonId%G,size:1,status:'active',bid:newPrice,currentPrice:newPrice,bids:1,bidder:loggedIn,maxBidder:loggedIn,owner:null,image:null,url:null,title:null,_imgObj:null};blkMap.set(canonId,nb);cellMap.set(canonId,{bId:canonId,sz:1});ndraw=true;}
+    // Success
+    if(blk){blk.bid=bid;blk.bids=result.newBids;blk.status='active';blk.bidder=loggedIn;ndraw=true;mmDirty=true;}
+    else{const nb={id:canonId,row:Math.floor(canonId/G),col:canonId%G,size:1,status:'active',bid,bids:1,bidder:loggedIn,owner:null,image:null,url:null,title:null,_imgObj:null};blkMap.set(canonId,nb);cellMap.set(canonId,{bId:canonId,sz:1});ndraw=true;}
 
-    ok.innerHTML=`✓ Max bid $${myMax} set! Current price: <b>$${newPrice}</b>. You're winning! 💳 Payment only if you win.`;
+    ok.innerHTML=`✓ Bid of <b>$${bid}</b> placed! You're winning. 💳 Only charged if you win.`;
     ok.style.background='#DFFFDF';ok.style.borderColor='#008000';ok.style.color='#008000';
 
-    // Update modal displays
-    document.getElementById('m-bid').textContent='$'+newPrice;
-    document.getElementById('m-bids').textContent=(blk?.bids||1)+' bid'+(blk?.bids===1?'':'s');
-    document.getElementById('bidinp').min=newPrice+2;
-    document.getElementById('bidinp').value=newPrice+2;
+    // Update modal
+    document.getElementById('m-bid').textContent='$'+bid;
+    document.getElementById('m-bids').textContent=result.newBids+' bid'+(result.newBids===1?'':'s');
+    // Refresh bid rules for next raise
+    const newMin=Math.max(bid+1,Math.ceil(bid*1.1));
+    const newMax=Math.floor(bid*3);
+    const minRaiseEl=document.getElementById('mo-min-raise');
+    const maxBidEl=document.getElementById('mo-max-bid');
+    if(minRaiseEl)minRaiseEl.textContent='$'+newMin;
+    if(maxBidEl)maxBidEl.textContent='$'+newMax;
+    document.getElementById('bidinp').value=newMin;
+    document.getElementById('bidinp').min=newMin;
+    document.getElementById('bidinp').max=newMax;
+    // Refresh quick-bid buttons
+    const qbRow=document.getElementById('mo-quickbid-row');
+    if(qbRow){
+      const mid=Math.floor((newMin+newMax)/2);
+      const opts=[{label:'+min $'+newMin,val:newMin,col:'#000080'},{label:'mid $'+mid,val:mid,col:'#884400'},{label:'max $'+newMax,val:newMax,col:'#880000'}];
+      qbRow.innerHTML=opts.map(o=>`<button onclick="setQuickBid(${o.val})" style="font-family:'Press Start 2P',monospace;font-size:6px;padding:5px 8px;background:${o.col};color:white;border:none;cursor:pointer;border-top:1px solid rgba(255,255,255,0.3);border-left:1px solid rgba(255,255,255,0.3);">${o.label}</button>`).join('');
+    }
     const leaderEl=document.getElementById('m-current-leader');
-    if(leaderEl){leaderEl.style.display='block';leaderEl.innerHTML='<span style="color:#008000;">✓ You are currently winning!</span> Current price: <b style="color:#000080;">$'+newPrice+'</b>';}
+    if(leaderEl){leaderEl.style.display='block';leaderEl.innerHTML='<span style="color:#008000;">✓ You are currently winning at $'+bid+'!</span>';}
 
-    // Log bid to bidLog array on block doc (append-only, no subcollection needed)
-    try {
-      await setDoc(blockRef, {
-        bidLog: [...((await getDoc(blockRef)).data()?.bidLog||[]), {user:loggedIn, maxBid:myMax, price:newPrice, ts:Date.now()}].slice(-50)
-      },{merge:true});
-    } catch(e){}
+    // Log to bid history
+    try{const bsnap=await getDoc(blockRef);const prev=bsnap.data()?.bidLog||[];await setDoc(blockRef,{bidLog:[...prev,{user:loggedIn,bid,ts:Date.now()}].slice(-50)},{merge:true});}catch(e){}
 
-    if(curMO!==null){const c2=cellMap.get(curMO);addFeed(loggedIn,newPrice,canonId,c2?.sz||sz,true);}
+    if(curMO!==null){const c2=cellMap.get(curMO);addFeed(loggedIn,bid,canonId,c2?.sz||sz,true);}
     totalBids++;document.getElementById('h-bids').textContent=totalBids;
+    updSidebar();
+    if(window._fbLoadBidHistory)window._fbLoadBidHistory(canonId);
 
-    // Reload bid history
-    if(window._fbLoadBidHistory) window._fbLoadBidHistory(canonId);
-
-  } catch(e){
+  }catch(e){
     ok.innerHTML='⚠ Error: '+e.message;
     ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
   }
