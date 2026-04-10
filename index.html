@@ -842,8 +842,15 @@ setInterval(()=>{
             if(window._fbFinalizeAuction){window._fbFinalizeAuction(blk.id,null,true);}
           }
         }
-        // Show the sold animation for everyone; winner=true shows celebration after
-        if(winner){showAuctionClose(blk, isWinner);}
+        // Only show the full sold animation to the winner
+        // Everyone else just gets a quiet toast notification
+        if(winner){
+          if(isWinner){
+            showAuctionClose(blk, true);
+          } else {
+            showToast(`🔨 Block #${String(blk.id).padStart(6,'0')} sold to ${winner}`, '#333355', 4000);
+          }
+        }
       }
     }
   }
