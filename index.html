@@ -626,25 +626,29 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
       <div class="mig">
         <div class="ib"><div class="ibl">GRID ID</div><div class="ibv" id="m-id">#000000</div></div>
         <div class="ib"><div class="ibl">SIZE</div><div class="ibv" id="m-sz">1×1 BASIC</div></div>
-        <div class="ib"><div class="ibl">CURRENT BID</div><div class="ibv big" id="m-bid">No bids</div></div>
-        <div class="ib"><div class="ibl">MIN BID</div><div class="ibv big" id="m-min" style="color:#CC6600;">$1</div></div>
+        <div class="ib"><div class="ibl">CURRENT PRICE</div><div class="ibv big" id="m-bid">No bids</div></div>
+        <div class="ib"><div class="ibl">TOTAL BIDS</div><div class="ibv" id="m-bids" style="color:#555;">0</div></div>
       </div>
       <div id="motmr">23 : 59 : 59 : 00</div>
       <div id="mo-bid-sec">
-        <div class="sechd">PLACE YOUR BID</div>
-        <div class="bidr">
-          <span style="font-size:16px;">$ </span>
-          <input type="number" id="bidinp" min="1" value="1">
-          <button id="bidbt" onclick="placeBid()">▶ PLACE BID</button>
+        <div class="sechd">SET YOUR MAX BID</div>
+        <div style="background:#FFFFF0;border:1px solid #CCAA00;padding:8px 10px;margin-bottom:10px;font-family:'VT323',monospace;font-size:15px;color:#555;line-height:1.5;">
+          Enter the <b style="color:#000080;">most you're willing to pay</b>. The system only spends what it needs — bidding starts low and auto-raises in <b style="color:#008000;">$2 increments</b> if someone outbids you, up to your max.
         </div>
+        <div class="bidr">
+          <span style="font-family:'Press Start 2P',monospace;font-size:9px;color:#CC6600;">MAX $</span>
+          <input type="number" id="bidinp" min="1" value="1">
+          <button id="bidbt" onclick="placeBid()">▶ BID</button>
+        </div>
+        <div id="m-current-leader" style="display:none;margin-top:6px;padding:5px 8px;background:#F0F8FF;border:1px solid #AACCFF;font-family:'VT323',monospace;font-size:15px;"></div>
         <div id="bidok"></div>
         <div class="sechd" style="margin-top:12px;">PAYMENT METHOD</div>
         <div class="payr">
           <button id="strbtn" onclick="choosePay('stripe')"><span>▋</span> Stripe / Card</button>
           <button id="ppbtn" onclick="choosePay('paypal')"><span>Ⓟ</span> PayPal</button>
         </div>
-        <div class="payn" id="payn">🔒 Card authorized only — charged if you win. Released if outbid.</div>
-        <div class="payn" style="color:#CC0000;margin-top:3px;">⚠ Real payments require backend: POST /api/bids with Stripe/PayPal integration.</div>
+        <div class="payn" id="payn">🔒 Card authorized only — charged only if you win. Auto-released if outbid.</div>
+        <div class="payn" style="color:#CC0000;margin-top:3px;">⚠ Real payments require backend integration (Stripe/PayPal).</div>
         <div id="mo-admin-row" style="display:none;margin-top:10px;padding-top:10px;border-top:2px solid #FFD700;">
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button onclick="adminClaimCurrent()" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 14px;background:#CC6600;color:white;border-top:2px solid #FFD700;border-left:2px solid #FFD700;border-right:2px solid #884400;border-bottom:2px solid #884400;cursor:pointer;flex:1;">⚡ ADMIN CLAIM FREE</button>
@@ -1234,19 +1238,33 @@ function openMO(id){
   const cell=cellMap.get(id),blk=cell?blkMap.get(cell.bId):null;
   const resolvedId=blk?blk.id:id;
   curMO=resolvedId;
-  const sz=blk?blk.size:1,sp=sz===5?20:sz===2?5:1,minB=blk&&blk.bid?blk.bid+1:sp;
+  const sz=blk?blk.size:1,sp=sz===5?20:sz===2?5:1;
+  const currentPrice=blk&&blk.bid?blk.bid:0;
+  const minMax=currentPrice>0?currentPrice+2:sp; // min max-bid = current price + $2
   const isSold=blk&&blk.status==='sold';
 
   document.getElementById('motit').textContent=(isSold?'PIXEL — ':'AUCTION — ')+`GRID #${String(resolvedId).padStart(6,'0')}`;
   document.getElementById('m-id').textContent='#'+String(resolvedId).padStart(6,'0');
   document.getElementById('m-sz').textContent=sz===5?'5×5 PREMIUM':sz===2?'2×2 STANDARD':'1×1 BASIC';
   document.getElementById('m-bid').textContent=blk&&blk.bid?'$'+blk.bid:'No bids';
-  document.getElementById('m-min').textContent='$'+minB;
-  document.getElementById('bidinp').value=minB;document.getElementById('bidinp').min=minB;
+  document.getElementById('m-bids').textContent=(blk&&blk.bids||0)+' bid'+(blk&&blk.bids===1?'':'s');
+  document.getElementById('bidinp').value=minMax;document.getElementById('bidinp').min=minMax;
+
+  // Show current leader
+  const leaderEl=document.getElementById('m-current-leader');
+  if(leaderEl){
+    if(blk&&blk.bidder&&!isSold){
+      leaderEl.style.display='block';
+      const isYou=blk.bidder===loggedIn;
+      leaderEl.innerHTML=isYou
+        ?'<span style="color:#008000;">✓ You are currently winning!</span> Current price: <b style="color:#000080;">$'+blk.bid+'</b>'
+        :'<span style="color:#CC6600;">⚠ Leading: <b>'+blk.bidder+'</b></span> — Current price: <b style="color:#000080;">$'+blk.bid+'</b>. Bid more than $'+blk.bid+' to win.';
+    } else { leaderEl.style.display='none'; }
+  }
 
   const tmr=document.getElementById('motmr');
   if(isSold){
-    tmr.textContent='-- AUCTION ENDED --';tmr.style.color='#FF4444';
+    tmr.textContent='-- AUCTION ENDED --';tmr.style.color='#FF4444';tmr.style.animation='none';
   } else {
     if(blk&&blk.endsAt){
       const remMs=Math.max(0,blk.endsAt-Date.now());
@@ -1257,39 +1275,62 @@ function openMO(id){
       tmr.textContent=`${String(h).padStart(2,'0')} : ${String(m).padStart(2,'0')} : 00`;
     }
     tmr.style.color=(blk&&blk.status==='ending')?'#FF4444':'#00FF00';
+    tmr.style.animation='none';
   }
 
-  document.getElementById('bhlist').innerHTML='<div style="padding:8px;color:#888;font-family:VT323,monospace;font-size:15px;">No bids yet — be the first! Starting at $'+minB+'</div>';
+  document.getElementById('bhlist').innerHTML='<div style="padding:8px;color:#888;font-family:VT323,monospace;font-size:15px;">Loading...</div>';
 
   const gate=document.getElementById('mo-gate');
   const bsec=document.getElementById('mo-bid-sec');
   const soldView=document.getElementById('mo-sold-view');
 
   if(isSold){
-    // Show sold pixel info — everyone can see it
     gate.style.display='none';
     bsec.style.display='none';
+    const gb=document.getElementById('mo-guest-bar');if(gb)gb.style.display='none';
     if(soldView){
       soldView.style.display='block';
       const ownerEl=soldView.querySelector('#mo-sold-owner');
       const titleEl=soldView.querySelector('#mo-sold-title');
       const urlEl=soldView.querySelector('#mo-sold-url');
       const imgEl=soldView.querySelector('#mo-sold-img');
-      if(ownerEl)ownerEl.textContent=blk.owner||'Unknown';
-      if(titleEl)titleEl.textContent=blk.title||'No title set';
-      if(urlEl){if(blk.url){urlEl.href=blk.url;urlEl.textContent=blk.url;urlEl.style.display='';}else{urlEl.style.display='none';}}
+      if(ownerEl)ownerEl.textContent=blk.owner||blk.bidder||'Unknown';
+      if(titleEl)titleEl.textContent=blk.title||'No title set yet';
+      if(urlEl){if(blk.url){urlEl.href=blk.url;urlEl.textContent=blk.url;urlEl.style.display='';}else{urlEl.textContent='No link set';urlEl.style.display='';}}
       if(imgEl){if(blk.image){imgEl.src=blk.image;imgEl.style.display='block';}else{imgEl.style.display='none';}}
     }
   } else {
     if(soldView)soldView.style.display='none';
-    if(loggedIn){gate.style.display='none';bsec.style.display='block';}
-    else{gate.style.display='block';bsec.style.display='none';}
+    if(loggedIn){
+      gate.style.display='none';bsec.style.display='block';
+      const gb=document.getElementById('mo-guest-bar');if(gb)gb.style.display='none';
+    } else {
+      // Guest: hide the old gate (login-required block), show a slim inline sign-in nudge instead
+      gate.style.display='none';
+      bsec.style.display='none';
+      // Insert a non-intrusive sign-in bar if not already there
+      let guestBar=document.getElementById('mo-guest-bar');
+      if(!guestBar){
+        guestBar=document.createElement('div');
+        guestBar.id='mo-guest-bar';
+        guestBar.style.cssText='background:#F0F4FF;border:2px solid #000080;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
+        guestBar.innerHTML=`<span style="font-family:'VT323',monospace;font-size:17px;color:#000080;flex:1;">🔒 Sign in to place bids on this pixel</span><button onclick="closeMO();openLM('login')" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 12px;background:#000080;color:white;border-top:2px solid #4444FF;border-left:2px solid #4444FF;border-right:2px solid #000044;border-bottom:2px solid #000044;cursor:pointer;white-space:nowrap;">LOG IN</button><button onclick="closeMO();openLM('register')" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 12px;background:#CC8800;color:white;border-top:2px solid #FFDD00;border-left:2px solid #FFDD00;border-right:2px solid #886600;border-bottom:2px solid #886600;cursor:pointer;white-space:nowrap;">REGISTER FREE</button>`;
+        // Insert before the bid history section
+        const bhSection=document.querySelector('#mob > div[style*="margin-top:12px"]');
+        if(bhSection) bhSection.parentNode.insertBefore(guestBar, bhSection);
+        else document.getElementById('mob').appendChild(guestBar);
+      }
+      guestBar.style.display='flex';
+    }
   }
 
   document.getElementById('bidok').style.display='none';
   const adminRow=document.getElementById('mo-admin-row');
   if(adminRow)adminRow.style.display=isAdmin?'block':'none';
   document.getElementById('moo').classList.add('open');
+
+  // Load bid history from Firestore
+  if(window._fbLoadBidHistory) window._fbLoadBidHistory(resolvedId);
 }
 function closeMO(){document.getElementById('moo').classList.remove('open');curMO=null;}
 
@@ -1489,7 +1530,13 @@ function oauth(p){if(window._fbOauth){window._fbOauth(p);return;}setUser('oauth_
 function forgotPwd(){if(window._fbForgot){window._fbForgot();return;}alert('Password reset link will be sent to your email.');}
 
 // SECTION NAV
+// PUBLIC sections (no login needed): grid, auctions, ending, leaderboard, badges, how
+// GATED sections (login needed): mypixels, admin
 function showSec(name){
+  // Gate only truly private sections
+  if((name==='mypixels'||name==='admin')&&!loggedIn){
+    openLM('login');return;
+  }
   ['grid','auctions','ending','leaderboard','badges','how','mypixels','admin'].forEach(s=>{document.getElementById('btn-'+s)?.classList.remove('active');});
   document.getElementById('btn-'+name)?.classList.add('active');
   const sv=document.getElementById('sv');
@@ -1946,8 +1993,7 @@ import { getAuth, signInWithEmailAndPassword,
          createUserWithEmailAndPassword, signInWithPopup,
          GoogleAuthProvider, signOut, onAuthStateChanged,
          sendPasswordResetEmail, updateProfile, setPersistence,
-         browserLocalPersistence, browserSessionPersistence,
-         signInAnonymously } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+         browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection,
          onSnapshot, serverTimestamp, increment }           from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 import { getDatabase, ref, set, onValue,
@@ -1990,24 +2036,52 @@ function authErr(code){
           'auth/network-request-failed':'Network error — check your connection.'}[code]||'Error: '+code);
 }
 
-// ── VISITOR PRESENCE ─────────────────────────────────────
+// ── VISITOR PRESENCE — no anonymous auth needed ──────────
+// Uses a random client-generated ID stored in sessionStorage.
+// RTDB rules allow anyone to write to presence/{uid} — no auth required.
+// Slot is auto-deleted on disconnect via onDisconnect, and refreshed every 55s.
 let _presenceUid = null;
+let _presenceHeartbeat = null;
+let _presenceRef = null;
 
-function setupPresenceRef(uid, displayName){
-  // Clean up old presence slot when upgrading anon → real user
-  if(_presenceUid && _presenceUid !== uid){
-    set(ref(rtdb, 'presence/' + _presenceUid), null).catch(()=>{});
-  }
-  _presenceUid = uid;
-  const myRef = ref(rtdb, 'presence/' + uid);
-  onValue(ref(rtdb, '.info/connected'), snap => {
-    if(!snap.val()) return;
-    onDisconnect(myRef).remove();
-    set(myRef, {connected: true, name: displayName, ts: Date.now()});
-  });
+function getSessionId(){
+  let id = sessionStorage.getItem('mpa_sid');
+  if(!id){ id = Math.random().toString(36).slice(2)+Date.now().toString(36); sessionStorage.setItem('mpa_sid',id); }
+  return id;
 }
 
-// Live presence count → stats bar VISITORS ONLINE
+function setupPresenceRef(uid, displayName){
+  // Clean up old slot if switching uid (visitor → named user)
+  if(_presenceUid && _presenceUid !== uid && _presenceRef){
+    set(_presenceRef, null).catch(()=>{});
+    if(_presenceHeartbeat){ clearInterval(_presenceHeartbeat); _presenceHeartbeat=null; }
+  }
+  _presenceUid = uid;
+  _presenceRef = ref(rtdb, 'presence/' + uid);
+  const presenceData = {n: displayName||'visitor', t: Date.now()};
+
+  // Register onDisconnect FIRST, then write
+  onValue(ref(rtdb, '.info/connected'), snap => {
+    if(!snap.val()) return;
+    onDisconnect(_presenceRef).remove().then(() => {
+      set(_presenceRef, presenceData).catch(()=>{});
+    }).catch(() => {
+      set(_presenceRef, presenceData).catch(()=>{});
+    });
+  });
+
+  // Keepalive heartbeat every 55s
+  if(_presenceHeartbeat) clearInterval(_presenceHeartbeat);
+  _presenceHeartbeat = setInterval(() => {
+    if(_presenceRef) set(_presenceRef, {...presenceData, t: Date.now()}).catch(()=>{});
+  }, 55000);
+}
+
+// Immediately register presence for every visitor using a random session ID
+// This runs before any login — every tab counts toward "visitors online"
+setupPresenceRef(getSessionId(), 'visitor');
+
+// Live presence count → VISITORS ONLINE stat
 onValue(ref(rtdb,'presence'), snap => {
   const count = snap.exists() ? Object.keys(snap.val()).length : 0;
   document.getElementById('h-on').textContent = count;
@@ -2042,9 +2116,6 @@ onSnapshot(doc(db,'meta','userCount'), snap => {
   }
 });
 
-// Sign in anonymously — gives every visitor a real Firebase UID for RTDB writes
-signInAnonymously(auth).catch(e => console.warn('Anon sign-in failed:', e.message));
-
 onAuthStateChanged(auth, async user => {
   if(!user){
     window._fbUid = null; loggedIn = null; isAdmin = false;
@@ -2053,18 +2124,14 @@ onAuthStateChanged(auth, async user => {
     document.getElementById('btn-reg').style.display     = '';
     const mb=document.getElementById('btn-mypixels'); if(mb)mb.style.display='none';
     const ab=document.getElementById('btn-admin');    if(ab)ab.style.display='none';
-    signInAnonymously(auth).catch(()=>{});
-    return;
-  }
-  if(user.isAnonymous){
-    // Anonymous visitor — register presence once here
-    setupPresenceRef(user.uid, 'visitor');
+    // Re-register presence as visitor using session ID
+    setupPresenceRef(getSessionId(), 'visitor');
     loadGridState();
     loadSpotlight();
     loadUserCount();
     return;
   }
-  // Real named user — swap anon presence → named presence
+  // Named (real) user logged in — upgrade presence slot to their name
   let name = user.displayName || user.email.split('@')[0];
   try {
     const snap = await getDoc(doc(db,'users',user.uid));
@@ -2072,7 +2139,8 @@ onAuthStateChanged(auth, async user => {
   } catch(e){}
   window._fbUid = user.uid;
   setUser(name, user.email);
-  setupPresenceRef(user.uid, name); // removes anon slot, registers named slot
+  // Swap anonymous session slot → named user slot
+  setupPresenceRef(user.uid, name);
   loadGridState();
   loadSpotlight();
   loadUserCount();
@@ -2134,6 +2202,18 @@ async function loadGridState() {
       }
       if(blk.status!=='available' && wasAvail) addFeed(blk.bidder||blk.owner||'?',blk.bid,blk.id,blk.size,true);
       ndraw=true;mmDirty=true;
+      // If modal is open for this block, refresh live displays
+      if(curMO!==null&&(curMO===blk.id||(cellMap.get(curMO)&&blkMap.get(cellMap.get(curMO).bId)?.id===blk.id))){
+        document.getElementById('m-bid').textContent=blk.bid?'$'+blk.bid:'No bids';
+        document.getElementById('m-bids').textContent=(blk.bids||0)+' bid'+((blk.bids||0)===1?'':'s');
+        const leaderEl=document.getElementById('m-current-leader');
+        if(leaderEl&&blk.bidder&&blk.status!=='sold'){
+          const isYou=blk.bidder===loggedIn;
+          leaderEl.style.display='block';
+          leaderEl.innerHTML=isYou?'<span style="color:#008000;">✓ You are currently winning!</span> Current price: <b style="color:#000080;">$'+blk.bid+'</b>':'<span style="color:#CC6600;">⚠ Leading: <b>'+blk.bidder+'</b></span> — Current price: <b style="color:#000080;">$'+blk.bid+'</b>';
+        }
+        if(window._fbLoadBidHistory) window._fbLoadBidHistory(blk.id);
+      }
     });
   });
 }
@@ -2229,7 +2309,8 @@ window._fbOauth = async function(provider) {
 
 // ── LOGOUT ────────────────────────────────────────────────
 window._fbDoLogout = async function() {
-  if(window._fbUid) { try { await set(ref(rtdb,'presence/'+window._fbUid), null); } catch(e) {} }
+  if(_presenceRef){ try { await set(_presenceRef, null); } catch(e) {} }
+  if(_presenceHeartbeat){ clearInterval(_presenceHeartbeat); _presenceHeartbeat=null; }
   try { await signOut(auth); } catch(e) {}
 };
 
@@ -2278,58 +2359,195 @@ window._fbFinalizeAuction = async function(blockId, winner, noBids=false) {
   }
 };
 
-// ── PLACE BID (Firestore) ─────────────────────────────────
+// ── BID HISTORY LOADER ────────────────────────────────────
+window._fbLoadBidHistory = async function(blockId) {
+  const docId = String(blockId).padStart(6,'0');
+  const bhEl = document.getElementById('bhlist');
+  if(!bhEl) return;
+  try {
+    const {getDocs, collection: col2, query, orderBy, limit} = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js');
+    const q = query(col2(db,'blocks',docId,'bidLog'), orderBy('ts','desc'), limit(20));
+    const snap = await getDocs(q);
+    if(snap.empty){
+      // fallback: check block doc for legacy bidLog array
+      const bsnap = await getDoc(doc(db,'blocks',docId));
+      const bdata = bsnap.exists() ? bsnap.data() : null;
+      const log = bdata?.bidLog || [];
+      if(!log.length){
+        bhEl.innerHTML='<div style="padding:8px;color:#888;font-family:VT323,monospace;font-size:15px;">No bids yet — be the first! 🚀</div>';
+        return;
+      }
+      bhEl.innerHTML='';
+      [...log].reverse().forEach(entry=>{
+        const d=document.createElement('div');d.className='bhi';
+        const ts=entry.ts?(new Date(entry.ts)).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+        d.innerHTML=`<span class="bhu">${entry.user||'?'}</span><span class="bha"> max $${entry.maxBid||entry.bid||0}</span><span style="color:#555;font-size:12px;margin-left:4px;">→ price $${entry.price||entry.bid||0}</span><span class="bht">${ts}</span>`;
+        bhEl.appendChild(d);
+      });
+      return;
+    }
+    bhEl.innerHTML='';
+    snap.forEach(d=>{
+      const e=d.data();
+      const el=document.createElement('div');el.className='bhi';
+      const ts=e.ts?.toMillis?(new Date(e.ts.toMillis())).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):e.ts?(new Date(e.ts)).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+      el.innerHTML=`<span class="bhu">${e.user||'?'}</span><span class="bha"> max $${e.maxBid||e.bid||0}</span><span style="color:#555;font-size:12px;margin-left:4px;">→ price $${e.price||e.bid||0}</span><span class="bht">${ts}</span>`;
+      bhEl.appendChild(el);
+    });
+  } catch(err) {
+    // subcollection may not exist — try block doc bidLog array
+    try {
+      const bsnap = await getDoc(doc(db,'blocks',docId));
+      const bdata = bsnap.exists() ? bsnap.data() : null;
+      const log = bdata?.bidLog || [];
+      if(!log.length){ bhEl.innerHTML='<div style="padding:8px;color:#888;font-family:VT323,monospace;font-size:15px;">No bids yet — be the first! 🚀</div>'; return; }
+      bhEl.innerHTML='';
+      [...log].reverse().forEach(entry=>{
+        const d=document.createElement('div');d.className='bhi';
+        const ts=entry.ts?(new Date(entry.ts)).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+        d.innerHTML=`<span class="bhu">${entry.user||'?'}</span><span class="bha"> max $${entry.maxBid||entry.bid||0}</span><span style="color:#555;font-size:12px;margin-left:4px;">→ price $${entry.price||entry.bid||0}</span><span class="bht">${ts}</span>`;
+        bhEl.appendChild(d);
+      });
+    } catch(e2){ bhEl.innerHTML='<div style="padding:8px;color:#888;font-family:VT323,monospace;font-size:15px;">No bids yet — be the first! 🚀</div>'; }
+  }
+};
+
+// ── PLACE BID — PROXY / MAX-BID SYSTEM (Firestore) ────────
+// How it works:
+//   - User enters their MAX BID (most they'll pay)
+//   - System stores maxBid + maxBidder privately
+//   - Current PRICE starts at starting price and only rises $2 at a time
+//   - When a new bidder enters, system compares their max vs existing max:
+//     * If new > existing max → new bidder becomes leader at existingMax+2
+//     * If new <= existing max → existing holder auto-raises to newBid+2, new bidder loses
+//   - Winner pays the current PRICE at expiry, not their max
 window._fbPlaceBid = async function() {
   if(!loggedIn||!window._fbUid){openLM('login');return;}
-  const v=parseInt(document.getElementById('bidinp').value);
-  const min=parseInt(document.getElementById('bidinp').min);
-  if(isNaN(v)||v<min){document.getElementById('bidinp').style.borderColor='#CC0000';setTimeout(()=>document.getElementById('bidinp').style.borderColor='',1000);return;}
+  const userMaxBid = parseInt(document.getElementById('bidinp').value);
+  const minAllowed = parseInt(document.getElementById('bidinp').min);
+  const ok = document.getElementById('bidok');
+
+  if(isNaN(userMaxBid)||userMaxBid<minAllowed){
+    document.getElementById('bidinp').style.borderColor='#CC0000';
+    setTimeout(()=>document.getElementById('bidinp').style.borderColor='',1000);
+    return;
+  }
   if(curMO===null) return;
-  // Resolve to canonical block
+
   const cell=cellMap.get(curMO),blk=cell?blkMap.get(cell.bId):null,sz=blk?blk.size:1;
-  // Block bids on sold pixels
   if(blk&&blk.status==='sold'){
-    const ok=document.getElementById('bidok');ok.style.display='block';
     ok.style.cssText='display:block;background:#FFEEEE;border:2px solid #CC0000;padding:7px 10px;font-family:"Share Tech Mono",monospace;font-size:12px;color:#CC0000;margin-top:7px;';
     ok.innerHTML='⚠ This pixel has already been sold. Auction is closed.';
     return;
   }
+
   const canonId=blk?blk.id:curMO;
   const docId=String(canonId).padStart(6,'0');
-  const ok=document.getElementById('bidok');
-  ok.style.display='block';ok.innerHTML='⏳ Placing bid...';
   ok.style.cssText='display:block;background:#FFF8DC;border:2px solid #CC8800;padding:7px 10px;font-family:"Share Tech Mono",monospace;font-size:12px;color:#CC6600;margin-top:7px;';
+  ok.innerHTML='⏳ Processing bid...';
+
   try {
-    const snap=await getDoc(doc(db,'blocks',docId));
-    const ex=snap.exists()?snap.data():null;
-    // Double-check sold status from DB
-    if(ex&&ex.status==='sold'){
+    const {runTransaction, collection: col2, addDoc, serverTimestamp: st2} = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js');
+
+    const blockRef = doc(db,'blocks',docId);
+
+    // Run as a transaction so proxy logic is atomic
+    const result = await runTransaction(db, async (txn) => {
+      const snap = await txn.get(blockRef);
+      const ex = snap.exists() ? snap.data() : null;
+
+      if(ex && ex.status==='sold') return {err:'sold'};
+
+      const startPrice = sz===5?20:sz===2?5:1;
+      const currentPrice = ex?.currentPrice || ex?.bid || 0;
+      const currentMax   = ex?.maxBid || 0;
+      const currentMaxBidder = ex?.maxBidder || null;
+      const totalBids2   = (ex?.bids||0)+1;
+
+      // If someone else holds max and their max beats this bid → they auto-raise
+      if(currentMaxBidder && currentMaxBidder !== loggedIn && currentMax >= userMaxBid) {
+        // Existing holder wins — raise their price to userMaxBid (but not over their own max)
+        const newPrice = Math.min(userMaxBid, currentMax);
+        txn.set(blockRef, {
+          id:canonId, row:Math.floor(canonId/G), col:canonId%G, size:sz,
+          status:'active', bid:newPrice, currentPrice:newPrice,
+          maxBid:currentMax, maxBidder:currentMaxBidder,
+          bidder:currentMaxBidder, uid:ex?.uid||null,
+          bids:totalBids2, mins:1440,
+          endsAt:new Date(Date.now()+24*60*60*1000)
+        },{merge:true});
+        return {err:'outbid', newPrice, currentMaxBidder};
+      }
+
+      // New bidder wins (or is raising their own max)
+      // New current price = currentMax + 2 (or startPrice if no prior bids), capped at userMaxBid
+      let newPrice;
+      if(!currentMaxBidder || currentMaxBidder===loggedIn) {
+        // First bid or same user raising their own max
+        newPrice = currentPrice || startPrice;
+      } else {
+        // Beat the old holder — price goes to oldMax + 2
+        newPrice = Math.min(currentMax + 2, userMaxBid);
+      }
+      newPrice = Math.max(newPrice, startPrice);
+
+      txn.set(blockRef, {
+        id:canonId, row:Math.floor(canonId/G), col:canonId%G, size:sz,
+        status:'active', bid:newPrice, currentPrice:newPrice,
+        maxBid:userMaxBid, maxBidder:loggedIn,
+        bidder:loggedIn, uid:window._fbUid,
+        bids:totalBids2, mins:1440,
+        endsAt:new Date(Date.now()+24*60*60*1000)
+      },{merge:true});
+
+      return {ok:true, newPrice, userMaxBid, prevHolder: currentMaxBidder, prevMax: currentMax};
+    });
+
+    if(result.err==='sold'){
       ok.innerHTML='⚠ This pixel was just sold. Auction is closed.';
       ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
-      if(blk)blk.status='sold';ndraw=true;
-      return;
+      if(blk)blk.status='sold';ndraw=true; return;
     }
-    if(ex&&ex.bid>=v){
-      ok.innerHTML='⚠ Outbid! Min bid now: $'+(ex.bid+1);
+
+    if(result.err==='outbid'){
+      ok.innerHTML=`⚠ Outbid! Current leader bid up to <b>$${result.newPrice}</b>. To win, set your max above $${result.currentMaxBidder}'s limit.`;
       ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
-      document.getElementById('bidinp').value=ex.bid+1;document.getElementById('bidinp').min=ex.bid+1;
+      document.getElementById('bidinp').value=result.newPrice+2;
+      document.getElementById('bidinp').min=result.newPrice+2;
+      document.getElementById('m-bid').textContent='$'+result.newPrice;
+      if(blk){blk.bid=result.newPrice;blk.bids++;ndraw=true;}
       return;
     }
-    await setDoc(doc(db,'blocks',docId),{
-      id:canonId,row:Math.floor(canonId/1000),col:canonId%1000,size:sz,
-      status:'active',bid:v,bids:(ex?ex.bids||0:0)+1,
-      bidder:loggedIn,uid:window._fbUid,mins:1440,
-      endsAt:new Date(Date.now()+24*60*60*1000)
-    },{merge:true});
-    if(blk){blk.bid=v;blk.bids++;blk.status='active';blk.bidder=loggedIn;ndraw=true;mmDirty=true;}
-    else{const nb={id:canonId,row:Math.floor(canonId/1000),col:canonId%1000,size:1,status:'active',bid:v,bids:1,mins:1440,bidder:loggedIn,owner:null,image:null,url:null,title:null,_imgObj:null};blkMap.set(canonId,nb);cellMap.set(canonId,{bId:canonId,sz:1});ndraw=true;}
-    ok.innerHTML='✓ Bid of $'+v+' placed! Payment required at checkout.';
+
+    // Success — update local state
+    const {newPrice, userMaxBid:myMax} = result;
+    if(blk){blk.bid=newPrice;blk.bids++;blk.status='active';blk.bidder=loggedIn;blk.currentPrice=newPrice;ndraw=true;mmDirty=true;}
+    else{const nb={id:canonId,row:Math.floor(canonId/G),col:canonId%G,size:1,status:'active',bid:newPrice,currentPrice:newPrice,bids:1,bidder:loggedIn,maxBidder:loggedIn,owner:null,image:null,url:null,title:null,_imgObj:null};blkMap.set(canonId,nb);cellMap.set(canonId,{bId:canonId,sz:1});ndraw=true;}
+
+    ok.innerHTML=`✓ Max bid $${myMax} set! Current price: <b>$${newPrice}</b>. You're winning! 💳 Payment only if you win.`;
     ok.style.background='#DFFFDF';ok.style.borderColor='#008000';ok.style.color='#008000';
-    document.getElementById('m-bid').textContent='$'+v;
-    document.getElementById('m-min').textContent='$'+(v+1);
-    document.getElementById('bidinp').value=v+1;document.getElementById('bidinp').min=v+1;
-    if(curMO!==null){const c2=cellMap.get(curMO);addFeed(loggedIn,v,canonId,c2?.sz||sz,true);}
+
+    // Update modal displays
+    document.getElementById('m-bid').textContent='$'+newPrice;
+    document.getElementById('m-bids').textContent=(blk?.bids||1)+' bid'+(blk?.bids===1?'':'s');
+    document.getElementById('bidinp').min=newPrice+2;
+    document.getElementById('bidinp').value=newPrice+2;
+    const leaderEl=document.getElementById('m-current-leader');
+    if(leaderEl){leaderEl.style.display='block';leaderEl.innerHTML='<span style="color:#008000;">✓ You are currently winning!</span> Current price: <b style="color:#000080;">$'+newPrice+'</b>';}
+
+    // Log bid to bidLog array on block doc (append-only, no subcollection needed)
+    try {
+      await setDoc(blockRef, {
+        bidLog: [...((await getDoc(blockRef)).data()?.bidLog||[]), {user:loggedIn, maxBid:myMax, price:newPrice, ts:Date.now()}].slice(-50)
+      },{merge:true});
+    } catch(e){}
+
+    if(curMO!==null){const c2=cellMap.get(curMO);addFeed(loggedIn,newPrice,canonId,c2?.sz||sz,true);}
     totalBids++;document.getElementById('h-bids').textContent=totalBids;
+
+    // Reload bid history
+    if(window._fbLoadBidHistory) window._fbLoadBidHistory(canonId);
+
   } catch(e){
     ok.innerHTML='⚠ Error: '+e.message;
     ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
@@ -2491,6 +2709,22 @@ window.submitSpotlight = async function() {
 
 // ── INITIAL LOAD (for all visitors, logged in or not) ─────
 // loadGridState, loadSpotlight, loadUserCount called in onAuthStateChanged
+// ── REQUIRED FIREBASE RTDB RULES ─────────────────────────
+// Paste in Firebase Console → Realtime Database → Rules:
+// {
+//   "rules": {
+//     "presence": {
+//       "$uid": {
+//         ".read": true,
+//         ".write": true
+//       },
+//       ".read": true
+//     },
+//     ".read": false,
+//     ".write": false
+//   }
+// }
+// No authentication needed — presence uses a random session ID per tab.
 </script>
 </body>
 </html>
