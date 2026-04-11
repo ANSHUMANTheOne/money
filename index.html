@@ -1945,11 +1945,18 @@ function adminSetTimer(){
   if(isNaN(mins)||mins<0){msg.textContent='⚠ Invalid minutes';msg.style.color='#CC0000';return;}
   const cell=cellMap.get(id),blk=cell?blkMap.get(cell.bId):blkMap.get(id);
   if(!blk){msg.textContent='⚠ Block not found in layout';msg.style.color='#CC0000';return;}
-  blk.mins=mins;
-  blk.status=mins===0?'sold':mins<120?'ending':'active';
-  ndraw=true;
-  if(_fbAdminSetTimer){_fbAdminSetTimer(blk.id,mins);}
-  msg.textContent=`✓ Block #${String(blk.id).padStart(6,'0')} timer set to ${mins} min`;msg.style.color='#008000';
+  // If block isn't already in an active/ending auction, make it active first
+  if(blk.status==='available'){blk.status='active';}
+  // Set the real endsAt timestamp — the countdown engine reads this every second
+  const endsAtMs = mins===0 ? Date.now()-1 : Date.now()+(mins*60*1000);
+  blk.endsAt = endsAtMs;
+  blk.mins = mins;
+  blk.status = mins===0 ? 'ending' : mins<120 ? 'ending' : 'active';
+  // If 0 mins, force-expire immediately via the countdown engine on next tick
+  ndraw=true; mmDirty=true;
+  _fbAdminSetTimer(blk.id, mins);
+  msg.textContent=`✓ Block #${String(blk.id).padStart(6,'0')} — expires in ${mins===0?'NOW':mins+' min'}`;
+  msg.style.color='#008000';
   setTimeout(()=>{if(msg)msg.textContent='';},3000);
 }
 function adminSetTimerQuick(mins){
@@ -2938,10 +2945,12 @@ const _fbAdminSetTimer = async function(blockId, mins) {
   if(!_adm.get()||!window._fbUid) return;
   try {
     const docId=String(blockId).padStart(6,'0');
-    const endsAt=new Date(Date.now()+mins*60*1000);
+    // mins=0 → set endsAt 1ms in the past so all clients' countdown engines trigger expiry
+    const endsAt = mins===0 ? new Date(Date.now()-1) : new Date(Date.now()+(mins*60*1000));
     await setDoc(doc(db,'blocks',docId),{
-      mins,endsAt,
-      status:mins===0?'sold':mins<120?'ending':'active'
+      mins,
+      endsAt,
+      status: mins<120 ? 'ending' : 'active'
     },{merge:true});
   } catch(e){ console.warn('Admin timer set error:',e); }
 };
