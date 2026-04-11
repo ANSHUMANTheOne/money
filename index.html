@@ -782,6 +782,8 @@ let loggedIn=null;
 // Admin state stored in a closure — not patchable from console
 // Verified server-side via Firestore meta/admin doc (uid match only, no email in source)
 const _adm=(()=>{let _v=false;return{get:()=>_v,set:(v)=>{_v=!!v;}}})();
+// Expose _adm to module scripts via a non-obvious window key
+window['__mpa_adm']=_adm;
 // Lock out console patching of common admin variable names
 try{Object.defineProperty(window,'isAdmin',{get:()=>false,set:()=>{},configurable:false});}catch(e){}
 try{Object.defineProperty(window,'admin',{get:()=>false,set:()=>{},configurable:false});}catch(e){}
@@ -2353,7 +2355,7 @@ onSnapshot(doc(db,'meta','userCount'), snap => {
 
 onAuthStateChanged(auth, async user => {
   if(!user){
-    window._fbUid = null; loggedIn = null; _adm.set(false);
+    window._fbUid = null; loggedIn = null; window['__mpa_adm'].set(false);
     document.getElementById('logged-area').style.display = 'none';
     document.getElementById('btn-login').style.display   = '';
     document.getElementById('btn-reg').style.display     = '';
@@ -2376,8 +2378,8 @@ onAuthStateChanged(auth, async user => {
   // Verify admin server-side: read meta/admin doc — only succeeds if uid matches (Firestore rule)
   try {
     const adminSnap = await getDoc(doc(db,'meta','admin'));
-    _adm.set(adminSnap.exists() && adminSnap.data().uid === user.uid);
-  } catch(e) { _adm.set(false); }
+    window['__mpa_adm'].set(adminSnap.exists() && adminSnap.data().uid === user.uid);
+  } catch(e) { window['__mpa_adm'].set(false); }
   setUser(name);
   // Swap anonymous session slot → named user slot
   setupPresenceRef(user.uid, name);
@@ -2944,7 +2946,7 @@ console.log(JSON.stringify({rules:{presence:{"$uid":{".read":"auth != null",".wr
 
 // ── ADMIN: SET TIMER (Firestore) ──────────────────────────
 const _fbAdminSetTimer = async function(blockId, mins) {
-  if(!_adm.get()||!window._fbUid) return;
+  if(!window['__mpa_adm'].get()||!window._fbUid) return;
   try {
     const docId=String(blockId).padStart(6,'0');
     const endsAt=new Date(Date.now()+mins*60*1000);
@@ -2957,7 +2959,7 @@ const _fbAdminSetTimer = async function(blockId, mins) {
 
 // ── ADMIN: FREE CLAIM (Firestore) ─────────────────────────
 const _fbAdminClaim = async function(blockId, username, uid) {
-  if(!_adm.get()||!window._fbUid) return;
+  if(!window['__mpa_adm'].get()||!window._fbUid) return;
   try {
     const docId=String(blockId).padStart(6,'0');
     await setDoc(doc(db,'blocks',docId),{
@@ -2969,7 +2971,7 @@ const _fbAdminClaim = async function(blockId, username, uid) {
 
 // ── ADMIN: UNCLAIM (Firestore) ────────────────────────────
 const _fbAdminUnclaim = async function(blockId) {
-  if(!_adm.get()||!window._fbUid) return;
+  if(!window['__mpa_adm'].get()||!window._fbUid) return;
   try {
     const docId=String(blockId).padStart(6,'0');
     await deleteDoc(doc(db,'blocks',docId));
@@ -2984,7 +2986,7 @@ const _fbAdminUnclaim = async function(blockId) {
   }
 };
 
-// Admin spotlight: handled via _adm.get() check inside submitSpotlight directly
+// Admin spotlight: handled via window['__mpa_adm'].get() check inside submitSpotlight directly
 
 // ── INITIAL LOAD (for all visitors, logged in or not) ─────
 // loadGridState, loadSpotlight, loadUserCount called in onAuthStateChanged
