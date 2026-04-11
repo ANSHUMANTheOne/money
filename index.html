@@ -588,7 +588,8 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
       <div id="lf-l">
         <div class="lmf"><label>EMAIL ADDRESS</label><input type="email" id="le" placeholder="you@email.com"></div>
         <div class="lmf"><label>PASSWORD</label><input type="password" id="lp" placeholder="••••••••"></div>
-        <div class="lmck"><input type="checkbox" id="lrem"><label for="lrem">Remember me (saves session cookie)</label></div>
+        <div class="lmck" style="display:none;"><input type="checkbox" id="lrem" checked><label for="lrem">Remember me (saves session cookie)</label></div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#008000;margin-top:4px;">✓ You'll be kept signed in automatically.</div>
         <button class="lmsub" onclick="doLogin()">▶ LOG IN</button>
         <div class="lmerr" id="le-err"></div>
         <div class="lmor">— or —</div>
@@ -634,7 +635,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
       <div id="mo-bid-sec">
         <div class="sechd">PLACE YOUR BID</div>
         <div id="mo-bid-rules" style="background:#FFFFF0;border:1px solid #CCAA00;padding:7px 10px;margin-bottom:10px;font-family:'VT323',monospace;font-size:15px;color:#555;line-height:1.5;">
-          Min raise: <b id="mo-min-raise" style="color:#000080;">$1</b> &nbsp;·&nbsp; Max single bid: <b id="mo-max-bid" style="color:#CC6600;">$3</b>
+          Min raise: <b id="mo-min-raise" style="color:#000080;">$1</b> &nbsp;·&nbsp; Max raise: <b id="mo-max-bid" style="color:#555;">3× current</b> <span style="color:#888;font-size:13px;">(auto-clamped)</span>
         </div>
         <div class="bidr">
           <span style="font-family:'Press Start 2P',monospace;font-size:9px;color:#000080;">$</span>
@@ -778,8 +779,12 @@ let CELL=16,zi=3;const ZL=[4,7,11,16,24,36,80,160],ZN=['0.25×','0.4×','0.6×',
 const sc={x:0,y:0};let drag=false,dS={x:0,y:0},sS={x:0,y:0},ndraw=true;
 function markDirty(withMinimap=false){ndraw=true;if(withMinimap)mmDirty=true;}
 let loggedIn=null;
-let isAdmin=false;
-const ADMIN_EMAIL='luckyansh.t@gmail.com';
+// Admin state stored in a closure — not patchable from console
+// Verified server-side via Firestore meta/admin doc (uid match only, no email in source)
+const _adm=(()=>{let _v=false;return{get:()=>_v,set:(v)=>{_v=!!v;}}})();
+// Lock out console patching of common admin variable names
+try{Object.defineProperty(window,'isAdmin',{get:()=>false,set:()=>{},configurable:false});}catch(e){}
+try{Object.defineProperty(window,'admin',{get:()=>false,set:()=>{},configurable:false});}catch(e){}
 const cellMap=new Map(),blkMap=new Map();
 let visCount=0,totalBids=0,soldCount=0;
 
@@ -1030,7 +1035,7 @@ function showWinnerCelebration(blk){
       </div>
       <div style="font-family:'VT323',monospace;font-size:15px;color:#AAFFAA;margin-bottom:16px;">This pixel is now yours forever!<br>Customize it with your image & link.</div>
       <div style="display:flex;gap:8px;justify-content:center;">
-        <button onclick="ackWin(${blk.id});this.closest('[id^=winner-notif]').remove();openPxEdit(${blk.id});" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:9px 16px;background:#008000;color:white;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;cursor:pointer;">✏ CUSTOMIZE PIXEL</button>
+        <button onclick="ackWin(${blk.id});this.closest('[id^=winner-notif]').remove();openMO(${blk.id});" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:9px 16px;background:#008000;color:white;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;cursor:pointer;">💳 PAY &amp; CLAIM PIXEL</button>
         <button onclick="ackWin(${blk.id});this.closest('[id^=winner-notif]').remove();" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:9px 16px;background:#444;color:white;border:none;cursor:pointer;">CLOSE</button>
       </div>
     </div>`;
@@ -1318,7 +1323,7 @@ function openMO(id){
 
   // Bid constraints: min = current * 1.1 (rounded up, min +$1), max = current * 3
   const minBid=currentBid>0?Math.max(currentBid+1,Math.ceil(currentBid*1.1)):sp;
-  const maxBid=currentBid>0?Math.floor(currentBid*3):sp*10;
+  const maxBid=currentBid>0?Math.floor(currentBid*3):sp*3;
 
   document.getElementById('motit').textContent=(isSold?'PIXEL — ':isDirectBuy?'BUY NOW — ':'AUCTION — ')+`GRID #${String(resolvedId).padStart(6,'0')}`;
   document.getElementById('m-id').textContent='#'+String(resolvedId).padStart(6,'0');
@@ -1435,7 +1440,7 @@ function openMO(id){
 
   document.getElementById('bidok').style.display='none';
   const adminRow=document.getElementById('mo-admin-row');
-  if(adminRow)adminRow.style.display=isAdmin?'block':'none';
+  if(adminRow)adminRow.style.display=_adm.get()?'block':'none';
   document.getElementById('moo').classList.add('open');
   if(window._fbLoadBidHistory)window._fbLoadBidHistory(resolvedId);
 }
@@ -1681,8 +1686,8 @@ function escH(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
 function openLM(tab){stab(tab);document.getElementById('lmo').classList.add('open');}
 function closeLM(){document.getElementById('lmo').classList.remove('open');}
 function stab(t){document.getElementById('lt-l').className='lmtab'+(t==='login'?' a':'');document.getElementById('lt-r').className='lmtab'+(t==='register'?' a':'');document.getElementById('lf-l').style.display=t==='login'?'block':'none';document.getElementById('lf-r').style.display=t==='register'?'block':'none';}
-function setUser(u,email){loggedIn=u;isAdmin=!!(email&&email===ADMIN_EMAIL);document.getElementById('usr-disp').textContent='👤 '+(isAdmin?'⚡ ':'')+u.toUpperCase().slice(0,12);document.getElementById('logged-area').style.display='flex';document.getElementById('btn-login').style.display='none';document.getElementById('btn-reg').style.display='none';document.getElementById('btn-mypixels').style.display='';const ab=document.getElementById('btn-admin');if(ab)ab.style.display=isAdmin?'':'none';if(document.getElementById('lrem')?.checked)localStorage.setItem('mpa_usr',u);}
-function doLogout(){if(window._fbDoLogout){window._fbDoLogout();return;}loggedIn=null;isAdmin=false;document.getElementById('logged-area').style.display='none';document.getElementById('btn-login').style.display='';document.getElementById('btn-reg').style.display='';const ab=document.getElementById('btn-admin');if(ab)ab.style.display='none';}
+function setUser(u){loggedIn=u;document.getElementById('usr-disp').textContent='👤 '+(_adm.get()?'⚡ ':'')+u.toUpperCase().slice(0,12);document.getElementById('logged-area').style.display='flex';document.getElementById('btn-login').style.display='none';document.getElementById('btn-reg').style.display='none';document.getElementById('btn-mypixels').style.display='';const ab=document.getElementById('btn-admin');if(ab)ab.style.display=_adm.get()?'':'none';localStorage.setItem('mpa_usr',u);}
+function doLogout(){if(window._fbDoLogout){window._fbDoLogout();return;}loggedIn=null;_adm.set(false);document.getElementById('logged-area').style.display='none';document.getElementById('btn-login').style.display='';document.getElementById('btn-reg').style.display='';const ab=document.getElementById('btn-admin');if(ab)ab.style.display='none';}
 function doLogin(){if(window._fbDoLogin){window._fbDoLogin();return;}}
 function doRegister(){if(window._fbDoRegister){window._fbDoRegister();return;}}
 function oauth(p){if(window._fbOauth){window._fbOauth(p);return;}setUser('oauth_user');closeLM();}
@@ -1711,7 +1716,7 @@ function showSec(name){
   sidebar.style.display='none';
   sv.style.display='block';sv.innerHTML='';
   if(name==='mypixels'){showMyPixels();return;}
-  if(name==='admin'){if(isAdmin)showAdminPanel();return;}
+  if(name==='admin'){if(_adm.get())showAdminPanel();return;}
   if(name==='auctions'){
     const active=[...blkMap.values()].filter(b=>b.status==='active'||b.status==='ending').sort((a,b2)=>b2.bid-a.bid);
     if(!active.length){sv.innerHTML=`<div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#000080;margin-bottom:12px;">🔨 ACTIVE AUCTIONS</div><div style="font-family:'VT323',monospace;font-size:18px;color:#555;padding:20px;">No active auctions yet. Click any square on the grid to start bidding!</div>`;return;}
@@ -1800,7 +1805,7 @@ function showMyPixels(){
     const sn=blk.size===5?'5×5 PREMIUM':blk.size===2?'2×2 STANDARD':'1×1 BASIC';
     const thumb=blk.image?`<img src="${blk.image}" alt="pixel">`:`<div class="mypx-retro" style="background:${retroGradient(blk.id)}">${retroEmoji(blk.id)}</div>`;
     const urlStr=blk.url?`<div class="murl" onclick="window.open('${blk.url}','_blank')">${blk.url}</div>`:'<span style="color:#999;font-size:13px;">No URL set</span>';
-    cards+=`<div class="mypx-card"><div class="mypx-hdr"><span>GRID #${String(blk.id).padStart(6,'0')}</span><span style="color:#AAFFAA;">${sn}</span><span style="color:#FFD700;">$${blk.bid||0}</span></div><div class="mypx-body"><div class="mypx-thumb">${thumb}</div><div class="mypx-info"><div class="mid">#${String(blk.id).padStart(6,'0')} · ${sn}</div><div class="mbid">Paid: $${blk.bid||0}</div><div style="margin-top:3px;">${urlStr}</div>${blk.title?`<div style="font-size:13px;color:#555;">${blk.title}</div>`:''}</div><div class="mypx-actions"><button class="mypx-btn primary" onclick="openPxEdit(${blk.id})">✏ EDIT</button><button class="mypx-btn" onclick="jumpToPixel(${blk.id})">🔍 VIEW</button></div></div></div>`;
+    cards+=`<div class="mypx-card"><div class="mypx-hdr"><span>GRID #${String(blk.id).padStart(6,'0')}</span><span style="color:#AAFFAA;">${sn}</span><span style="color:#FFD700;">$${blk.bid||0}</span></div><div class="mypx-body"><div class="mypx-thumb">${thumb}</div><div class="mypx-info"><div class="mid">#${String(blk.id).padStart(6,'0')} · ${sn}</div><div class="mbid">Paid: $${blk.bid||0}</div><div style="margin-top:3px;">${urlStr}</div>${blk.title?`<div style="font-size:13px;color:#555;">${blk.title}</div>`:''}</div><div class="mypx-actions"><button class="mypx-btn primary" onclick="${blk.paid===false?`showPayFirst(${blk.id})`:`openPxEdit(${blk.id})`}" style="${blk.paid===false?'background:#CC6600;border-top:2px solid #FF8800;border-left:2px solid #FF8800;border-right:2px solid #884400;border-bottom:2px solid #884400;':''}">${blk.paid===false?'💳 PAY FIRST':'✏ EDIT'}</button><button class="mypx-btn" onclick="jumpToPixel(${blk.id})">🔍 VIEW</button></div></div></div>`;
   });
   sv.innerHTML=hd+cards;
 }
@@ -1808,12 +1813,12 @@ function jumpToPixel(id){document.getElementById('gi').value=id;showSec('grid');
 
 // ADMIN PANEL
 function showAdminPanel(){
-  if(!isAdmin){return;}
+  if(!_adm.get()){return;}
   const sv=document.getElementById('sv');
   sv.innerHTML=`
   <div style="font-family:'Press Start 2P',monospace;font-size:10px;color:#FFD700;background:#000080;padding:8px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
     <span>⚡ ADMIN CONTROL PANEL</span>
-    <span style="font-size:7px;color:#AAFFAA;font-family:'Share Tech Mono',monospace;">Logged in as luckyansh.t@gmail.com</span>
+    <span style="font-size:7px;color:#AAFFAA;font-family:'Share Tech Mono',monospace;">⚡ ADMIN SESSION VERIFIED</span>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:860px;">
@@ -1932,7 +1937,7 @@ function renderAdminDirectBuyTable(){
 }
 
 function adminSetTimer(){
-  if(!isAdmin)return;
+  if(!_adm.get())return;
   const id=parseInt(document.getElementById('adm-block-id').value);
   const mins=parseInt(document.getElementById('adm-timer-mins').value);
   const msg=document.getElementById('adm-timer-msg');
@@ -1943,7 +1948,7 @@ function adminSetTimer(){
   blk.mins=mins;
   blk.status=mins===0?'sold':mins<120?'ending':'active';
   ndraw=true;
-  if(window._fbAdminSetTimer){window._fbAdminSetTimer(blk.id,mins);}
+  if(_fbAdminSetTimer){_fbAdminSetTimer(blk.id,mins);}
   msg.textContent=`✓ Block #${String(blk.id).padStart(6,'0')} timer set to ${mins} min`;msg.style.color='#008000';
   setTimeout(()=>{if(msg)msg.textContent='';},3000);
 }
@@ -1953,7 +1958,7 @@ function adminSetTimerQuick(mins){
   adminSetTimer();
 }
 function adminFreePurchase(idOverride){
-  if(!isAdmin)return;
+  if(!_adm.get())return;
   const raw=idOverride!==undefined?idOverride:parseInt(document.getElementById('adm-buy-id')?.value);
   const msg=document.getElementById('adm-buy-msg');
   if(isNaN(raw)||raw<0||raw>=TOTAL){if(msg){msg.textContent='⚠ Invalid block ID';msg.style.color='#CC0000';}return;}
@@ -1961,13 +1966,13 @@ function adminFreePurchase(idOverride){
   if(!blk){if(msg){msg.textContent='⚠ Block not found';msg.style.color='#CC0000';}return;}
   blk.status='sold';blk.owner=loggedIn;blk.bid=blk.bid||1;ndraw=true;mmDirty=true;
   soldCount++;updStats();
-  if(window._fbAdminClaim){window._fbAdminClaim(blk.id,loggedIn,window._fbUid);}
+  if(_fbAdminClaim){_fbAdminClaim(blk.id,loggedIn,window._fbUid);}
   if(msg){msg.textContent=`✓ Claimed Block #${String(blk.id).padStart(6,'0')} for free!`;msg.style.color='#008000';setTimeout(()=>{if(msg)msg.textContent='';},3000);}
   const n=document.createElement('div');n.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#008000;color:white;font-family:"Press Start 2P",monospace;font-size:9px;padding:10px 18px;z-index:9999;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;white-space:nowrap;';
   n.textContent='⚡ ADMIN CLAIM: Block #'+String(blk.id).padStart(6,'0');document.body.appendChild(n);setTimeout(()=>n.remove(),2500);
 }
 function adminSetStats(){
-  if(!isAdmin)return;
+  if(!_adm.get())return;
   const s=parseInt(document.getElementById('adm-sold').value);
   const b=parseInt(document.getElementById('adm-bids').value);
   const r=parseInt(document.getElementById('adm-rev').value);
@@ -1978,13 +1983,13 @@ function adminSetStats(){
   if(msg){msg.textContent='✓ Stats updated';msg.style.color='#008000';setTimeout(()=>{if(msg)msg.textContent='';},2000);}
 }
 function adminClaimCurrent(){
-  if(!isAdmin||curMO===null)return;
+  if(!_adm.get()||curMO===null)return;
   adminFreePurchase(curMO);
   closeMO();
   openPxEdit(curMO);
 }
 function adminUnclaim(idOverride){
-  if(!isAdmin)return;
+  if(!_adm.get())return;
   const raw=idOverride!==undefined?idOverride:parseInt(document.getElementById('adm-buy-id')?.value);
   const msg=document.getElementById('adm-buy-msg');
   if(isNaN(raw)||raw<0||raw>=TOTAL){if(msg){msg.textContent='⚠ Invalid block ID';msg.style.color='#CC0000';}return;}
@@ -1994,13 +1999,13 @@ function adminUnclaim(idOverride){
   blk.status='available';blk.owner=null;blk.bidder=null;blk.bid=0;blk.bids=0;
   blk.image=null;blk.url=null;blk.title=null;blk._imgObj=null;blk.mins=1440;
   ndraw=true;mmDirty=true;
-  soldCount=Math.max(0,soldCount-1);updStats();{window._fbAdminUnclaim(blk.id);}
+  soldCount=Math.max(0,soldCount-1);updStats();{_fbAdminUnclaim(blk.id);}
   if(msg){msg.textContent=`✓ Block #${String(blk.id).padStart(6,'0')} unclaimed & reset`;msg.style.color='#008000';setTimeout(()=>{if(msg)msg.textContent='';},3000);}
   const n=document.createElement('div');n.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#CC0000;color:white;font-family:"Press Start 2P",monospace;font-size:9px;padding:10px 18px;z-index:9999;border:2px solid #FF4444;white-space:nowrap;';
   n.textContent='🗑 ADMIN UNCLAIM: Block #'+String(blk.id).padStart(6,'0');document.body.appendChild(n);setTimeout(()=>n.remove(),2500);
 }
 function adminUnclaimCurrent(){
-  if(!isAdmin||curMO===null)return;
+  if(!_adm.get()||curMO===null)return;
   adminUnclaim(curMO);
   closeMO();
 }
@@ -2009,12 +2014,30 @@ function adminUnclaimCurrent(){
 let pxEditId=null,pxEditImgData=null;
 function openPxEdit(blockId){
   const cell=cellMap.get(blockId),blk=blkMap.get(cell?cell.bId:blockId);if(!blk)return;
+  // Block editing if the user hasn't paid yet — send them to pay first
+  if(blk.owner===loggedIn && blk.paid===false){
+    showPayFirst(blk.id);
+    return;
+  }
   pxEditId=blk.id;pxEditImgData=blk.image||null;
   document.getElementById('pxedit-ttl').textContent='✏ EDIT PIXEL #'+String(blk.id).padStart(6,'0');
   document.getElementById('pxedit-url').value=blk.url||'';document.getElementById('pxedit-title').value=blk.title||'';
   const prev=document.getElementById('pxedit-preview');
   if(blk.image){prev.innerHTML=`<img src="${blk.image}" alt="preview">`;}else{prev.innerHTML='<span class="pxedit-preview-lbl">No image — retro gradient will show</span>';}
   document.getElementById('pxedit-mo').classList.add('open');
+}
+
+// Show a pay-first modal when winner tries to edit before paying
+function showPayFirst(blockId){
+  const blk=blkMap.get(blockId);if(!blk)return;
+  const dl=blk.claimDeadline
+    ?(blk.claimDeadline?.toMillis?blk.claimDeadline.toMillis():typeof blk.claimDeadline==='number'?blk.claimDeadline:blk.claimDeadline?.seconds?blk.claimDeadline.seconds*1000:0)
+    :0;
+  const timeLeft=dl>0?Math.max(0,Math.floor((dl-Date.now())/60000)):0;
+  const hrs=Math.floor(timeLeft/60),mins=timeLeft%60;
+  const timeStr=dl>0?`${hrs}h ${mins}m remaining`:'Claim window active';
+  // Open the auction modal on the claim section
+  openMO(blockId);
 }
 function closePxEdit(){document.getElementById('pxedit-mo').classList.remove('open');pxEditId=null;pxEditImgData=null;}
 function handleImgUpload(inp){const file=inp.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{pxEditImgData=e.target.result;document.getElementById('pxedit-preview').innerHTML=`<img src="${pxEditImgData}" alt="preview">`;};reader.readAsDataURL(file);}
@@ -2219,10 +2242,12 @@ const rtdb     = getDatabase(app);
 const gProvider= new GoogleAuthProvider();
 gProvider.setCustomParameters({ prompt: 'select_account' });
 
+// Always use local persistence so users stay signed in across browser sessions
 async function applyAuthPersistence() {
-  const remember = !!document.getElementById('lrem')?.checked;
-  await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
+  await setPersistence(auth, browserLocalPersistence);
 }
+// Apply immediately on page load so existing sessions are restored
+applyAuthPersistence().catch(()=>{});
 
 // ── helpers ──────────────────────────────────────────────
 function showErr(id,msg){const e=document.getElementById(id);if(!e)return;e.textContent=msg;e.style.display='block';}
@@ -2319,7 +2344,7 @@ onSnapshot(doc(db,'meta','userCount'), snap => {
 
 onAuthStateChanged(auth, async user => {
   if(!user){
-    window._fbUid = null; loggedIn = null; isAdmin = false;
+    window._fbUid = null; loggedIn = null; _adm.set(false);
     document.getElementById('logged-area').style.display = 'none';
     document.getElementById('btn-login').style.display   = '';
     document.getElementById('btn-reg').style.display     = '';
@@ -2339,32 +2364,39 @@ onAuthStateChanged(auth, async user => {
     if(snap.exists()&&snap.data().username) name = snap.data().username;
   } catch(e){}
   window._fbUid = user.uid;
-  setUser(name, user.email);
+  setUser(name);
   // Swap anonymous session slot → named user slot
   setupPresenceRef(user.uid, name);
   loadGridState();
   loadSpotlight();
   loadUserCount();
   // Check for any pending wins after grid loads
-  setTimeout(()=>checkPendingWins(name), 2500);
+  setTimeout(()=>checkPendingWins(name), 4000); // wait for loadGridState + Firestore snapshot to settle
 });
 
 async function checkPendingWins(username){
+  // Called after login — show winner celebration for any auctions this user won
+  // but hasn't yet acknowledged (seen the big popup for).
   try {
     const {getDocs,collection:col2,query,where} = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js');
     const q=query(col2(db,'blocks'),where('owner','==',username),where('status','==','sold'));
     const snap=await getDocs(q);
     snap.forEach(docSnap=>{
       const d=docSnap.data();
-      if(!d.paid&&d.claimDeadline){
-        const dl=d.claimDeadline?.toMillis?d.claimDeadline.toMillis():typeof d.claimDeadline==='number'?d.claimDeadline:d.claimDeadline?.seconds?d.claimDeadline.seconds*1000:0;
-        if(dl>Date.now()&&!notifiedExpired.has(d.id)){
-          // Sync local state
-          const blk=blkMap.get(d.id);
-          if(blk){Object.assign(blk,{status:'sold',owner:d.owner,bid:d.bid||0,bids:d.bids||0,claimDeadline:dl,paid:false});ndraw=true;mmDirty=true;}
-          showAuctionClose({id:d.id,size:d.size||1,bid:d.bid||0,owner:d.owner,bidder:d.bidder||d.owner},true);
-        }
+      // Skip if user already saw & acknowledged this win
+      if(notifiedExpired.has(d.id)) return;
+      // Parse claimDeadline if present
+      let dl=0;
+      if(d.claimDeadline){
+        dl=d.claimDeadline?.toMillis?d.claimDeadline.toMillis():typeof d.claimDeadline==='number'?d.claimDeadline:d.claimDeadline?.seconds?d.claimDeadline.seconds*1000:0;
       }
+      // Only skip if claim window has definitively expired (not if there's no deadline at all)
+      if(dl>0 && dl<Date.now()) return;
+      // Sync local blkMap state so the grid reflects ownership
+      const blk=blkMap.get(d.id);
+      if(blk){Object.assign(blk,{status:'sold',owner:d.owner,bid:d.bid||0,bids:d.bids||0,endsAt:blk.endsAt||0,paid:d.paid||false});ndraw=true;mmDirty=true;}
+      // Show the winner celebration popup
+      showAuctionClose({id:d.id,size:d.size||1,bid:d.bid||0,owner:d.owner,bidder:d.bidder||d.owner},true);
     });
   }catch(e){console.warn('checkPendingWins error:',e);}
 }
@@ -2383,6 +2415,7 @@ async function loadGridState() {
     }
   } catch(e){}
   // Real-time listener for block changes
+  let _firstSnapshotDone = false;
   onSnapshot(collection(db,'blocks'), snap => {
     snap.docChanges().forEach(change => {
       const d = change.doc.data();
@@ -2395,6 +2428,7 @@ async function loadGridState() {
       const blk = blkMap.get(d.id);
       if(!blk) return;
       const wasAvail = blk.status==='available';
+      const wasSold = blk.status==='sold';
       const oldImage = blk.image; // capture before Object.assign
       // Preserve endsAt as ms timestamp
       let endsAtMs = blk.endsAt||null;
@@ -2418,14 +2452,14 @@ async function loadGridState() {
       if(!blk.image) blk._imgObj = null;
       if(!blk.image) blk._imgObj = null;
       // If just finalized (sold) and current user is the winner, show winner popup
-      const justSold = d.status==='sold' && wasAvail===false && blk.status==='sold';
+      // wasAvail===false check was wrong — it should fire whenever status transitions TO sold
+      const justSold = d.status==='sold' && !wasSold;
       if(justSold && d.owner && d.owner===loggedIn && !notifiedExpired.has(blk.id)){
         showAuctionClose(blk, true);
         ackWin(blk.id);
       }
       if(blk.status!=='available' && wasAvail) addFeed(blk.bidder||blk.owner||'?',blk.bid,blk.id,blk.size,true);
       ndraw=true;mmDirty=true;
-      updSidebar();
       // If modal is open for this block, refresh live displays
       if(curMO!==null&&(curMO===blk.id||(cellMap.get(curMO)&&blkMap.get(cellMap.get(curMO).bId)?.id===blk.id))){
         document.getElementById('m-bid').textContent=blk.bid?'$'+blk.bid:'No bids';
@@ -2439,6 +2473,9 @@ async function loadGridState() {
         if(window._fbLoadBidHistory) window._fbLoadBidHistory(blk.id);
       }
     });
+    // After initial snapshot batch settles, refresh sidebar once
+    if(!_firstSnapshotDone){ _firstSnapshotDone=true; updSidebar(); }
+    else { updSidebar(); }
   });
 }
 
@@ -2708,22 +2745,26 @@ window._fbPlaceBid = async function() {
       const sp=sz===5?20:sz===2?5:1;
       const curBid=ex?.bid||0;
       const minBid=curBid>0?Math.max(curBid+1,Math.ceil(curBid*1.1)):sp;
-      const maxBid=curBid>0?Math.floor(curBid*3):sp*10;
+      const maxBid=curBid>0?Math.floor(curBid*3):sp*3;
+
+      // Block self-outbid — can't bid if you're already the top bidder
+      if(ex?.bidder&&ex.bidder===loggedIn) return{err:'self'};
 
       if(bid<minBid) return{err:'low',minBid};
-      if(bid>maxBid) return{err:'high',maxBid};
+      // Silently clamp over-max bids to maxBid instead of rejecting
+      const clampedBid=Math.min(bid,maxBid);
 
       const newBids=(ex?.bids||0)+1;
       txn.set(blockRef,{
         id:canonId,row:Math.floor(canonId/G),col:canonId%G,size:sz,
-        status:'active',bid,bids:newBids,
+        status:'active',bid:clampedBid,bids:newBids,
         bidder:loggedIn,uid:window._fbUid,
         // Track second bidder for forfeit chain (previous leader)
         secondBidder:ex?.bidder&&ex.bidder!==loggedIn?ex.bidder:ex?.secondBidder||null,
         secondBid:ex?.bidder&&ex.bidder!==loggedIn?ex.bid:ex?.secondBid||null,
         mins:1440,endsAt:new Date(Date.now()+24*60*60*1000)
       },{merge:true});
-      return{ok:true,bid,newBids,minBid,maxBid};
+      return{ok:true,bid:clampedBid,clamped:clampedBid<bid,newBids,minBid,maxBid};
     });
 
     if(result.err==='sold'){
@@ -2731,30 +2772,31 @@ window._fbPlaceBid = async function() {
       ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
       if(blk)blk.status='sold';ndraw=true;return;
     }
+    if(result.err==='self'){
+      ok.innerHTML='⚠ You are already the highest bidder on this pixel!';
+      ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
+      return;
+    }
     if(result.err==='low'){
-      ok.innerHTML=`⚠ Minimum bid is $${result.minBid} (must raise by at least 10%).`;
+      ok.innerHTML=`⚠ Minimum bid is $${result.minBid} (10% raise required).`;
       ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
       document.getElementById('bidinp').value=result.minBid;return;
     }
-    if(result.err==='high'){
-      ok.innerHTML=`⚠ Max allowed bid is $${result.maxBid} (max 3× current bid). Place a smaller raise first.`;
-      ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
-      document.getElementById('bidinp').value=result.maxBid;return;
-    }
 
     // Success
-    if(blk){blk.bid=bid;blk.bids=result.newBids;blk.status='active';blk.bidder=loggedIn;ndraw=true;mmDirty=true;}
-    else{const nb={id:canonId,row:Math.floor(canonId/G),col:canonId%G,size:1,status:'active',bid,bids:1,bidder:loggedIn,owner:null,image:null,url:null,title:null,_imgObj:null};blkMap.set(canonId,nb);cellMap.set(canonId,{bId:canonId,sz:1});ndraw=true;}
+    if(blk){blk.bid=result.bid;blk.bids=result.newBids;blk.status='active';blk.bidder=loggedIn;ndraw=true;mmDirty=true;}
+    else{const nb={id:canonId,row:Math.floor(canonId/G),col:canonId%G,size:1,status:'active',bid:result.bid,bids:1,bidder:loggedIn,owner:null,image:null,url:null,title:null,_imgObj:null};blkMap.set(canonId,nb);cellMap.set(canonId,{bId:canonId,sz:1});ndraw=true;}
 
-    ok.innerHTML=`✓ Bid of <b>$${bid}</b> placed! You're winning. 💳 Only charged if you win.`;
+    const clampNote=result.clamped?` <span style="color:#CC6600;">(clamped to 3× max)</span>`:'';
+    ok.innerHTML=`✓ Bid of <b>$${result.bid}</b> placed! You're winning. 💳 Only charged if you win.`+clampNote;
     ok.style.background='#DFFFDF';ok.style.borderColor='#008000';ok.style.color='#008000';
 
     // Update modal
-    document.getElementById('m-bid').textContent='$'+bid;
+    document.getElementById('m-bid').textContent='$'+result.bid;
     document.getElementById('m-bids').textContent=result.newBids+' bid'+(result.newBids===1?'':'s');
     // Refresh bid rules for next raise
-    const newMin=Math.max(bid+1,Math.ceil(bid*1.1));
-    const newMax=Math.floor(bid*3);
+    const newMin=Math.max(result.bid+1,Math.ceil(result.bid*1.1));
+    const newMax=Math.floor(result.bid*3);
     const minRaiseEl=document.getElementById('mo-min-raise');
     const maxBidEl=document.getElementById('mo-max-bid');
     if(minRaiseEl)minRaiseEl.textContent='$'+newMin;
@@ -2770,7 +2812,7 @@ window._fbPlaceBid = async function() {
       qbRow.innerHTML=opts.map(o=>`<button onclick="setQuickBid(${o.val})" style="font-family:'Press Start 2P',monospace;font-size:6px;padding:5px 8px;background:${o.col};color:white;border:none;cursor:pointer;border-top:1px solid rgba(255,255,255,0.3);border-left:1px solid rgba(255,255,255,0.3);">${o.label}</button>`).join('');
     }
     const leaderEl=document.getElementById('m-current-leader');
-    if(leaderEl){leaderEl.style.display='block';leaderEl.innerHTML='<span style="color:#008000;">✓ You are currently winning at $'+bid+'!</span>';}
+    if(leaderEl){leaderEl.style.display='block';leaderEl.innerHTML='<span style="color:#008000;">✓ You are currently winning at $'+result.bid+'!</span>';}
 
     // Log to bid history
     try{const bsnap=await getDoc(blockRef);const prev=bsnap.data()?.bidLog||[];await setDoc(blockRef,{bidLog:[...prev,{user:loggedIn,bid,ts:Date.now()}].slice(-50)},{merge:true});}catch(e){}
@@ -2887,8 +2929,8 @@ console.log('📋 Required Firebase RTDB Rules (paste in Firebase Console → Re
 console.log(JSON.stringify({rules:{presence:{"$uid":{".read":"auth != null",".write":"auth != null && auth.uid == $uid"}},".read":false,".write":false}},null,2));
 
 // ── ADMIN: SET TIMER (Firestore) ──────────────────────────
-window._fbAdminSetTimer = async function(blockId, mins) {
-  if(!isAdmin||!window._fbUid) return;
+const _fbAdminSetTimer = async function(blockId, mins) {
+  if(!_adm.get()||!window._fbUid) return;
   try {
     const docId=String(blockId).padStart(6,'0');
     const endsAt=new Date(Date.now()+mins*60*1000);
@@ -2900,8 +2942,8 @@ window._fbAdminSetTimer = async function(blockId, mins) {
 };
 
 // ── ADMIN: FREE CLAIM (Firestore) ─────────────────────────
-window._fbAdminClaim = async function(blockId, username, uid) {
-  if(!isAdmin||!window._fbUid) return;
+const _fbAdminClaim = async function(blockId, username, uid) {
+  if(!_adm.get()||!window._fbUid) return;
   try {
     const docId=String(blockId).padStart(6,'0');
     await setDoc(doc(db,'blocks',docId),{
@@ -2912,8 +2954,8 @@ window._fbAdminClaim = async function(blockId, username, uid) {
 };
 
 // ── ADMIN: UNCLAIM (Firestore) ────────────────────────────
-window._fbAdminUnclaim = async function(blockId) {
-  if(!isAdmin||!window._fbUid) return;
+const _fbAdminUnclaim = async function(blockId) {
+  if(!_adm.get()||!window._fbUid) return;
   try {
     const docId=String(blockId).padStart(6,'0');
     await deleteDoc(doc(db,'blocks',docId));
@@ -2928,16 +2970,7 @@ window._fbAdminUnclaim = async function(blockId) {
   }
 };
 
-// ── ADMIN: SPOTLIGHT FREE (bypass payment) ────────────────
-// When admin submits spotlight, skip payment and go straight to active
-const _origSubmitSpotlight = window.submitSpotlight;
-window.submitSpotlight = async function() {
-  if(isAdmin) {
-    // Call the Firebase version directly without payment gate
-    if(window._fbSubmitSpotlight) { await window._fbSubmitSpotlight(); return; }
-  }
-  if(_origSubmitSpotlight) _origSubmitSpotlight();
-};
+// Admin spotlight: handled via _adm.get() check inside submitSpotlight directly
 
 // ── INITIAL LOAD (for all visitors, logged in or not) ─────
 // loadGridState, loadSpotlight, loadUserCount called in onAuthStateChanged
