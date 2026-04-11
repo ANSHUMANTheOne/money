@@ -1941,7 +1941,12 @@ function adminSetTimer(){
   const id=parseInt(document.getElementById('adm-block-id').value);
   const mins=parseInt(document.getElementById('adm-timer-mins').value);
   const msg=document.getElementById('adm-timer-msg');
-  if(isNaN(id)||id<0||id>=TOTAL){msg.textContent='⚠ Invalid block ID';msg.style.color='#CC0000';return;}
+  if(isNaN(id)||id<0||id>=TOTAL){
+    msg.textContent='⚠ Enter a Block ID first!';msg.style.color='#CC0000';
+    const inp=document.getElementById('adm-block-id');
+    if(inp){inp.style.borderColor='#CC0000';inp.style.background='#FFF0F0';inp.focus();setTimeout(()=>{inp.style.borderColor='';inp.style.background='';},2000);}
+    return;
+  }
   if(isNaN(mins)||mins<0){msg.textContent='⚠ Invalid minutes';msg.style.color='#CC0000';return;}
   const cell=cellMap.get(id),blk=cell?blkMap.get(cell.bId):blkMap.get(id);
   if(!blk){msg.textContent='⚠ Block not found in layout';msg.style.color='#CC0000';return;}
@@ -1955,9 +1960,10 @@ function adminSetTimer(){
   // If 0 mins, force-expire immediately via the countdown engine on next tick
   ndraw=true; mmDirty=true;
   _fbAdminSetTimer(blk.id, mins);
-  msg.textContent=`✓ Block #${String(blk.id).padStart(6,'0')} — expires in ${mins===0?'NOW':mins+' min'}`;
+  const expStr=mins===0?'⚡ EXPIRING NOW':mins+' min';
+  msg.innerHTML=`<span style="background:#DFFFDF;border:1px solid #008000;padding:3px 8px;display:inline-block;">✓ Block #${String(blk.id).padStart(6,'0')} set to expire in ${expStr}</span>`;
   msg.style.color='#008000';
-  setTimeout(()=>{if(msg)msg.textContent='';},3000);
+  setTimeout(()=>{if(msg)msg.innerHTML='';},6000);
 }
 function adminSetTimerQuick(mins){
   const inp=document.getElementById('adm-timer-mins');
@@ -2456,7 +2462,7 @@ async function loadGridState() {
         image:d.image!==undefined?d.image:blk.image,
         url:d.url!==undefined?d.url:blk.url,
         title:d.title!==undefined?d.title:blk.title,
-        mins:d.mins||blk.mins,
+        mins:d.mins!==undefined?d.mins:blk.mins,  // use !== so mins=0 is applied
         endsAt:endsAtMs
       });
       // Reset _imgObj when image URL changes so drawBlockWithRetro re-loads it
@@ -2945,12 +2951,12 @@ const _fbAdminSetTimer = async function(blockId, mins) {
   if(!_adm.get()||!window._fbUid) return;
   try {
     const docId=String(blockId).padStart(6,'0');
-    // mins=0 → set endsAt 1ms in the past so all clients' countdown engines trigger expiry
+    // Only write the three timer fields — everything else (bid, bidder, owner, image etc) untouched
     const endsAt = mins===0 ? new Date(Date.now()-1) : new Date(Date.now()+(mins*60*1000));
     await setDoc(doc(db,'blocks',docId),{
       mins,
       endsAt,
-      status: mins<120 ? 'ending' : 'active'
+      status: 'ending'
     },{merge:true});
   } catch(e){ console.warn('Admin timer set error:',e); }
 };
