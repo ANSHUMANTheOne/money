@@ -2364,6 +2364,11 @@ onAuthStateChanged(auth, async user => {
     if(snap.exists()&&snap.data().username) name = snap.data().username;
   } catch(e){}
   window._fbUid = user.uid;
+  // Verify admin server-side: read meta/admin doc — only succeeds if uid matches (Firestore rule)
+  try {
+    const adminSnap = await getDoc(doc(db,'meta','admin'));
+    _adm.set(adminSnap.exists() && adminSnap.data().uid === user.uid);
+  } catch(e) { _adm.set(false); }
   setUser(name);
   // Swap anonymous session slot → named user slot
   setupPresenceRef(user.uid, name);
