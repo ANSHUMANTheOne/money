@@ -695,6 +695,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
           <div style="margin-bottom:6px;"><span style="color:#555;">Owner: </span><span id="mo-sold-owner" style="color:#000080;font-weight:bold;">—</span></div>
           <div style="margin-bottom:6px;"><span style="color:#555;">Title: </span><span id="mo-sold-title" style="color:#333;">—</span></div>
           <div style="margin-bottom:6px;"><span style="color:#555;">Link: </span><a id="mo-sold-url" href="#" target="_blank" rel="noopener noreferrer" style="color:#0000EE;text-decoration:underline;word-break:break-all;"></a></div>
+          <div id="mo-sold-socials" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid #AADDAA;"></div>
         </div>
         <img id="mo-sold-img" src="" alt="Pixel image" style="display:none;max-width:100%;max-height:160px;object-fit:contain;border:2px solid #CCC;margin-bottom:8px;">
         <div style="font-family:'VT323',monospace;font-size:15px;color:#888;">This pixel has been claimed and is no longer available for auction.</div>
@@ -1421,10 +1422,33 @@ function openMO(id){
       const titleEl=soldView.querySelector('#mo-sold-title');
       const urlEl=soldView.querySelector('#mo-sold-url');
       const imgEl=soldView.querySelector('#mo-sold-img');
+      const socialsEl=soldView.querySelector('#mo-sold-socials');
       if(ownerEl)ownerEl.textContent=blk.owner||blk.bidder||'Unknown';
       if(titleEl)titleEl.textContent=blk.title||'No title set yet';
       if(urlEl){if(blk.url){urlEl.href=blk.url;urlEl.textContent=blk.url;urlEl.style.display='';}else{urlEl.textContent='No link set';urlEl.style.display='';}}
       if(imgEl){if(blk.image){imgEl.src=blk.image;imgEl.style.display='block';}else{imgEl.style.display='none';}}
+      // Render social profiles
+      if(socialsEl){
+        const soc=blk.socials||{};
+        const SOCIAL_META={
+          twitter:{icon:'𝕏',label:'Twitter/X',url:u=>`https://twitter.com/${u}`},
+          instagram:{icon:'📸',label:'Instagram',url:u=>`https://instagram.com/${u}`},
+          linkedin:{icon:'💼',label:'LinkedIn',url:u=>u.startsWith('http')?u:`https://${u}`},
+          github:{icon:'🐙',label:'GitHub',url:u=>`https://github.com/${u}`},
+          facebook:{icon:'📘',label:'Facebook',url:u=>u.startsWith('http')?u:`https://${u}`},
+          youtube:{icon:'▶',label:'YouTube',url:u=>u.startsWith('http')?u:`https://${u}`},
+          tiktok:{icon:'🎵',label:'TikTok',url:u=>`https://tiktok.com/@${u}`},
+          discord:{icon:'💬',label:'Discord',url:u=>u.startsWith('http')?u:null}
+        };
+        const links=Object.entries(soc).filter(([k,v])=>v&&SOCIAL_META[k]).map(([k,v])=>{
+          const m=SOCIAL_META[k];const href=m.url(v);
+          return href
+            ?`<a href="${href}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:4px;margin:2px 4px 2px 0;padding:3px 8px;background:#EEF5FF;border:1px solid #AACCFF;color:#000080;text-decoration:none;font-family:'Share Tech Mono',monospace;font-size:12px;">${m.icon} ${m.label}</a>`
+            :`<span style="display:inline-flex;align-items:center;gap:4px;margin:2px 4px 2px 0;padding:3px 8px;background:#F5F5F5;border:1px solid #DDD;color:#555;font-family:'Share Tech Mono',monospace;font-size:12px;">${m.icon} ${v}</span>`;
+        });
+        if(links.length){socialsEl.innerHTML='<span style="font-size:13px;color:#555;">🔗 </span>'+links.join('');socialsEl.style.display='';}
+        else{socialsEl.style.display='none';}
+      }
     }
     // Check if this user won and needs to claim
     if(loggedIn&&blk.owner===loggedIn&&isPendingClaim){
@@ -1816,7 +1840,11 @@ function showMyPixels(){
     const sn=blk.size===5?'5×5 PREMIUM':blk.size===2?'2×2 STANDARD':'1×1 BASIC';
     const thumb=blk.image?`<img src="${blk.image}" alt="pixel">`:`<div class="mypx-retro" style="background:${retroGradient(blk.id)}">${retroEmoji(blk.id)}</div>`;
     const urlStr=blk.url?`<div class="murl" onclick="window.open('${blk.url}','_blank')">${blk.url}</div>`:'<span style="color:#999;font-size:13px;">No URL set</span>';
-    cards+=`<div class="mypx-card"><div class="mypx-hdr"><span>GRID #${String(blk.id).padStart(6,'0')}</span><span style="color:#AAFFAA;">${sn}</span><span style="color:#FFD700;">$${blk.bid||0}</span></div><div class="mypx-body"><div class="mypx-thumb">${thumb}</div><div class="mypx-info"><div class="mid">#${String(blk.id).padStart(6,'0')} · ${sn}</div><div class="mbid">Paid: $${blk.bid||0}</div><div style="margin-top:3px;">${urlStr}</div>${blk.title?`<div style="font-size:13px;color:#555;">${blk.title}</div>`:''}</div><div class="mypx-actions"><button class="mypx-btn primary" onclick="${blk.paid!==true&&!blk.adminClaim?`showPayFirst(${blk.id})`:`openPxEdit(${blk.id})`}" style="${blk.paid!==true&&!blk.adminClaim?'background:#CC6600;border-top:2px solid #FF8800;border-left:2px solid #FF8800;border-right:2px solid #884400;border-bottom:2px solid #884400;':''}">${blk.paid!==true&&!blk.adminClaim?'💳 PAY FIRST':'✏ EDIT'}</button><button class="mypx-btn" onclick="jumpToPixel(${blk.id})">🔍 VIEW</button></div></div></div>`;
+    const soc=blk.socials||{};
+    const socIcons={twitter:'𝕏',instagram:'📸',linkedin:'💼',github:'🐙',facebook:'📘',youtube:'▶',tiktok:'🎵',discord:'💬'};
+    const socLinks=Object.entries(soc).filter(([k,v])=>v&&socIcons[k]).map(([k,v])=>`<span title="${k}: ${v}" style="font-size:14px;cursor:default;">${socIcons[k]}</span>`).join(' ');
+    const socStr=socLinks?`<div style="margin-top:3px;font-size:13px;">${socLinks}</div>`:'';
+    cards+=`<div class="mypx-card"><div class="mypx-hdr"><span>GRID #${String(blk.id).padStart(6,'0')}</span><span style="color:#AAFFAA;">${sn}</span><span style="color:#FFD700;">$${blk.bid||0}</span></div><div class="mypx-body"><div class="mypx-thumb">${thumb}</div><div class="mypx-info"><div class="mid">#${String(blk.id).padStart(6,'0')} · ${sn}</div><div class="mbid">Paid: $${blk.bid||0}</div><div style="margin-top:3px;">${urlStr}</div>${blk.title?`<div style="font-size:13px;color:#555;">${blk.title}</div>":""}${socStr}</div><div class="mypx-actions"><button class="mypx-btn primary" onclick="${blk.paid!==true&&!blk.adminClaim?`showPayFirst(${blk.id})`:`openPxEdit(${blk.id})`}" style="${blk.paid!==true&&!blk.adminClaim?'background:#CC6600;border-top:2px solid #FF8800;border-left:2px solid #FF8800;border-right:2px solid #884400;border-bottom:2px solid #884400;':''}">${blk.paid!==true&&!blk.adminClaim?'💳 PAY FIRST':'✏ EDIT'}</button><button class="mypx-btn" onclick="jumpToPixel(${blk.id})">🔍 VIEW</button></div></div></div>`;
   });
   sv.innerHTML=hd+cards;
 }
@@ -2042,7 +2070,18 @@ function openPxEdit(blockId){
   }
   pxEditId=blk.id;pxEditImgData=blk.image||null;
   document.getElementById('pxedit-ttl').textContent='✏ EDIT PIXEL #'+String(blk.id).padStart(6,'0');
-  document.getElementById('pxedit-url').value=blk.url||'';document.getElementById('pxedit-title').value=blk.title||'';
+  document.getElementById('pxedit-url').value=blk.url||'';
+  document.getElementById('pxedit-title').value=blk.title||'';
+  // Load social profiles
+  const soc=blk.socials||{};
+  document.getElementById('pxedit-twitter').value=soc.twitter||'';
+  document.getElementById('pxedit-instagram').value=soc.instagram||'';
+  document.getElementById('pxedit-linkedin').value=soc.linkedin||'';
+  document.getElementById('pxedit-github').value=soc.github||'';
+  document.getElementById('pxedit-facebook').value=soc.facebook||'';
+  document.getElementById('pxedit-youtube').value=soc.youtube||'';
+  document.getElementById('pxedit-tiktok').value=soc.tiktok||'';
+  document.getElementById('pxedit-discord').value=soc.discord||'';
   const prev=document.getElementById('pxedit-preview');
   if(blk.image){prev.innerHTML=`<img src="${blk.image}" alt="preview">`;}else{prev.innerHTML='<span class="pxedit-preview-lbl">No image — retro gradient will show</span>';}
   document.getElementById('pxedit-mo').classList.add('open');
@@ -2199,7 +2238,18 @@ window.addEventListener('load',()=>{
       </div>
       <div class="pxedit-f"><label>WEBSITE URL (clicking your pixel goes here)</label><input type="url" id="pxedit-url" placeholder="https://yourwebsite.com"></div>
       <div class="pxedit-f"><label>TITLE / ALT TEXT</label><input type="text" id="pxedit-title" placeholder="My awesome ad" maxlength="60"></div>
-      <div class="pxedit-note">💡 No image? Your pixel will show a retro color gradient instead.</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:#000080;padding:6px 0 4px;margin-top:6px;border-top:1px solid #CCC;margin-bottom:6px;">🔗 SOCIAL PROFILES <span style="font-family:'VT323',monospace;font-size:13px;color:#888;font-weight:normal;">(optional — shown on your pixel)</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px;">
+        <div class="pxedit-f" style="margin-bottom:0;"><label>𝕏 TWITTER / X</label><input type="text" id="pxedit-twitter" placeholder="@username" maxlength="50"></div>
+        <div class="pxedit-f" style="margin-bottom:0;"><label>📸 INSTAGRAM</label><input type="text" id="pxedit-instagram" placeholder="@username" maxlength="50"></div>
+        <div class="pxedit-f" style="margin-bottom:0;"><label>💼 LINKEDIN</label><input type="url" id="pxedit-linkedin" placeholder="linkedin.com/in/you" maxlength="120"></div>
+        <div class="pxedit-f" style="margin-bottom:0;"><label>🐙 GITHUB</label><input type="text" id="pxedit-github" placeholder="username" maxlength="50"></div>
+        <div class="pxedit-f" style="margin-bottom:0;"><label>📘 FACEBOOK</label><input type="url" id="pxedit-facebook" placeholder="facebook.com/you" maxlength="120"></div>
+        <div class="pxedit-f" style="margin-bottom:0;"><label>▶ YOUTUBE</label><input type="url" id="pxedit-youtube" placeholder="youtube.com/@you" maxlength="120"></div>
+        <div class="pxedit-f" style="margin-bottom:0;"><label>🎵 TIKTOK</label><input type="text" id="pxedit-tiktok" placeholder="@username" maxlength="50"></div>
+        <div class="pxedit-f" style="margin-bottom:0;"><label>💬 DISCORD</label><input type="text" id="pxedit-discord" placeholder="username or invite" maxlength="80"></div>
+      </div>
+      <div class="pxedit-note" style="margin-top:8px;">💡 No image? Your pixel will show a retro color gradient instead. Social links show when visitors click your pixel.</div>
       <button class="pxedit-submit" onclick="savePxEdit()">▶ SAVE CHANGES</button>
     </div>
   </div>
@@ -2476,7 +2526,8 @@ async function loadGridState() {
         endsAt:endsAtMs,
         paid:d.paid!==undefined?d.paid:blk.paid,          // sync payment status
         adminClaim:d.adminClaim||false,                    // sync admin claim flag
-        claimDeadline:d.claimDeadline||blk.claimDeadline  // sync claim deadline
+        claimDeadline:d.claimDeadline||blk.claimDeadline, // sync claim deadline
+        socials:d.socials!==undefined?d.socials:blk.socials // sync social profiles
       });
       // Reset _imgObj when image URL changes so drawBlockWithRetro re-loads it
       if(blk.image !== oldImage) blk._imgObj = null;
@@ -2898,6 +2949,19 @@ window._fbSavePxEdit = async function() {
   let safeUrl='';
   if(url){try{const u=new URL(url);if(['http:','https:'].includes(u.protocol))safeUrl=url;}catch(e){}}
 
+  // Collect social profiles — only save non-empty values
+  function cleanSocial(val){ return val.trim().replace(/^@/,''); }
+  function safeLink(val){ try{const u=new URL(val.trim().startsWith('http')?val.trim():'https://'+val.trim());return['http:','https:'].includes(u.protocol)?u.href:'';}catch(e){return '';} }
+  const socials={};
+  const tw=cleanSocial(document.getElementById('pxedit-twitter').value);  if(tw) socials.twitter=tw;
+  const ig=cleanSocial(document.getElementById('pxedit-instagram').value); if(ig) socials.instagram=ig;
+  const li=safeLink(document.getElementById('pxedit-linkedin').value);    if(li) socials.linkedin=li;
+  const gh=cleanSocial(document.getElementById('pxedit-github').value);   if(gh) socials.github=gh;
+  const fb=safeLink(document.getElementById('pxedit-facebook').value);    if(fb) socials.facebook=fb;
+  const yt=safeLink(document.getElementById('pxedit-youtube').value);     if(yt) socials.youtube=yt;
+  const tt=cleanSocial(document.getElementById('pxedit-tiktok').value);   if(tt) socials.tiktok=tt;
+  const dc=document.getElementById('pxedit-discord').value.trim();        if(dc) socials.discord=dc;
+
   const btn=document.querySelector('.pxedit-submit');
   if(btn){btn.textContent='⏳ Saving...';btn.disabled=true;}
 
@@ -2915,12 +2979,15 @@ window._fbSavePxEdit = async function() {
     const docId=String(blk.id).padStart(6,'0');
     await setDoc(doc(db,'blocks',docId),{
       id:blk.id, owner:loggedIn, uid:window._fbUid,
-      image:imageData||null, url:safeUrl, title:title||'', status:'sold'
+      image:imageData||null, url:safeUrl, title:title||'',
+      socials:Object.keys(socials).length?socials:null,
+      status:'sold'
     },{merge:true});
 
     blk.image=imageData||null;
     blk.url=safeUrl;
     blk.title=title||'';
+    blk.socials=Object.keys(socials).length?socials:null;
     blk.status='sold';
     blk._imgObj=null; // reset so draw loop reloads it from new data
 
