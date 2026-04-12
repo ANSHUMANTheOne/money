@@ -635,7 +635,7 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
       <div id="mo-bid-sec">
         <div class="sechd">PLACE YOUR BID</div>
         <div id="mo-bid-rules" style="background:#FFFFF0;border:1px solid #CCAA00;padding:7px 10px;margin-bottom:10px;font-family:'VT323',monospace;font-size:15px;color:#555;line-height:1.5;">
-          Min raise: <b id="mo-min-raise" style="color:#000080;">$1</b> &nbsp;·&nbsp; Max raise: <b id="mo-max-bid" style="color:#555;">3× current</b> <span style="color:#888;font-size:13px;">(auto-clamped)</span>
+          Min raise: <b id="mo-min-raise" style="color:#000080;">$1</b> &nbsp;·&nbsp; Max bid: <b id="mo-max-bid" style="color:#555;">$0</b> <span style="color:#888;font-size:13px;">(3× current — confirm if exceeded)</span>
         </div>
         <div class="bidr">
           <span style="font-family:'Press Start 2P',monospace;font-size:9px;color:#000080;">$</span>
@@ -655,13 +655,19 @@ body{background:var(--bg);font-family:'Share Tech Mono',monospace;font-size:13px
         <!-- Claim window — shown when user has won and needs to pay -->
         <div id="mo-claim-sec" style="display:none;background:#FFF8E8;border:2px solid #CC8800;padding:12px;margin-top:10px;">
           <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:#CC6600;margin-bottom:8px;">🏆 YOU WON — CLAIM YOUR PIXEL</div>
-          <div style="font-family:'VT323',monospace;font-size:16px;color:#333;margin-bottom:8px;">You have <b id="mo-claim-timer" style="color:#CC0000;">6:00:00</b> to complete payment. If you don't claim, it passes to the next bidder.</div>
-          <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <div style="font-family:'VT323',monospace;font-size:18px;color:#CC0000;font-weight:bold;margin-bottom:6px;">Time remaining: <b id="mo-claim-timer" style="color:#CC0000;">24:00:00</b></div>
+          <div style="background:#FFF0E8;border:1px solid #CC6600;padding:8px 10px;margin-bottom:10px;font-family:'VT323',monospace;font-size:16px;color:#333;line-height:1.6;">
+            ⚠ <b>You must complete payment within 24 hours.</b><br>
+            • If unpaid, this pixel passes to the <b>next highest bidder</b>.<br>
+            • If there is no next bidder, the pixel becomes <b>available again</b>.<br>
+            • You cannot edit or use this pixel until payment is confirmed.
+          </div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;">
             <button onclick="choosePay('stripe')" style="font-family:'Share Tech Mono',monospace;font-size:12px;padding:8px 14px;background:#635BFF;color:white;border:none;cursor:pointer;border-top:2px solid #8880FF;border-left:2px solid #8880FF;border-right:2px solid #3030CC;border-bottom:2px solid #3030CC;">▋ Pay with Stripe</button>
             <button onclick="choosePay('paypal')" style="font-family:'Share Tech Mono',monospace;font-size:12px;padding:8px 14px;background:#003087;color:#FFD700;border:none;cursor:pointer;border-top:2px solid #0044AA;border-left:2px solid #0044AA;border-right:2px solid #001844;border-bottom:2px solid #001844;">Ⓟ Pay with PayPal</button>
             <button onclick="forfeitPixel()" style="font-family:'Press Start 2P',monospace;font-size:7px;padding:8px 12px;background:#888;color:white;border:none;cursor:pointer;">FORFEIT →</button>
           </div>
-          <div style="font-family:'VT323',monospace;font-size:13px;color:#888;margin-top:6px;">Forfeit passes this pixel to the next highest bidder.</div>
+          <div style="font-family:'VT323',monospace;font-size:13px;color:#888;">Forfeit immediately passes this pixel to the next highest bidder, or makes it available again if none.</div>
         </div>
         <div id="mo-admin-row" style="display:none;margin-top:10px;padding-top:10px;border-top:2px solid #FFD700;">
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -830,6 +836,9 @@ function handleWS(d){
 }
 
 function updStats(){
+  // Recount from blkMap so progress bar always reflects real sold pixels
+  const realSold=[...blkMap.values()].filter(b=>b.status==='sold').length;
+  if(realSold>soldCount) soldCount=realSold;
   document.getElementById('h-sold').textContent=soldCount.toLocaleString();
   const pct=(soldCount/TOTAL*100).toFixed(3);
   document.getElementById('prog-fill').style.width=pct+'%';
@@ -1320,7 +1329,7 @@ function openMO(id){
   const sz=blk?blk.size:1,sp=sz===5?20:sz===2?5:1;
   const currentBid=blk&&blk.bid?blk.bid:0;
   const isSold=blk&&blk.status==='sold';
-  const isPendingClaim=isSold&&blk.claimDeadline&&Date.now()<(blk.claimDeadline?.toMillis?blk.claimDeadline.toMillis():blk.claimDeadline)&&!blk.paid;
+  const isPendingClaim=isSold&&blk.claimDeadline&&Date.now()<(blk.claimDeadline?.toMillis?blk.claimDeadline.toMillis():blk.claimDeadline)&&blk.paid!==true;
   const isDirectBuy=blk&&blk.directBuy&&blk.status==='available';
 
   // Bid constraints: min = current * 1.1 (rounded up, min +$1), max = current * 3
@@ -1807,7 +1816,7 @@ function showMyPixels(){
     const sn=blk.size===5?'5×5 PREMIUM':blk.size===2?'2×2 STANDARD':'1×1 BASIC';
     const thumb=blk.image?`<img src="${blk.image}" alt="pixel">`:`<div class="mypx-retro" style="background:${retroGradient(blk.id)}">${retroEmoji(blk.id)}</div>`;
     const urlStr=blk.url?`<div class="murl" onclick="window.open('${blk.url}','_blank')">${blk.url}</div>`:'<span style="color:#999;font-size:13px;">No URL set</span>';
-    cards+=`<div class="mypx-card"><div class="mypx-hdr"><span>GRID #${String(blk.id).padStart(6,'0')}</span><span style="color:#AAFFAA;">${sn}</span><span style="color:#FFD700;">$${blk.bid||0}</span></div><div class="mypx-body"><div class="mypx-thumb">${thumb}</div><div class="mypx-info"><div class="mid">#${String(blk.id).padStart(6,'0')} · ${sn}</div><div class="mbid">Paid: $${blk.bid||0}</div><div style="margin-top:3px;">${urlStr}</div>${blk.title?`<div style="font-size:13px;color:#555;">${blk.title}</div>`:''}</div><div class="mypx-actions"><button class="mypx-btn primary" onclick="${blk.paid===false?`showPayFirst(${blk.id})`:`openPxEdit(${blk.id})`}" style="${blk.paid===false?'background:#CC6600;border-top:2px solid #FF8800;border-left:2px solid #FF8800;border-right:2px solid #884400;border-bottom:2px solid #884400;':''}">${blk.paid===false?'💳 PAY FIRST':'✏ EDIT'}</button><button class="mypx-btn" onclick="jumpToPixel(${blk.id})">🔍 VIEW</button></div></div></div>`;
+    cards+=`<div class="mypx-card"><div class="mypx-hdr"><span>GRID #${String(blk.id).padStart(6,'0')}</span><span style="color:#AAFFAA;">${sn}</span><span style="color:#FFD700;">$${blk.bid||0}</span></div><div class="mypx-body"><div class="mypx-thumb">${thumb}</div><div class="mypx-info"><div class="mid">#${String(blk.id).padStart(6,'0')} · ${sn}</div><div class="mbid">Paid: $${blk.bid||0}</div><div style="margin-top:3px;">${urlStr}</div>${blk.title?`<div style="font-size:13px;color:#555;">${blk.title}</div>`:''}</div><div class="mypx-actions"><button class="mypx-btn primary" onclick="${blk.paid!==true&&!blk.adminClaim?`showPayFirst(${blk.id})`:`openPxEdit(${blk.id})`}" style="${blk.paid!==true&&!blk.adminClaim?'background:#CC6600;border-top:2px solid #FF8800;border-left:2px solid #FF8800;border-right:2px solid #884400;border-bottom:2px solid #884400;':''}">${blk.paid!==true&&!blk.adminClaim?'💳 PAY FIRST':'✏ EDIT'}</button><button class="mypx-btn" onclick="jumpToPixel(${blk.id})">🔍 VIEW</button></div></div></div>`;
   });
   sv.innerHTML=hd+cards;
 }
@@ -2025,8 +2034,9 @@ function adminUnclaimCurrent(){
 let pxEditId=null,pxEditImgData=null;
 function openPxEdit(blockId){
   const cell=cellMap.get(blockId),blk=blkMap.get(cell?cell.bId:blockId);if(!blk)return;
-  // Block editing if the user hasn't paid yet — send them to pay first
-  if(blk.owner===loggedIn && blk.paid===false){
+  // Block editing unless paid===true (explicit). paid===false OR paid===undefined both block.
+  // Admin claims set paid:true so they bypass correctly. Regular users must pay first.
+  if(blk.owner===loggedIn && blk.paid!==true && !blk.adminClaim){
     showPayFirst(blk.id);
     return;
   }
@@ -2419,16 +2429,18 @@ async function checkPendingWins(username){
 
 // ── GRID STATE (Firestore) ───────────────────────────────
 async function loadGridState() {
+  // Real-time listener on meta/stats so progress bar + sold count stay live
   try {
-    const snap = await getDoc(doc(db,'meta','stats'));
-    if(snap.exists()){
-      const s=snap.data();
-      soldCount=s.sold||0; totalBids=s.bids||0;
-      document.getElementById('h-sold').textContent=soldCount.toLocaleString();
-      document.getElementById('h-bids').textContent=totalBids;
-      document.getElementById('h-rev').textContent='$'+(s.revenue||0).toLocaleString();
-      updStats();
-    }
+    onSnapshot(doc(db,'meta','stats'), snap => {
+      if(snap.exists()){
+        const s=snap.data();
+        soldCount=s.sold||0; totalBids=s.bids||0;
+        document.getElementById('h-sold').textContent=soldCount.toLocaleString();
+        document.getElementById('h-bids').textContent=totalBids;
+        document.getElementById('h-rev').textContent='$'+(s.revenue||0).toLocaleString();
+        updStats();
+      }
+    });
   } catch(e){}
   // Real-time listener for block changes
   let _firstSnapshotDone = false;
@@ -2461,7 +2473,10 @@ async function loadGridState() {
         url:d.url!==undefined?d.url:blk.url,
         title:d.title!==undefined?d.title:blk.title,
         mins:d.mins!==undefined?d.mins:blk.mins,  // use !== so mins=0 is applied
-        endsAt:endsAtMs
+        endsAt:endsAtMs,
+        paid:d.paid!==undefined?d.paid:blk.paid,          // sync payment status
+        adminClaim:d.adminClaim||false,                    // sync admin claim flag
+        claimDeadline:d.claimDeadline||blk.claimDeadline  // sync claim deadline
       });
       // Reset _imgObj when image URL changes so drawBlockWithRetro re-loads it
       if(blk.image !== oldImage) blk._imgObj = null;
@@ -2613,7 +2628,7 @@ window._fbFinalizeAuction = async function(blockId, winner, noBids=false) {
       await deleteDoc(doc(db,'blocks',docId));
     } else {
       // Give winner 6 hours to claim/pay — store deadline + second bidder for forfeit chain
-      const claimDeadline = new Date(Date.now() + 6*60*60*1000);
+      const claimDeadline = new Date(Date.now() + 24*60*60*1000);
       await setDoc(doc(db,'blocks',docId), {
         status: 'sold',
         owner: winner,
@@ -2621,7 +2636,7 @@ window._fbFinalizeAuction = async function(blockId, winner, noBids=false) {
         bid: ex?.bid || 0,
         bids: ex?.bids || 0,
         claimDeadline,
-        paid: false,
+        paid: false,  // must be set true by payment webhook/backend
         secondBidder: ex?.secondBidder || null,
         secondBid: ex?.secondBid || null,
         finalizedAt: serverTimestamp()
@@ -2646,8 +2661,8 @@ window._fbForfeit = async function(blockId) {
         owner: next,
         uid: null,
         bid: ex.secondBid || ex.bid,
-        claimDeadline: new Date(Date.now()+6*60*60*1000),
-        paid: false,
+        claimDeadline: new Date(Date.now()+24*60*60*1000),
+        paid: false,  // must be set true by payment webhook/backend
         secondBidder: null,
         secondBid: null,
         forfeitedBy: loggedIn,
@@ -2767,8 +2782,8 @@ window._fbPlaceBid = async function() {
       if(ex?.bidder&&ex.bidder===loggedIn) return{err:'self'};
 
       if(bid<minBid) return{err:'low',minBid};
-      // Silently clamp over-max bids to maxBid instead of rejecting
-      const clampedBid=Math.min(bid,maxBid);
+      if(bid>maxBid) return{err:'overmax',maxBid};
+      const clampedBid=bid;
 
       const newBids=(ex?.bids||0)+1;
       txn.set(blockRef,{
@@ -2780,7 +2795,7 @@ window._fbPlaceBid = async function() {
         secondBid:ex?.bidder&&ex.bidder!==loggedIn?ex.bid:ex?.secondBid||null,
         mins:1440,endsAt:new Date(Date.now()+24*60*60*1000)
       },{merge:true});
-      return{ok:true,bid:clampedBid,clamped:clampedBid<bid,newBids,minBid,maxBid};
+      return{ok:true,bid:clampedBid,newBids,minBid,maxBid};
     });
 
     if(result.err==='sold'){
@@ -2798,13 +2813,20 @@ window._fbPlaceBid = async function() {
       ok.style.background='#FFEEEE';ok.style.borderColor='#CC0000';ok.style.color='#CC0000';
       document.getElementById('bidinp').value=result.minBid;return;
     }
+    if(result.err==='overmax'){
+      ok.style.display='block';
+      ok.innerHTML=`⚠ <b>$${bid}</b> exceeds the 3× max of <b>$${result.maxBid}</b>.<br>Click BID again to confirm at <b>$${result.maxBid}</b>.`;
+      ok.style.background='#FFF8E8';ok.style.borderColor='#CC8800';ok.style.color='#CC6600';
+      document.getElementById('bidinp').value=result.maxBid;
+      document.getElementById('bidinp').max=result.maxBid;
+      return;
+    }
 
     // Success
     if(blk){blk.bid=result.bid;blk.bids=result.newBids;blk.status='active';blk.bidder=loggedIn;ndraw=true;mmDirty=true;}
     else{const nb={id:canonId,row:Math.floor(canonId/G),col:canonId%G,size:1,status:'active',bid:result.bid,bids:1,bidder:loggedIn,owner:null,image:null,url:null,title:null,_imgObj:null};blkMap.set(canonId,nb);cellMap.set(canonId,{bId:canonId,sz:1});ndraw=true;}
 
-    const clampNote=result.clamped?` <span style="color:#CC6600;">(clamped to 3× max)</span>`:'';
-    ok.innerHTML=`✓ Bid of <b>$${result.bid}</b> placed! You're winning. 💳 Only charged if you win.`+clampNote;
+    ok.innerHTML=`✓ Bid of <b>$${result.bid}</b> placed! You're winning. 💳 Only charged if you win.`;
     ok.style.background='#DFFFDF';ok.style.borderColor='#008000';ok.style.color='#008000';
 
     // Update modal
@@ -2831,10 +2853,11 @@ window._fbPlaceBid = async function() {
     if(leaderEl){leaderEl.style.display='block';leaderEl.innerHTML='<span style="color:#008000;">✓ You are currently winning at $'+result.bid+'!</span>';}
 
     // Log to bid history
-    try{const bsnap=await getDoc(blockRef);const prev=bsnap.data()?.bidLog||[];await setDoc(blockRef,{bidLog:[...prev,{user:loggedIn,bid,ts:Date.now()}].slice(-50)},{merge:true});}catch(e){}
+    try{const bsnap=await getDoc(blockRef);const prev=bsnap.data()?.bidLog||[];await setDoc(blockRef,{bidLog:[...prev,{user:loggedIn,bid:result.bid,ts:Date.now()}].slice(-50)},{merge:true});}catch(e){}
 
-    if(curMO!==null){const c2=cellMap.get(curMO);addFeed(loggedIn,bid,canonId,c2?.sz||sz,true);}
+    if(curMO!==null){const c2=cellMap.get(curMO);addFeed(loggedIn,result.bid,canonId,c2?.sz||sz,true);}
     totalBids++;document.getElementById('h-bids').textContent=totalBids;
+    try{await setDoc(doc(db,'meta','stats'),{bids:increment(1)},{merge:true});}catch(e){}
     updSidebar();
     if(window._fbLoadBidHistory)window._fbLoadBidHistory(canonId);
 
@@ -2964,7 +2987,8 @@ window._fbAdminClaim = async function(blockId, username, uid) {
     const docId=String(blockId).padStart(6,'0');
     await setDoc(doc(db,'blocks',docId),{
       id:blockId,status:'sold',owner:username,uid,
-      bid:1,bids:1,endsAt:new Date()
+      bid:1,bids:1,endsAt:new Date(),
+      paid:true,adminClaim:true,claimedAt:serverTimestamp()
     },{merge:true});
   } catch(e){ console.warn('Admin claim error:',e); }
 };
