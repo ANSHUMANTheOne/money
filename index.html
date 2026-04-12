@@ -1957,7 +1957,7 @@ function adminSetTimer(){
   blk.endsAt=Date.now()+(mins*60*1000);
   blk.status=mins===0?'sold':mins<120?'ending':'active';
   ndraw=true;mmDirty=true;
-  _fbAdminSetTimer(blk.id,mins);
+  if(window._fbAdminSetTimer) window._fbAdminSetTimer(blk.id,mins); else console.warn("_fbAdminSetTimer not ready");
   const expStr=mins===0?'⚡ EXPIRING NOW':mins+' min';
   msg.innerHTML=`<span style="background:#DFFFDF;border:1px solid #008000;padding:3px 8px;display:inline-block;">✓ Block #${String(blk.id).padStart(6,'0')} set to expire in ${expStr}</span>`;
   msg.style.color='#008000';
@@ -1977,7 +1977,7 @@ function adminFreePurchase(idOverride){
   if(!blk){if(msg){msg.textContent='⚠ Block not found';msg.style.color='#CC0000';}return;}
   blk.status='sold';blk.owner=loggedIn;blk.bid=blk.bid||1;ndraw=true;mmDirty=true;
   soldCount++;updStats();
-  if(_fbAdminClaim){_fbAdminClaim(blk.id,loggedIn,window._fbUid);}
+  if(window._fbAdminClaim) window._fbAdminClaim(blk.id,loggedIn,window._fbUid); else console.warn("_fbAdminClaim not ready");
   if(msg){msg.textContent=`✓ Claimed Block #${String(blk.id).padStart(6,'0')} for free!`;msg.style.color='#008000';setTimeout(()=>{if(msg)msg.textContent='';},3000);}
   const n=document.createElement('div');n.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#008000;color:white;font-family:"Press Start 2P",monospace;font-size:9px;padding:10px 18px;z-index:9999;border-top:2px solid #00CC00;border-left:2px solid #00CC00;border-right:2px solid #006600;border-bottom:2px solid #006600;white-space:nowrap;';
   n.textContent='⚡ ADMIN CLAIM: Block #'+String(blk.id).padStart(6,'0');document.body.appendChild(n);setTimeout(()=>n.remove(),2500);
@@ -2010,7 +2010,7 @@ function adminUnclaim(idOverride){
   blk.status='available';blk.owner=null;blk.bidder=null;blk.bid=0;blk.bids=0;
   blk.image=null;blk.url=null;blk.title=null;blk._imgObj=null;blk.mins=1440;
   ndraw=true;mmDirty=true;
-  soldCount=Math.max(0,soldCount-1);updStats();{_fbAdminUnclaim(blk.id);}
+  soldCount=Math.max(0,soldCount-1);updStats();if(window._fbAdminUnclaim) window._fbAdminUnclaim(blk.id); else console.warn("_fbAdminUnclaim not ready");
   if(msg){msg.textContent=`✓ Block #${String(blk.id).padStart(6,'0')} unclaimed & reset`;msg.style.color='#008000';setTimeout(()=>{if(msg)msg.textContent='';},3000);}
   const n=document.createElement('div');n.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:#CC0000;color:white;font-family:"Press Start 2P",monospace;font-size:9px;padding:10px 18px;z-index:9999;border:2px solid #FF4444;white-space:nowrap;';
   n.textContent='🗑 ADMIN UNCLAIM: Block #'+String(blk.id).padStart(6,'0');document.body.appendChild(n);setTimeout(()=>n.remove(),2500);
@@ -2945,7 +2945,7 @@ console.log('📋 Required Firebase RTDB Rules (paste in Firebase Console → Re
 console.log(JSON.stringify({rules:{presence:{"$uid":{".read":"auth != null",".write":"auth != null && auth.uid == $uid"}},".read":false,".write":false}},null,2));
 
 // ── ADMIN: SET TIMER (Firestore) ──────────────────────────
-const _fbAdminSetTimer = async function(blockId, mins) {
+window._fbAdminSetTimer = async function(blockId, mins) {
   if(!window['__mpa_adm'].get()||!window._fbUid) return;
   try {
     const docId=String(blockId).padStart(6,'0');
@@ -2958,7 +2958,7 @@ const _fbAdminSetTimer = async function(blockId, mins) {
 };
 
 // ── ADMIN: FREE CLAIM (Firestore) ─────────────────────────
-const _fbAdminClaim = async function(blockId, username, uid) {
+window._fbAdminClaim = async function(blockId, username, uid) {
   if(!window['__mpa_adm'].get()||!window._fbUid) return;
   try {
     const docId=String(blockId).padStart(6,'0');
@@ -2970,7 +2970,7 @@ const _fbAdminClaim = async function(blockId, username, uid) {
 };
 
 // ── ADMIN: UNCLAIM (Firestore) ────────────────────────────
-const _fbAdminUnclaim = async function(blockId) {
+window._fbAdminUnclaim = async function(blockId) {
   if(!window['__mpa_adm'].get()||!window._fbUid) return;
   try {
     const docId=String(blockId).padStart(6,'0');
