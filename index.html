@@ -1844,7 +1844,7 @@ function showMyPixels(){
     const socIcons={twitter:'𝕏',instagram:'📸',linkedin:'💼',github:'🐙',facebook:'📘',youtube:'▶',tiktok:'🎵',discord:'💬'};
     const socLinks=Object.entries(soc).filter(([k,v])=>v&&socIcons[k]).map(([k,v])=>`<span title="${k}: ${v}" style="font-size:14px;cursor:default;">${socIcons[k]}</span>`).join(' ');
     const socStr=socLinks?`<div style="margin-top:3px;font-size:13px;">${socLinks}</div>`:'';
-    cards+=`<div class="mypx-card"><div class="mypx-hdr"><span>GRID #${String(blk.id).padStart(6,'0')}</span><span style="color:#AAFFAA;">${sn}</span><span style="color:#FFD700;">$${blk.bid||0}</span></div><div class="mypx-body"><div class="mypx-thumb">${thumb}</div><div class="mypx-info"><div class="mid">#${String(blk.id).padStart(6,'0')} · ${sn}</div><div class="mbid">Paid: $${blk.bid||0}</div><div style="margin-top:3px;">${urlStr}</div>${blk.title?`<div style="font-size:13px;color:#555;">${blk.title}</div>":""}${socStr}</div><div class="mypx-actions"><button class="mypx-btn primary" onclick="${blk.paid!==true&&!blk.adminClaim?`showPayFirst(${blk.id})`:`openPxEdit(${blk.id})`}" style="${blk.paid!==true&&!blk.adminClaim?'background:#CC6600;border-top:2px solid #FF8800;border-left:2px solid #FF8800;border-right:2px solid #884400;border-bottom:2px solid #884400;':''}">${blk.paid!==true&&!blk.adminClaim?'💳 PAY FIRST':'✏ EDIT'}</button><button class="mypx-btn" onclick="jumpToPixel(${blk.id})">🔍 VIEW</button></div></div></div>`;
+    cards+=`<div class="mypx-card"><div class="mypx-hdr"><span>GRID #${String(blk.id).padStart(6,'0')}</span><span style="color:#AAFFAA;">${sn}</span><span style="color:#FFD700;">$${blk.bid||0}</span></div><div class="mypx-body"><div class="mypx-thumb">${thumb}</div><div class="mypx-info"><div class="mid">#${String(blk.id).padStart(6,'0')} · ${sn}</div><div class="mbid">Paid: $${blk.bid||0}</div><div style="margin-top:3px;">${urlStr}</div>${blk.title?`<div style="font-size:13px;color:#555;">${blk.title}</div>`:''}${socStr}</div><div class="mypx-actions"><button class="mypx-btn primary" onclick="${blk.paid!==true&&!blk.adminClaim?`showPayFirst(${blk.id})`:`openPxEdit(${blk.id})`}" style="${blk.paid!==true&&!blk.adminClaim?'background:#CC6600;border-top:2px solid #FF8800;border-left:2px solid #FF8800;border-right:2px solid #884400;border-bottom:2px solid #884400;':''}">${blk.paid!==true&&!blk.adminClaim?'💳 PAY FIRST':'✏ EDIT'}</button><button class="mypx-btn" onclick="jumpToPixel(${blk.id})">🔍 VIEW</button></div></div></div>`;
   });
   sv.innerHTML=hd+cards;
 }
@@ -1995,6 +1995,17 @@ function adminSetTimer(){
   blk.status=mins===0?'sold':mins<120?'ending':'active';
   ndraw=true;mmDirty=true;
   if(window._fbAdminSetTimer) window._fbAdminSetTimer(blk.id,mins); else console.warn("_fbAdminSetTimer not ready");
+  // EXPIRE NOW: show animation immediately, prevent double-fire from setInterval
+  if(mins===0){
+    ackWin(blk.id);
+    soldCount++;updStats();
+    const winner=blk.bidder||blk.owner||null;
+    if(winner){
+      showAuctionClose(blk, winner===loggedIn);
+    } else {
+      showToast(`🔨 Block #${String(blk.id).padStart(6,'0')} expired — no bids, now available again`, '#555555', 4500);
+    }
+  }
   const expStr=mins===0?'⚡ EXPIRING NOW':mins+' min';
   msg.innerHTML=`<span style="background:#DFFFDF;border:1px solid #008000;padding:3px 8px;display:inline-block;">✓ Block #${String(blk.id).padStart(6,'0')} set to expire in ${expStr}</span>`;
   msg.style.color='#008000';
