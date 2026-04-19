@@ -850,6 +850,7 @@ function generateChunk(cr,cc){
   const key=cr*CHUNKS_PER_ROW+cc;
   if(generatedChunks[key])return;
   generatedChunks[key]=1;
+  ndraw=true;
   const r0=cr*CHUNK,c0=cc*CHUNK;
   const r1=Math.min(G,r0+CHUNK),c1=Math.min(G,c0+CHUNK);
   const rng=lcgMake(cr*7919+cc*6271+0xAB1234);
@@ -1133,7 +1134,15 @@ function showToast(msg, color='#000080', duration=3000){
   n.textContent=msg;document.body.appendChild(n);setTimeout(()=>n.isConnected&&n.remove(),duration);
 }
 
-function resizeC(){const w=document.getElementById('gw').clientWidth,h=document.getElementById('gw').clientHeight;canvas.width=w;canvas.height=h;ndraw=true;}
+function resizeC(){
+    const wrap=document.getElementById('gw');
+    if(!wrap)return;
+    canvas.width=wrap.clientWidth||800;
+    canvas.height=wrap.clientHeight||600;
+    mmc.width=150;
+    mmc.height=150;
+    ndraw=true;
+}
 function clampSc(){sc.x=Math.max(0,Math.min(G*CELL-canvas.width,sc.x));sc.y=Math.max(0,Math.min(G*CELL-canvas.height,sc.y));}
 
 function blkCol(blk){
@@ -1232,7 +1241,8 @@ function rebuildMinimap(){
 // Batch same-color fills to minimize ctx state changes
 let _layoutReady=false; // set true after genLayoutChunked completes
 function drawGrid(){
-  if(!ndraw||!_layoutReady)return;ndraw=false;
+  if(!_layoutReady)return;
+  if (!ndraw) ndraw = true;
   const cs=CELL,ox=sc.x,oy=sc.y;
   const sc2=Math.max(0,Math.floor(ox/cs)),sr=Math.max(0,Math.floor(oy/cs));
   const ec=Math.min(G,sc2+Math.ceil(canvas.width/cs)+2);
@@ -1305,7 +1315,7 @@ function drawGrid(){
   }
 
   // Minimap — blit from cache, only rebuild when dirty
-  if(mmDirty)rebuildMinimap();
+  if (mmDirty || blkMap.size === 0) rebuildMinimap();
   mmx.drawImage(mmOff,0,0);
   const mmW=mmOff.width,mmH=mmOff.height;
   const vx=(sc.x/(G*CELL))*mmW,vy=(sc.y/(G*CELL))*mmH;
@@ -2352,10 +2362,18 @@ window.addEventListener('load',()=>{
 
   // Lazy chunk generation — no upfront work needed
   _layoutReady=true;
+  if (typeof ensureChunksVisible === "function") {
+      ensureChunksVisible(0, 0, 100, 100);
+  }
   resizeC();
   mmDirty=true;ndraw=true;
   drawGrid();
   requestAnimationFrame(loop);
+  setInterval(() => {
+      ndraw = true;
+  }, 500);
+  setTimeout(()=>{resizeC();ndraw=true;},0);
+  window.addEventListener('resize',()=>{resizeC();ndraw=true;});
   updateSpotlightPanel();
   updSidebar();  // Auth state managed by Firebase onAuthStateChanged
   document.addEventListener('keydown',e=>{
