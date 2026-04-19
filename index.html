@@ -835,6 +835,44 @@ try{Object.defineProperty(window,'admin',{get:()=>false,set:()=>{},configurable:
 function cLookup(cellId){const b=cellBId[cellId];return b===-1?null:{bId:b,sz:cellSz[cellId]};}
 function cSet(cellId,bId,sz){cellBId[cellId]=bId;cellSz[cellId]=sz;}
 const blkMap=new Map();  // blockId → block object (~1M entries after layout gen)
+
+// ── placeBlock & lazy chunk generation (top-level so drawGrid can call ensureChunksVisible) ──
+function placeBlock(r,c,sz,extra){
+  const id=r*G+c;
+  blkMap.set(id,{id,row:r,col:c,size:sz,status:'available',bid:0,bids:0,mins:1440,bidder:null,owner:null,image:null,url:null,...(extra||{})});
+  for(let dr=0;dr<sz;dr++)for(let dc=0;dc<sz;dc++){const ci=(r+dr)*G+(c+dc);cellBId[ci]=id;cellSz[ci]=sz;}
+}
+const CHUNK=50;
+const CHUNKS_PER_ROW=Math.ceil(G/CHUNK);
+const generatedChunks=new Uint8Array(CHUNKS_PER_ROW*CHUNKS_PER_ROW);
+function lcgMake(seed){let n=seed|0;return()=>{n=(Math.imul(n,1664525)+1013904223)|0;return(n>>>0)/0x100000000;};}
+function generateChunk(cr,cc){
+  const key=cr*CHUNKS_PER_ROW+cc;
+  if(generatedChunks[key])return;
+  generatedChunks[key]=1;
+  const r0=cr*CHUNK,c0=cc*CHUNK;
+  const r1=Math.min(G,r0+CHUNK),c1=Math.min(G,c0+CHUNK);
+  const rng=lcgMake(cr*7919+cc*6271+0xAB1234);
+  for(let r=r0;r+5<=r1;r+=5)for(let c=c0;c+5<=c1;c+=5){
+    if(rng()<0.625){
+      let free=true;
+      for(let dr=0;dr<5&&free;dr++)for(let dc=0;dc<5&&free;dc++)if(cellBId[(r+dr)*G+(c+dc)]!==-1)free=false;
+      if(free)placeBlock(r,c,5,{});
+    }
+  }
+  for(let r=r0;r+2<=r1;r++)for(let c=c0;c+2<=c1;c++){
+    if(rng()<0.10&&cellBId[r*G+c]===-1&&cellBId[r*G+c+1]===-1&&cellBId[(r+1)*G+c]===-1&&cellBId[(r+1)*G+c+1]===-1)
+      placeBlock(r,c,2,{});
+  }
+  for(let r=r0;r<r1;r++)for(let c=c0;c<c1;c++)if(cellBId[r*G+c]===-1)placeBlock(r,c,1,{});
+}
+function ensureChunksVisible(sr,sc2,er,ec){
+  const cr0=Math.max(0,Math.floor(sr/CHUNK)-1);
+  const cc0=Math.max(0,Math.floor(sc2/CHUNK)-1);
+  const cr1=Math.min(CHUNKS_PER_ROW-1,Math.floor((er-1)/CHUNK)+1);
+  const cc1=Math.min(CHUNKS_PER_ROW-1,Math.floor((ec-1)/CHUNK)+1);
+  for(let cr=cr0;cr<=cr1;cr++)for(let cc=cc0;cc<=cc1;cc++)generateChunk(cr,cc);
+}
 let visCount=0,totalBids=0,soldCount=0;
 
 // Layout generated via genLayoutChunked on window load
@@ -1199,6 +1237,8 @@ function drawGrid(){
   const sc2=Math.max(0,Math.floor(ox/cs)),sr=Math.max(0,Math.floor(oy/cs));
   const ec=Math.min(G,sc2+Math.ceil(canvas.width/cs)+2);
   const er=Math.min(G,sr+Math.ceil(canvas.height/cs)+2);
+
+  ensureChunksVisible(sr,sc2,er,ec);
 
   ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,canvas.width,canvas.height);
 
@@ -2310,96 +2350,14 @@ window.addEventListener('load',()=>{
   // Loading overlay not needed — grid generates synchronously
   const loadMsg={remove:()=>{}}; // no-op placeholder
 
-  // placeBlock: registers a block in blkMap and marks its cells in typed arrays
-  function placeBlock(r,c,sz,extra){
-    const id=r*G+c;
-    blkMap.set(id,{id,row:r,col:c,size:sz,status:'available',bid:0,bids:0,mins:1440,bidder:null,owner:null,image:null,url:null,...(extra||{})});
-    for(let dr=0;dr<sz;dr++)for(let dc=0;dc<sz;dc++){const ci=(r+dr)*G+(c+dc);cellBId[ci]=id;cellSz[ci]=sz;}
-  }
-
-  // Generate layout asynchronously in 3 chunks to keep browser responsive
-  function genLayoutChunked(done){
-    const loadOverlay=document.createElement('div');
-    loadOverlay.id='_mpa_load';
-    loadOverlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:99999;display:flex;align-items:center;justify-content:center;';
-    loadOverlay.innerHTML='<div class="terminal-loader"><div class="terminal-header"><div class="terminal-title">Status</div><div class="terminal-controls"><div class="control close"></div><div class="control minimize"></div><div class="control maximize"></div></div></div><div class="text" id="_ld_msg">Loading...</div></div>';
-    document.body.appendChild(loadOverlay);
-    function sp(p,m){const s=document.getElementById('_ld_msg');if(m&&s)s.textContent=m;}
-
-    function finish(){
-      try{loadOverlay.remove();}catch(e){}
-      done();
-    }
-
-    function phase3(directBuyIds){
-      // Fill remaining 1x1 cells (synchronous — fast since it's just array writes)
-      try{
-        for(let r=0;r<G;r++)for(let c=0;c<G;c++){
-          const id=r*G+c;
-          if(cellBId[id]===-1) placeBlock(r,c,1,{directBuy:directBuyIds.has(id)||undefined});
-        }
-        sp(100,'READY!');
-      }catch(e){console.warn('phase3 error:',e);}
-      setTimeout(finish,50);
-    }
-
-    function phase2(){
-      try{
-        sp(30,'PLACING 2×2 BLOCKS...');
-        const rng=((s)=>{let n=s;return()=>{n=(n*1664525+1013904223)&0xFFFFFFFF;return(n>>>0)/0xFFFFFFFF;}})(0xABCD1235);
-        // Collect valid 2x2 positions
-        const pos2=[];
-        for(let r=0;r<G-1;r++)for(let c=0;c<G-1;c++){
-          if(cellBId[r*G+c]===-1&&cellBId[r*G+c+1]===-1&&cellBId[(r+1)*G+c]===-1&&cellBId[(r+1)*G+c+1]===-1)
-            pos2.push(r*G+c);
-        }
-        // Shuffle and place 200k
-        for(let i=pos2.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));const t=pos2[i];pos2[i]=pos2[j];pos2[j]=t;}
-        let placed2=0;
-        for(let i=0;i<pos2.length&&placed2<200000;i++){
-          const id=pos2[i],r=Math.floor(id/G),c=id%G;
-          if(cellBId[r*G+c]===-1&&cellBId[r*G+c+1]===-1&&cellBId[(r+1)*G+c]===-1&&cellBId[(r+1)*G+c+1]===-1){placeBlock(r,c,2,{});placed2++;}
-        }
-        sp(70,'GENERATING DIRECT-BUY PIXELS...');
-        // Direct-buy 200 seeded 1x1s
-        const rng3=((s)=>{let n=s;return()=>{n=(n*1664525+1013904223)&0xFFFFFFFF;return(n>>>0)/0xFFFFFFFF;}})(0xDEADBEEF);
-        const directBuyIds=new Set();
-        let dbAtt=0;
-        while(directBuyIds.size<200&&dbAtt<500000){dbAtt++;const r=Math.floor(rng3()*(G-2))+1,c=Math.floor(rng3()*(G-2))+1,id=r*G+c;if(cellBId[id]===-1)directBuyIds.add(id);}
-        sp(80,'FILLING 1×1 PIXELS...');
-        setTimeout(()=>phase3(directBuyIds),0);
-      }catch(e){console.warn('phase2 error:',e);setTimeout(finish,50);}
-    }
-
-    function phase1(){
-      try{
-        sp(10,'PLACING 5×5 BLOCKS...');
-        const rng=((s)=>{let n=s;return()=>{n=(n*1664525+1013904223)&0xFFFFFFFF;return(n>>>0)/0xFFFFFFFF;}})(0xABCD1234);
-        const stride5=Math.floor(G/5),p5len=stride5*stride5;
-        const pos5=new Int32Array(p5len*2);
-        let pn=0;
-        for(let r=0;r<stride5;r++)for(let c=0;c<stride5;c++){pos5[pn++]=r*5;pos5[pn++]=c*5;}
-        for(let i=p5len-1;i>0;i--){const j=Math.floor(rng()*(i+1));const tr=pos5[i*2],tc=pos5[i*2+1];pos5[i*2]=pos5[j*2];pos5[i*2+1]=pos5[j*2+1];pos5[j*2]=tr;pos5[j*2+1]=tc;}
-        for(let i=0;i<100000;i++) placeBlock(pos5[i*2],pos5[i*2+1],5,{});
-        sp(20,'SCANNING 2×2 POSITIONS...');
-        setTimeout(phase2,0);
-      }catch(e){console.warn('phase1 error:',e);setTimeout(finish,50);}
-    }
-
-    setTimeout(phase1,0);
-  }
-
-  genLayoutChunked(()=>{
-    _layoutReady=true;
-    resizeC();
-    mmDirty=true;ndraw=true;
-    drawGrid(); // force immediate first draw regardless of rAF timing
-    requestAnimationFrame(loop);
-    updateSpotlightPanel();
-    updSidebar();
-  });
-  window.addEventListener('resize',()=>{resizeC();ndraw=true;});
-  // Auth state managed by Firebase onAuthStateChanged
+  // Lazy chunk generation — no upfront work needed
+  _layoutReady=true;
+  resizeC();
+  mmDirty=true;ndraw=true;
+  drawGrid();
+  requestAnimationFrame(loop);
+  updateSpotlightPanel();
+  updSidebar();  // Auth state managed by Firebase onAuthStateChanged
   document.addEventListener('keydown',e=>{
     if(document.getElementById('ee').classList.contains('open')){if(e.key==='Escape')closeEE();return;}
     if(document.getElementById('lounge-overlay').classList.contains('open')){if(e.key==='Escape')closeLounge();return;}
