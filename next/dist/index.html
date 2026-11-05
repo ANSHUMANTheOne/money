@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Million Pixel Auction — A little space. A big internet.</title>
+  <meta name="description" content="One million pixels. Claim your corner of the internet, discover independent projects, and bid for the big spots.">
+  <meta name="theme-color" content="#222c75">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <div class="preview-bar"><span class="preview-dot"></span><strong>REVIEW EDITION</strong><span>Try the entire journey. Demo activity stays in this browser. No real charges.</span><button id="reset-demo">Reset demo</button></div>
+  <header class="site-header"><a href="#wall" class="wordmark" aria-label="Million Pixel Auction home"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>MILLION PIXEL<br><b>AUCTION</b><small>EST. IN YOUR CORNER OF THE INTERNET</small></span></a><nav aria-label="Main navigation"><a href="#wall" data-route="wall">The wall</a><a href="#auctions" data-route="auctions">Auctions <span class="nav-dot"></span></a><a href="#directory" data-route="directory">Discover</a><a href="#dashboard" data-route="dashboard">My pixels <span id="notification-count" hidden></span></a></nav><button class="button dark small" id="profile-button">Join the wall ↗</button></header>
+  <div class="ticker" aria-label="Campaign information"><span>A MILLION PIXELS. A THOUSAND POSSIBILITIES.</span><span>BUY A LITTLE SPOT. BID FOR A BIG ONE.</span><span>YOUR NEXT FAVORITE PROJECT LIVES HERE.</span><a href="#how">HOW DOES THIS WORK? ↗</a></div>
+  <main id="main-content" tabindex="-1"></main>
+  <footer><a href="#wall" class="footer-brand">MILLION PIXEL AUCTION</a><span>Small corners. Real people. One shared canvas.</span><div><a href="#how">How it works</a><a href="#rules">Rules & privacy</a><a href="#studio">Owner studio <span class="muted">(demo)</span></a></div></footer>
+  <dialog id="modal" aria-labelledby="modal-title"><div class="dialog-top"><span id="dialog-label">MILLION PIXEL AUCTION</span><button class="icon-button" id="close-modal" aria-label="Close dialog">×</button></div><div id="modal-body"></div></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <noscript><p class="notice">Enable JavaScript to explore the interactive wall. This is a review edition and accepts no real payments.</p></noscript>
+</body>
+</html>
+
