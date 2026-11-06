@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {CURRENCY,money,STORAGE_KEY} from './dist/model.mjs';
 import {freshState,selectPlacement,canPlace,releasePlacement,reserve,cancelReservation,startAuction,placeBid,minimumBid,expire,simulatePayment,stats,submitAd,approveAd,safeUrl,estimateRevenue} from './dist/model.mjs';
 const now=1700000000000;
 const setup=()=>{const s=freshState();s.user={id:'alex',name:'Alex'};return s;};
+test('prices and fresh records use USD without reinterpreting the earlier AED demo',()=>{const s=setup();assert.equal(CURRENCY,'USD');assert.equal(s.currency,'USD');assert.equal(s.version,3);assert.equal(money(20),'$20');assert.equal(money(500),'$500');assert.notEqual(STORAGE_KEY,'mpa-free-wall-demo-v2');});
 function coverage(s){const map=new Uint8Array(1000000);for(const l of s.lots)for(let y=l.y;y<l.y+l.side;y++)for(let x=l.x;x<l.x+l.side;x++){assert.equal(map[y*1000+x],0,'overlap');map[y*1000+x]=1;}assert.equal(map.every(v=>v===1),true);}
 test('a neutral wall covers one million pixels with no buyer zones',()=>{const s=setup();assert.equal(s.lots.length,1600);assert.equal(s.lots.every(l=>l.side===25&&l.status==='available'),true);coverage(s);});
 test('every size can occupy left, middle or right areas including former zone boundaries',()=>{for(const size of ['small','medium','large'])for(const [x,y] of [[0,0],[475,175],[775,500],[900,900]]){const s=setup();assert.ok(canPlace(s,x,y,size));const l=selectPlacement(s,x,y,size);assert.equal(l.x,x);assert.equal(l.y,y);assert.equal(l.sizeKey,size);coverage(s);}});
