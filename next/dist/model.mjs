@@ -1,27 +1,46 @@
 export const WALL_SIZE = 1000;
 export const TOTAL_PIXELS = WALL_SIZE ** 2;
-export const STORAGE_KEY = 'mpa-next-demo-v1';
-export const TIERS = Object.freeze({
-  community: { name: 'Community', side: 25, price: 20, mode: 'buy', color: '#edf4d4', description: 'Your name, your project, your little corner of the internet.' },
-  creator: { name: 'Creator', side: 50, price: 100, mode: 'buy', color: '#dce7ff', description: 'Four times the space for a project ready to be noticed.' },
-  brand: { name: 'Brand', side: 100, price: 500, mode: 'auction', color: '#f7dae8', description: 'A big canvas. A featured auction. A place in the daily story.' },
+export const STORAGE_KEY = 'mpa-free-wall-demo-v2';
+export const SIZES = Object.freeze({
+  small: { name: '25 × 25', side: 25, price: 20, mode: 'buy', color: '#edf4d4', description: 'A 25 × 25 pixel placement anywhere free on the wall.' },
+  medium: { name: '50 × 50', side: 50, price: 100, mode: 'buy', color: '#dce7ff', description: 'A 50 × 50 pixel placement, at a location you choose.' },
+  large: { name: '100 × 100', side: 100, price: 500, mode: 'auction', color: '#f7dae8', description: 'A 100 × 100 pixel auction placement anywhere it fits.' },
 });
 export const money = n => new Intl.NumberFormat('en-AE', {style:'currency', currency:'AED', maximumFractionDigits:0}).format(n);
 export function createLots() {
-  const lots = [];
-  for (let y=0;y<1000;y+=25) for (let x=0;x<500;x+=25) lots.push(lot(x,y,'community'));
-  for (let y=0;y<1000;y+=50) for (let x=500;x<800;x+=50) lots.push(lot(x,y,'creator'));
-  for (let y=0;y<1000;y+=100) for (let x=800;x<1000;x+=100) lots.push(lot(x,y,'brand'));
+  const lots=[];
+  for(let y=0;y<1000;y+=25)for(let x=0;x<1000;x+=25)lots.push(lot(x,y,'small'));
   return lots;
 }
-function lot(x,y,tier) { return {id:`${tier[0]}-${x}-${y}`, x,y,tier,side:TIERS[tier].side,status:tier==='brand'?'upcoming':'available',amount:TIERS[tier].price,bids:[],ad:null,owner:null,paidAt:null}; }
-export function freshState() { return {version:1,lots:createLots(),user:null,campaignStart:null,events:[],reports:[],sequence:0}; }
+function lot(x,y,sizeKey) {return {id:`${sizeKey}-${x}-${y}`,x,y,sizeKey,side:SIZES[sizeKey].side,status:sizeKey==='large'?'upcoming':'available',amount:SIZES[sizeKey].price,bids:[],ad:null,owner:null,paidAt:null};}
+export function freshState(){return {version:2,lots:createLots(),user:null,campaignStart:null,events:[],reports:[],sequence:0};}
+function overlaps(a,b){return a.x<b.x+b.side&&a.x+a.side>b.x&&a.y<b.y+b.side&&a.y+a.side>b.y;}
+export function canPlace(s,x,y,sizeKey){
+ const size=SIZES[sizeKey];
+ if(!size||!Number.isInteger(x)||!Number.isInteger(y)||x<0||y<0||x%25||y%25||x+size.side>1000||y+size.side>1000)return false;
+ const target={x,y,side:size.side};
+ return !s.lots.some(l=>overlaps(l,target)&&!(l.status==='available'&&l.side===25&&!l.paidAt));
+}
+export function selectPlacement(s,x,y,sizeKey){
+ if(!canPlace(s,x,y,sizeKey))throw Error('This selection overlaps an existing placement or goes outside the wall. Choose another free location.');
+ const target=lot(x,y,sizeKey);
+ s.lots=s.lots.filter(l=>!overlaps(l,target));
+ s.lots.push(target);
+ return target;
+}
+export function releasePlacement(s,id){
+ const target=s.lots.find(l=>l.id===id);
+ if(!target||target.paidAt||target.bids.length||!['available','upcoming'].includes(target.status))return false;
+ s.lots=s.lots.filter(l=>l.id!==id);
+ for(let y=target.y;y<target.y+target.side;y+=25)for(let x=target.x;x<target.x+target.side;x+=25)s.lots.push(lot(x,y,'small'));
+ return true;
+}
 export function stats(state) {
   const paid = state.lots.filter(l=>l.paidAt && l.owner && ['paid','published','review','hidden'].includes(l.status));
   const area = paid.reduce((a,l)=>a+l.side**2,0);
   return {paidPixels:area,percent:area/TOTAL_PIXELS*100,paidLots:paid.length,gross:paid.reduce((a,l)=>a+l.amount,0),bids:state.lots.reduce((a,l)=>a+l.bids.length,0)};
 }
-export function minimumBid(lot) { return lot.bids.length ? Math.max(lot.amount+1,Math.ceil(lot.amount*1.1)) : TIERS[lot.tier].price; }
+export function minimumBid(lot) { return lot.bids.length ? Math.max(lot.amount+1,Math.ceil(lot.amount*1.1)) : SIZES[lot.sizeKey].price; }
 export function safeUrl(value) {
   try { const u=new URL(value); return u.protocol==='https:' && !u.username && !u.password && u.hostname.includes('.') ? u.href : null; } catch { return null; }
 }
@@ -38,7 +57,7 @@ function requireUser(s) { if (!s.user) throw new Error('Create a demo profile fi
 function event(s,message,now) { s.events.unshift({id:++s.sequence,message,at:now}); s.events=s.events.slice(0,40); }
 export function reserve(s,id,now=Date.now()) {
   const user=requireUser(s), l=s.lots.find(l=>l.id===id);
-  if (!l || l.tier==='brand' || l.status!=='available') throw new Error('This block is not available for Buy Now.');
+  if (!l || l.sizeKey==='large' || l.status!=='available') throw new Error('This block is not available for Buy Now.');
   if (s.lots.some(l=>l.status==='reserved'&&l.reservedBy===user.id&&l.deadline>now)) throw new Error('Finish or cancel your current checkout first.');
   l.status='reserved'; l.reservedBy=user.id; l.deadline=now+10*60*1000;
   return l;
@@ -46,7 +65,7 @@ export function reserve(s,id,now=Date.now()) {
 export function cancelReservation(s,id) { const l=s.lots.find(l=>l.id===id); if(l?.status==='reserved'&&l.reservedBy===s.user?.id){l.status='available';delete l.reservedBy;delete l.deadline;} }
 export function startAuction(s,id,now=Date.now()) {
   const l=s.lots.find(l=>l.id===id);
-  if (!l || l.tier!=='brand' || l.status!=='upcoming') throw new Error('Choose an upcoming brand block.');
+  if (!l || l.sizeKey!=='large' || l.status!=='upcoming') throw new Error('Choose an upcoming 100 × 100 placement.');
   if (s.lots.some(l=>l.status==='active'||l.status==='awaiting-payment')) throw new Error('Finish the current featured auction first.');
   l.status='active';l.startedAt=now;l.endsAt=now+48*60*60*1000;l.hardEndsAt=l.endsAt+10*60*1000;
   event(s,`Featured auction opened for ${l.id}.`,now);
@@ -66,14 +85,14 @@ export function placeBid(s,id,amount,now=Date.now()) {
 export function expire(s,now=Date.now()) {
   let changed=false;
   for(const l of s.lots) {
-    if(l.status==='reserved' && now>=l.deadline) {l.status='available';delete l.reservedBy;delete l.deadline;changed=true;}
+    if(l.status==='reserved' && now>=l.deadline) {l.status='available';delete l.reservedBy;delete l.deadline;releasePlacement(s,l.id);changed=true;}
     if(l.status==='active' && now>=l.endsAt) {
       const winning=l.bids.at(-1);
       if(winning){l.status='awaiting-payment';l.winner=winning.uid;l.winnerName=winning.name;l.deadline=now+24*60*60*1000;event(s,`Auction ${l.id} ended. Winner payment is pending.`,now);}
-      else {l.status='upcoming';event(s,`Auction ${l.id} ended without a bid.`,now);}
+      else {l.status='upcoming';releasePlacement(s,l.id);event(s,`Auction ${l.id} ended without a bid. Its area is available again.`,now);}
       changed=true;
     }
-    if(l.status==='awaiting-payment'&&now>=l.deadline) {l.status='upcoming';l.winner=null;l.winnerName=null;l.bids=[];l.amount=TIERS.brand.price;delete l.deadline;event(s,`Unpaid block ${l.id} returned to the auction queue.`,now);changed=true;}
+    if(l.status==='awaiting-payment'&&now>=l.deadline) {l.status='upcoming';l.winner=null;l.winnerName=null;l.bids=[];l.amount=SIZES.large.price;delete l.deadline;releasePlacement(s,l.id);event(s,`Unpaid block ${l.id} returned to the shared wall.`,now);changed=true;}
   }
   return changed;
 }
@@ -91,7 +110,7 @@ export function submitAd(s,id,ad,now=Date.now()) {const u=requireUser(s),l=s.lot
 export function approveAd(s,id,now=Date.now()) {const l=s.lots.find(l=>l.id===id);if(!l||l.status!=='review'||!l.pendingAd)throw new Error('No submitted ad to review.');l.ad=l.pendingAd;delete l.pendingAd;l.status='published';event(s,`Ad for ${id} approved.`,now);}
 export function rejectAd(s,id) {const l=s.lots.find(l=>l.id===id);if(!l||l.status!=='review')throw new Error('No submitted ad to review.');delete l.pendingAd;l.status=l.reviewBefore==='published'?'published':'paid';}
 export function estimateRevenue(feePercent=2.9,fixedFee=1,refundPercent=5,hosting=0) {
-  const lots=createLots(), gross=lots.reduce((a,l)=>a+TIERS[l.tier].price,0), processing=gross*feePercent/100+lots.length*fixedFee,refunds=gross*refundPercent/100;
+  const lots=createLots(), gross=lots.reduce((a,l)=>a+SIZES[l.sizeKey].price,0), processing=gross*feePercent/100+lots.length*fixedFee,refunds=gross*refundPercent/100;
   return {gross,processing,refunds,hosting,contribution:gross-processing-refunds-hosting,count:lots.length};
 }
 
