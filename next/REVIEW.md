@@ -28,9 +28,9 @@ The original navy/grey retro layout is restored, using the original CSS in `dist
 
 Choose 25 x 25, 50 x 50 or 100 x 100, then click any available location. Selection snaps to a 25-pixel grid. A larger placement merges adjacent free cells and can cross any former zone boundary. Overlap, wall overflow and reservation conflicts are rejected.
 
-- 25 x 25: AED 20 Buy Now, available to everyone.
-- 50 x 50: AED 100 Buy Now, available to everyone.
-- 100 x 100: auction from AED 500, available to everyone.
+- 25 x 25: USD 20 Buy Now, available to everyone.
+- 50 x 50: USD 100 Buy Now, available to everyone.
+- 100 x 100: auction from USD 500, available to everyone.
 
 Start with the same 1,000 x 1,000 wall. Inventory is allocated dynamically, rather than imposing 800/120/20 slots or a company district. The journal counts paid area, regardless of placement size.
 
@@ -44,13 +44,13 @@ Buy Now for the two smaller sizes, one featured 48-hour auction at a time for th
 
 ## Economics
 
-There is no fixed sell-through mix. A completely filled wall of 25 x 25 blocks would generate AED 32,000 gross; all 50 x 50 would generate AED 40,000; all 100 x 100 at opening bids would generate AED 50,000. These examples are not a forecast or profit guarantee. Actual totals depend on sizes, available geometry, bids, refunds and costs.
+There is no fixed sell-through mix. A completely filled wall of 25 x 25 blocks would generate USD 32,000 gross; all 50 x 50 would generate USD 40,000; all 100 x 100 at opening bids would generate USD 50,000. These examples are not a forecast or profit guarantee. Actual totals depend on sizes, available geometry, bids, refunds and costs.
 
-The studio calculator uses the all-25 x 25 scenario: 1,600 payments at AED 20. At an illustrative 2.9% + AED 1 fee and a 5% refund reserve, that leaves AED 27,872 before hosting, licensing, taxes, disputes, labour and other overhead. Fee inputs are assumptions, not provider quotes.
+The studio calculator uses the all-25 x 25 scenario: 1,600 payments at USD 20. At an illustrative 2.9% + USD 1 fee and a 5% refund reserve, that leaves USD 27,872 before hosting, licensing, taxes, disputes, labour and other overhead. Fee inputs are assumptions, not provider quotes.
 
 ## Scope of verification
 
-- 15 Node model tests: exact inventory coverage, reservation expiry, payment identity and replay, bid validation, end times, anti-sniping cap, single auction, no-bid expiry, unpaid winner expiry, winner checkout, ad moderation, URL/image validation and economics.
+- 16 Node model tests: exact inventory coverage, reservation expiry, payment identity and replay, bid validation, end times, anti-sniping cap, single auction, no-bid expiry, unpaid winner expiry, winner checkout, ad moderation, URL/image validation and economics.
 - Browser flow checks: profile, Buy Now, simulated checkout, submission, owner approval, directory search, external link disclosure, two-bidder auction, closure, winner checkout, reload persistence and area-based stats.
 - Desktop and mobile checks of wall, auctions, Discover, dashboard, journal, how it works, rules and studio, with no horizontal page overflow.
 - Saved desktop and mobile screenshots were inspected.
@@ -60,4 +60,8 @@ These checks validate the review application. Local browser checks do not provid
 ## Production launch requirements
 
 See [PRODUCTION.md](PRODUCTION.md). The current Firebase account/configuration, payment eligibility, live database rules, business identity, domain DNS and actual provider credentials were not changed or verified. No money can be accepted by this build.
+
+## USD currency revision
+
+All review prices, bids, checkout totals, records and revenue displays are now denominated in USD. The proposed numeric prices remain 20, 100 and 500; this is a new USD price proposal, not an exchange-rate conversion of the old AED prices. The versioned USD demo storage key prevents old AED records from being relabelled as dollars. Existing local demo records remain untouched under their previous key. No live provider is connected. See PAYMENTS.md for the provider research and remaining account requirements.
 
