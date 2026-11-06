@@ -27,7 +27,7 @@ Suggested records:
 - `publicLots`: canonical geometry, block size, public sale state, approved ad and public auction information. No email, secret or provider session data.
 - `auctions`: trusted timestamps, reserve, bid sequence and winning user ID. Restrict write access to the backend.
 - `bids`: immutable audit entries created by the backend; hide private payment/customer details.
-- `orders`: buyer uid, canonical lot ID, immutable amount in minor units, AED currency, expiry, provider ID and state. Accessible to that user and server only.
+- `orders`: buyer uid, canonical lot ID, immutable amount in minor units, explicit USD currency, expiry, provider ID and state. Accessible to that user and server only.
 - `adSubmissions`: authenticated paid-owner content, revision and review state. Users cannot change ownership or payment flags.
 - `reports`: rate-limited reports and moderation audit history. Private to moderators.
 - `notifications`: private account reminders for wins, deadlines, rejected ads and payment failures.
@@ -58,13 +58,11 @@ Suggested records:
 - Protect the owner studio with real server authorisation. It is intentionally public in the local review app so the flow can be tested.
 - Keep real user email addresses, payment metadata and reports out of public queries.
 
-## Payment eligibility is still unresolved
+## Payment eligibility must be confirmed
 
-The user is in the UAE and has no trade licence or startup budget. Stripe UAE normally requires a trade licence or freelancer permit. Ziina's documentation describes limited Professional account features before full verification, but this does **not** confirm that this advertising-auction activity, API access and payouts are eligible without a licence.
+Merchant account approval, payment method availability, API access and processing limits are provider-specific. Public product documentation is not approval for a particular merchant or auction model. Review PAYMENTS.md for the generic provider comparison and primary references.
 
-Obtain a provider's confirmation for the exact business and account before activating checkout. A transaction fee deducted from proceeds can avoid an upfront provider fee, but it does not remove account requirements, business obligations or backend operating costs.
-
-Do not collect live payments through a personal transfer type mislabelled as a gift/donation, someone else's credentials, or an unsupported provider flow.
+A live operator must confirm the activity is permitted, complete the provider's verification and obtain any applicable local business approvals. Never mislabel advertising purchases as personal gifts or use someone else's credentials.
 
 Primary references checked during this work:
 
