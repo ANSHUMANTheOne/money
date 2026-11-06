@@ -12,7 +12,7 @@ No build or runtime dependencies are required for the website:
 python -m http.server 4173 --directory dist
 ```
 
-Open `http://localhost:4173`. All eight views use hash routes, so static hosting needs no rewrite rules. `dist/` can also be published on GitHub Pages or another static host.
+Open `http://localhost:4173`. All eleven views use hash routes, so static hosting needs no rewrite rules. `dist/` can also be published on GitHub Pages or another static host.
 
 Run the business logic tests:
 
@@ -22,46 +22,35 @@ node --test model.test.mjs
 
 The separate `browser-test.mjs` records end-to-end coverage. It expects Playwright in `../qa/node_modules`, a local server on port 4173 and Chrome at the configured Windows path. Playwright is test tooling only; it is not part of the deployed site.
 
-## Review the whole journey
+## Current revision: original layout and a shared wall
 
-1. Click a community or creator block and choose **Try demo checkout**.
-2. Create a demo profile. No email or real authentication is requested.
-3. Accept the preview disclosure and simulate payment. The ownership record is a local demo record only.
-4. Submit a title, HTTPS link, optional raster image and description.
-5. Open **Owner Studio (demo)** in the footer and approve the ad.
-6. See the ad on the wall and in Discover. Try directory search, link disclosure and reporting.
-7. Open Auctions and start the sample auction. Bid as Alex, switch to Sam using the profile dialog and place a competing bid.
-8. End the auction using the demo studio. The winner sees a payment reminder in My Pixels, without checking email.
-9. Complete winner checkout, or use the missed-deadline control to return the block to the queue.
-10. Open the progress journal and copy the daily update. Exports and copied updates explicitly label demo figures.
+The original navy/grey retro layout is restored, using the original CSS in `dist/original.css` plus responsive adapters in `dist/retro.css`. There are no separate buyer categories or exclusive regions.
 
-## Proposed model
+Choose 25 x 25, 50 x 50 or 100 x 100, then click any available location. Selection snaps to a 25-pixel grid. A larger placement merges adjacent free cells and can cross any former zone boundary. Overlap, wall overflow and reservation conflicts are rejected.
 
-| Tier | Count | Size | Mode | Proposed price |
-| --- | ---: | --- | --- | ---: |
-| Community | 800 | 25 × 25 | Buy Now | AED 20 |
-| Creator | 120 | 50 × 50 | Buy Now | AED 100 |
-| Brand | 20 | 100 × 100 | Featured auction | AED 500 opening bid |
+- 25 x 25: AED 20 Buy Now, available to everyone.
+- 50 x 50: AED 100 Buy Now, available to everyone.
+- 100 x 100: auction from AED 500, available to everyone.
 
-The layout covers exactly 1,000 × 1,000 pixels, without overlap. Community occupies 500,000 pixels, Creator 300,000 and Brand 200,000.
+Start with the same 1,000 x 1,000 wall. Inventory is allocated dynamically, rather than imposing 800/120/20 slots or a company district. The journal counts paid area, regardless of placement size.
 
-The proposed placement term is 12 months from confirmed payment. It is not permanent ownership, a financial asset or a guarantee of impressions. There is no recurring charge. A live implementation must remove expired placements and define renewals; the preview does not run a real annual renewal service.
+To review: select a free location, choose a size, create a local demo profile, simulate checkout, submit an ad, and approve it in the demo admin view. For an auction, select 100 x 100 at any free location and open a demo auction there. Switch profiles to try competitive bidding; use the admin time controls to test closing and unpaid winners.
 
-Auctions run one at a time for 48 hours. Bids increase by at least 10%, rounded up. Last-minute bids leave 60 seconds on the timer, capped at ten extra minutes. A winner gets 24 hours to pay. An unpaid block returns to the queue; the runner-up is never silently charged.
+Expired or canceled larger reservations release their footprint back to the neutral wall. An expired unpaid auction also releases its area; runners-up are never silently charged. The preview uses a new versioned local storage key so the previous zoned demo is not reinterpreted as free-position inventory.
 
-The mixed model preserves the auction identity while allowing a casual visitor to buy immediately. The daily video narrative is paid area filled, new advertisers, and the featured auction. Do not publish demo figures as actual sales.
+## Proposed operating model
+
+Buy Now for the two smaller sizes, one featured 48-hour auction at a time for the 100 x 100 size. At least a 10% raise, with last-minute extensions capped at 10 minutes. Winners have 24 hours to pay. Proposed ad placement lasts 12 months from payment; no recurring charge or promise of clicks.
 
 ## Economics
 
-Full sell-through at the proposed Buy Now prices and minimum winning bids yields **AED 38,000 gross**, not profit. It requires 940 successful transactions and assumes every block sells. It excludes auction upside.
+There is no fixed sell-through mix. A completely filled wall of 25 x 25 blocks would generate AED 32,000 gross; all 50 x 50 would generate AED 40,000; all 100 x 100 at opening bids would generate AED 50,000. These examples are not a forecast or profit guarantee. Actual totals depend on sizes, available geometry, bids, refunds and costs.
 
-An illustrative 2.9% + AED 1 processing assumption gives AED 2,042 of processing cost. A 5% refund reserve is AED 1,900. This leaves AED 34,058 before hosting, licence costs, taxes, disputes, labour and other overhead. These are planning inputs, not a verified provider quote or a forecast. The studio calculator lets you vary sell-through, fees, reserve and hosting cost.
-
-Higher auction bids can increase gross revenue. A large number of low-value disputes can erase the margin. Avoid upfront spend on a promise of full sell-through.
+The studio calculator uses the all-25 x 25 scenario: 1,600 payments at AED 20. At an illustrative 2.9% + AED 1 fee and a 5% refund reserve, that leaves AED 27,872 before hosting, licensing, taxes, disputes, labour and other overhead. Fee inputs are assumptions, not provider quotes.
 
 ## Scope of verification
 
-- 13 Node model tests: exact inventory coverage, reservation expiry, payment identity and replay, bid validation, end times, anti-sniping cap, single auction, no-bid expiry, unpaid winner expiry, winner checkout, ad moderation, URL/image validation and economics.
+- 15 Node model tests: exact inventory coverage, reservation expiry, payment identity and replay, bid validation, end times, anti-sniping cap, single auction, no-bid expiry, unpaid winner expiry, winner checkout, ad moderation, URL/image validation and economics.
 - Browser flow checks: profile, Buy Now, simulated checkout, submission, owner approval, directory search, external link disclosure, two-bidder auction, closure, winner checkout, reload persistence and area-based stats.
 - Desktop and mobile checks of wall, auctions, Discover, dashboard, journal, how it works, rules and studio, with no horizontal page overflow.
 - Saved desktop and mobile screenshots were inspected.
