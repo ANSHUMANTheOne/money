@@ -1,19 +1,20 @@
 export const WALL_SIZE = 1000;
 export const TOTAL_PIXELS = WALL_SIZE ** 2;
-export const STORAGE_KEY = 'mpa-free-wall-demo-v2';
+export const CURRENCY = 'USD';
+export const STORAGE_KEY = 'mpa-usd-wall-demo-v3';
 export const SIZES = Object.freeze({
   small: { name: '25 × 25', side: 25, price: 20, mode: 'buy', color: '#edf4d4', description: 'A 25 × 25 pixel placement anywhere free on the wall.' },
   medium: { name: '50 × 50', side: 50, price: 100, mode: 'buy', color: '#dce7ff', description: 'A 50 × 50 pixel placement, at a location you choose.' },
   large: { name: '100 × 100', side: 100, price: 500, mode: 'auction', color: '#f7dae8', description: 'A 100 × 100 pixel auction placement anywhere it fits.' },
 });
-export const money = n => new Intl.NumberFormat('en-AE', {style:'currency', currency:'AED', maximumFractionDigits:0}).format(n);
+export const money = n => new Intl.NumberFormat('en-US', {style:'currency', currency:CURRENCY, maximumFractionDigits:0}).format(n);
 export function createLots() {
   const lots=[];
   for(let y=0;y<1000;y+=25)for(let x=0;x<1000;x+=25)lots.push(lot(x,y,'small'));
   return lots;
 }
 function lot(x,y,sizeKey) {return {id:`${sizeKey}-${x}-${y}`,x,y,sizeKey,side:SIZES[sizeKey].side,status:sizeKey==='large'?'upcoming':'available',amount:SIZES[sizeKey].price,bids:[],ad:null,owner:null,paidAt:null};}
-export function freshState(){return {version:2,lots:createLots(),user:null,campaignStart:null,events:[],reports:[],sequence:0};}
+export function freshState(){return {version:3,currency:CURRENCY,lots:createLots(),user:null,campaignStart:null,events:[],reports:[],sequence:0};}
 function overlaps(a,b){return a.x<b.x+b.side&&a.x+a.side>b.x&&a.y<b.y+b.side&&a.y+a.side>b.y;}
 export function canPlace(s,x,y,sizeKey){
  const size=SIZES[sizeKey];
@@ -76,7 +77,7 @@ export function placeBid(s,id,amount,now=Date.now()) {
   if (!l || l.status!=='active' || now>=l.endsAt) throw new Error('This auction is closed.');
   if(l.bids.at(-1)?.uid===u.id) throw new Error('You are already the highest bidder.');
   if(s.lots.some(l=>l.status==='awaiting-payment'&&l.winner===u.id)) throw new Error('Complete your outstanding winning payment before bidding again.');
-  if(!Number.isSafeInteger(amount)||amount<minimumBid(l)||amount>1000000) throw new Error(`Enter a whole-dirham bid of at least ${money(minimumBid(l))}, up to AED 1,000,000.`);
+  if(!Number.isSafeInteger(amount)||amount<minimumBid(l)||amount>1000000) throw new Error(`Enter a whole-dollar bid of at least ${money(minimumBid(l))}, up to USD 1,000,000.`);
   l.amount=amount;l.bids.push({uid:u.id,name:u.name,amount,at:now});
   if(l.endsAt-now<=60000) l.endsAt=Math.min(l.hardEndsAt,now+60000);
   event(s,`${u.name} bid ${money(amount)} on ${id}.`,now);
