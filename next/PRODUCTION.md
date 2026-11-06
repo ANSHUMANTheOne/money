@@ -24,7 +24,7 @@ Use a new versioned namespace, such as `campaigns/season-1`, so original block I
 
 Suggested records:
 
-- `publicLots`: canonical geometry, tier, public sale state, approved ad and public auction information. No email, secret or provider session data.
+- `publicLots`: canonical geometry, block size, public sale state, approved ad and public auction information. No email, secret or provider session data.
 - `auctions`: trusted timestamps, reserve, bid sequence and winning user ID. Restrict write access to the backend.
 - `bids`: immutable audit entries created by the backend; hide private payment/customer details.
 - `orders`: buyer uid, canonical lot ID, immutable amount in minor units, AED currency, expiry, provider ID and state. Accessible to that user and server only.
@@ -78,4 +78,8 @@ Primary references checked during this work:
 ## Before changing millionpixelauction.com
 
 Review the new hosted edition first. Then select a production payment provider and backend, migrate legitimate records, test server-side concurrency and provider sandbox flows, publish operator/contact/refund/privacy details and confirm legal/tax requirements. Finally configure production hosting, credentials and DNS. The new review Site does not change the existing domain.
+
+## Free-position layout revision
+
+The review now keeps the original retro shell and removes all buyer-specific zones. The backend must validate a selected rectangle in 25-pixel grid increments, check every covered cell in a transaction and reserve the entire footprint atomically. Use a canonical cell occupancy index to prevent concurrent overlapping allocations. Price depends only on size and sale mode, never a company/creator classification. Cancellation and payment expiry release the footprint. Do not migrate the earlier zoned IDs into this layout without an explicit occupancy migration.
 
